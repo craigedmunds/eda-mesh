@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backstage-operator
+  namespace: argocd
+spec:
+  project: eventing
+  source:
+    repoURL: https://backstage.github.io/charts
+    targetRevision: 2.6.3
+    chart: backstage
+    helm:
+      parameters:
+        - name: postgresql.enabled
+          value: 'true'
+        - name: env.APP_CONFIG_app_baseUrl
+          value: 'http://192.168.194.250:7007'
+        - name: env.APP_CONFIG_backend_baseUrl
+          value: 'http://192.168.194.250:7007'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: backstage
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
