@@ -1,13 +1,12 @@
-# apiVersion: camel.apache.org/v1
-# kind: IntegrationPlatform
-# metadata:
-#   labels:
-#     app: camel-k
-#   name: camel-k
-#   namespace: camel-k
-# spec:
-#   build:
-#     registry:
-#       address: registry.io
-#       organization: camel-k
-#       insecure: true
+apiVersion: camel.apache.org/v1
+kind: IntegrationPlatform
+metadata:
+  labels:
+    app: camel-k
+  name: camel-k
+  namespace: camel-k
+spec:
+  build:
+    registry:
+      address: 192.168.194.214
+      insecure: true
