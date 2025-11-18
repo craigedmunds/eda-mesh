@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: camel-k-mesh
+  namespace: argocd
+spec:
+  project: eventing
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    path: helm/mesh
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    # namespace: camel-k-mesh
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

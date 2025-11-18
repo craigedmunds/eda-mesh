@@ -1,0 +1,23 @@
+apiVersion: camel.apache.org/v1
+kind: Integration
+metadata:
+  
+  labels:
+    app: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
+  name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-source
+  namespace: camel-k-mesh-{{.Values.lob}}
+spec:
+  
+  flows:
+  - from:
+      parameters:
+        period: "1000"
+      steps:
+      - setBody:
+          simple: Hello Camel from ${routeId}
+      - log: ${body}
+      uri: timer:yaml
+
+  traits:
+    camel:
+      runtimeProvider: plain-quarkus

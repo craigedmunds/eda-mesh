@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: camel-k-mesh-camel-k-operator
+  namespace: argocd
+spec:
+  project: eventing
+  source:
+    repoURL: https://apache.github.io/camel-k/charts/
+    targetRevision: 2.8.0
+    chart: camel-k
+    helm:
+      # todo : drive this from configuration
+    values: |
+      watchNamespaces:
+        - camel-k-mesh-demo
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: camel-k-mesh
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

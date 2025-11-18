@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: camel-k-mesh-lob-service-applications
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - git:
+      repoURL: https://github.com/craigedmunds/argocd-eda.git
+      revision: HEAD
+      directories:
+
+      # todo : drive this from configuration rather than just the folders in the local folder
+      # (similar to what we do in lob-deployment for APIs)
+      - path: mesh/lobs/{{.Values.name}}/*
+  template:
+    metadata:
+      name: 'camel-k-mesh-{{.Values.name}}-{{ "{{.path.basename}}" }}'
+    spec:
+      project: "eventing"
+      source:
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        targetRevision: HEAD
+        path: 'helm/mesh-lob-service'
+        helm:
+          parameters:
+            - name: lob
+              value: '{{ .Values.name }}'
+            - name: name
+              value: '{{ "{{.path.basename}}" }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'camel-k-mesh-{{.Values.name}}'
+
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
