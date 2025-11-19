@@ -11,6 +11,7 @@ helmChartInflationGenerator:
 
 resources:
 - lob-applications.yaml
+- rabbitmq
 
 patches: 
   - patch: |-
