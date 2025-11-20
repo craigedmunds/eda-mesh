@@ -1,33 +1,33 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: opensearch
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://opensearch-project.github.io/helm-charts/
-    chart: opensearch
-    targetRevision: 3.2.1
-    helm:
-      valuesObject:
-        config:
-          opensearch.yml: |-
-            cluster.name: opensearch-cluster
-            network.host: 0.0.0.0
-        extraEnvs:
-          - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
-            #Temporary - should come from a secret
-            value: ofsEWPglQpHjZwzX4oMPg
-    #   parameters:
-    #     - name: thanosRuler.service.enabled
-    #       value: 'false'
-    #     - name: alertmanager.enabled
-    #       value: 'false'
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: observability
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true
-      # - ServerSideApply=true
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: opensearch
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://opensearch-project.github.io/helm-charts/
+#     chart: opensearch
+#     targetRevision: 3.2.1
+#     helm:
+#       valuesObject:
+#         config:
+#           opensearch.yml: |-
+#             cluster.name: opensearch-cluster
+#             network.host: 0.0.0.0
+#         extraEnvs:
+#           - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+#             #Temporary - should come from a secret
+#             value: ofsEWPglQpHjZwzX4oMPg
+#     #   parameters:
+#     #     - name: thanosRuler.service.enabled
+#     #       value: 'false'
+#     #     - name: alertmanager.enabled
+#     #       value: 'false'
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: observability
+#   syncPolicy:
+#     syncOptions:
+#       - CreateNamespace=true
+#       # - ServerSideApply=true
