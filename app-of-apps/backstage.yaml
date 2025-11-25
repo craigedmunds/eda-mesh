@@ -6,42 +6,9 @@ metadata:
 spec:
   project: eventing
   source:
-    repoURL: https://backstage.github.io/charts
-    targetRevision: 2.6.3
-    chart: backstage
-    helm:
-      valuesObject:
-        postgresql:
-          enabled: true
-        ingress:
-          enabled: true
-          host: backstage.127.0.0.1.nip.io
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: websecure
-            traefik.ingress.kubernetes.io/router.tls: "true"
-          tls:
-            enabled: true
-            secretName: backstage-tls
-        extraDeploy:
-          - apiVersion: cert-manager.io/v1
-            kind: Issuer
-            metadata:
-              name: backstage-selfsigned
-              namespace: backstage
-            spec:
-              selfSigned: {}
-          - apiVersion: cert-manager.io/v1
-            kind: Certificate
-            metadata:
-              name: backstage-tls
-              namespace: backstage
-            spec:
-              secretName: backstage-tls
-              issuerRef:
-                name: backstage-selfsigned
-                kind: Issuer
-              dnsNames:
-                - backstage.127.0.0.1.nip.io
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    targetRevision: HEAD
+    path: kustomize/backstage
       
   destination:
     server: https://kubernetes.default.svc

@@ -1,0 +1,12 @@
+postgresql:
+  enabled: true
+
+ingress:
+  enabled: true
+  host: backstage.127.0.0.1.nip.io
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+  tls:
+    enabled: true
+    secretName: backstage-tls
