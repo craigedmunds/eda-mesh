@@ -23,8 +23,26 @@ Add github credentials for backstage authentication:
 
 ```
 kubectl -n backstage create secret generic backstage-github-auth \
-  --from-literal=GITHUB_CLIENT_ID="$GITHUB_BACKSTAGE_CLIENTID" \
-  --from-literal=GITHUB_CLIENT_SECRET="$GITHUB_BACKSTAGE_CLIENTSECRET
+  --from-literal=GITHUB_CLIENT_ID="$GITHUB_BUILD_CLIENTID" \
+  --from-literal=GITHUB_CLIENT_SECRET="$GITHUB_BUILD_CLIENTSECRET
+```
+
+Create the docker registry secret: 
+
+```
+kubectl create secret docker-registry ghcr-creds \
+  --docker-server=ghcr.io \
+  --docker-username="$GITHUB_BUILD_USERNAME" \
+  --docker-password="$GITHUB_PAT_BUILDTOOLING" \
+  --docker-email="$GITHUB_BUILD_USERNAME"
+```
+
+```
+kubectl create secret docker-registry -n backstage ghcr-creds \
+  --docker-server=ghcr.io \
+  --docker-username="$GITHUB_BUILD_USERNAME" \
+  --docker-password="$GITHUB_PAT_BUILDTOOLING" \
+  --docker-email="$GITHUB_BUILD_USERNAME"
 ```
 
 Create seed application:

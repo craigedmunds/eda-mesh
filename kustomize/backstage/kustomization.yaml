@@ -12,6 +12,8 @@ helmChartInflationGenerator:
 
 resources:
   - tls.yaml
+  - k8s-rbac.yaml
+  - users-configmap.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

@@ -12,6 +12,12 @@ ingress:
     secretName: backstage-tls
 
 backstage:
+  image:
+    # registry: ghcr.io
+    repository: craigedmunds/backstage
+    tag: '0.1'
+    pullSecrets:
+      - ghcr-creds
   extraEnvVars:
     - name: BACKSTAGE_AUTH_LEGACY_GUEST
       value: "true"
@@ -19,6 +25,14 @@ backstage:
       value: dev-backstage-key
   extraEnvVarsSecrets:
     - backstage-github-auth
+  extraVolumes:
+    - name: backstage-users
+      configMap:
+        name: backstage-users
+  extraVolumeMounts:
+    - name: backstage-users
+      mountPath: /etc/backstage/catalog
+      readOnly: true
   appConfig:
     app:
       title: Backstage
@@ -41,6 +55,22 @@ backstage:
             clientId: ${GITHUB_CLIENT_ID}
             clientSecret: ${GITHUB_CLIENT_SECRET}
             callbackUrl: https://backstage.127.0.0.1.nip.io/api/auth/github/handler/frame
+            signIn:
+              resolvers:
+                - resolver: emailMatchingUserEntityProfileEmail
+          development:
+            clientId: ${GITHUB_CLIENT_ID}
+            clientSecret: ${GITHUB_CLIENT_SECRET}
+            callbackUrl: https://backstage.127.0.0.1.nip.io/api/auth/github/handler/frame
+            signIn:
+              resolvers:
+                - resolver: emailMatchingUserEntityProfileEmail
+    catalog:
+      locations:
+        - type: file
+          target: /etc/backstage/catalog/users.yaml
+          rules:
+            - allow: [User, Group]
     signIn:
       resolvers:
         - resolver: github
