@@ -33,6 +33,8 @@ data:
       lifecycle: production
       owner: apim
       system: sample
+      providesApis:
+        - sample-api
     ---
     apiVersion: backstage.io/v1alpha1
     kind: API
@@ -44,8 +46,6 @@ data:
       lifecycle: production
       owner: apim
       system: sample
-      component: sample-service
-      apiProvidedBy: sample-service
       definition: |
         openapi: "3.0.0"
         info:

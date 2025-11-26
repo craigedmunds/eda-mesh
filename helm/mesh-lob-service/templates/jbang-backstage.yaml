@@ -16,6 +16,8 @@ data:
       lifecycle: production
       owner: apim
       system: {{.Values.lob}}-lob
+      providesApis:
+        - {{.Values.lob}}-{{.Values.name}}
     ---
     apiVersion: backstage.io/v1alpha1
     kind: API
@@ -27,7 +29,5 @@ data:
       lifecycle: production
       owner: apim
       system: {{.Values.lob}}-lob
-      component: {{.Values.lob}}-{{.Values.name}}
-      apiProvidedBy: {{.Values.lob}}
       definition: |
 {{ .Values.asyncapispec | indent 8 }}

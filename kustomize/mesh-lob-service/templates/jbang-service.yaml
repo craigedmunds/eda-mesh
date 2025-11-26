@@ -4,6 +4,7 @@ metadata:
   labels:
     app: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
     app.kubernetes.io/runtime: camel
+    backstage.io/kubernetes-id: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
   name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
   namespace: camel-k-mesh-{{.Values.lob}}
 spec:

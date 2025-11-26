@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   labels:
     app: camel-k-mesh-consumer-{{.Values.name}}
+    backstage.io/kubernetes-id: camel-k-mesh-consumer-{{.Values.name}}
   name: camel-k-mesh-consumer-{{.Values.name}}-config
   namespace: camel-k-mesh-consumer-{{.Values.name}}
 data:

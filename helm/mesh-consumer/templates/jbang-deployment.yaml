@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: camel-k-mesh-consumer-{{.Values.name}}
+        backstage.io/kubernetes-id: camel-k-mesh-consumer-{{.Values.name}}
     spec:
       containers:
       - name: integration
