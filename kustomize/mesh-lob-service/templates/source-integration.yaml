@@ -1,0 +1,41 @@
+# apiVersion: camel.apache.org/v1
+# kind: Integration
+# metadata:
+#   labels:
+#     app: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
+#   name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-source
+#   namespace: camel-k-mesh-{{.Values.lob}}
+# spec:
+
+#   flows:
+#   - from:
+#       uri: "kafka:users?brokers=kafka.confluent.svc.cluster.local:9092"
+      
+#       # uri: "kamelet:kafka-source"
+#       # parameters:
+#       #   topic: "users"
+#       #   bootstrapServers: "kafka.confluent.svc.cluster.local:9092"
+#       #   # user: "kafka"
+#       #   # password: "kafka-secret"
+#       steps:
+#       # - setBody:
+#       #     simple: Hello Camel from ${routeId}
+#       - log: ${body}
+#       # - to: "rabbitmq://ex.demo.userservice.usercreated?autoDelete=false&durable=true&username={{`{{secret:camel-k-mesh/camel-k-mesh-default-user/username}}`}}&password={{`{{secret:camel-k-mesh/camel-k-mesh-default-user/password}}`}}&hostname=camel-k-mesh.camel-k-mesh.svc.cluster.local"
+
+#       # - to: "spring-rabbitmq:exchange:ex.demo.userservice.usercreated?autoDelete=false&durable=true&hostname=camel-k-mesh.camel-k-mesh.svc.cluster.local"
+#       - to: "kamelet:rabbitmq-sink"
+#         parameters:
+#           host: "camel-k-mesh.camel-k-mesh.svc.cluster.local"
+#           port: 5672
+#           username: "guest"   # or reference secret
+#           password: "guest"   # or reference secret
+#           exchangeName: "ex.demo.userservice.usercreated"
+#           routingKey: "user.created"
+#           durable: true
+#           autoDelete: false
+
+#   traits:
+#     camel:
+#       # runtimeProvider: plain-quarkus
+#       runtimeProvider: quarkus

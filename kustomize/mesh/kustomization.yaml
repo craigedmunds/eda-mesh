@@ -1,34 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# helmChartInflationGenerator:
-#   - chartRepoUrl: https://apache.github.io/camel-k/charts/
-#     chartName: camel-k
-#     chartVersion: 2.8.0
-
-# resources:
-# - base
-
 resources:
 - producers.yaml
 - lob-applications.yaml
 - kyverno-copy-rabbit-secret.yaml
 - kyverno-rbac.yaml
 - rabbitmq
-
-# patches: 
-#   - patch: |-
-#       apiVersion: apps/v1
-#       kind: Deployment
-#       metadata:
-#         name: camel-k-operator
-#       spec:
-#         template:
-#           spec:
-#             containers:
-#             - name: camel-k-operator
-#               env:
-#                 - name: WATCH_NAMESPACE
-#                   # todo : drive this from configuration
-#                   value: camel-k-mesh-demo
-#                   valueFrom: null

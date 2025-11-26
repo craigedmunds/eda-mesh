@@ -1,9 +1,0 @@
-apiVersion: v2
-name: mesh
-description: A Helm chart to manage the mesh
-type: application
-version: 0.1.0
-dependencies:
-  - name: camel-k
-    version: 2.8.0
-    repository: https://apache.github.io/camel-k/charts/

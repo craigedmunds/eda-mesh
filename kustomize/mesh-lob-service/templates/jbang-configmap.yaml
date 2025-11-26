@@ -8,14 +8,3 @@ metadata:
 data:
   integration.yaml: |
 {{ tpl (.Files.Get "integration.yaml") . | indent 4 }}
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  labels:
-    app: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
-  name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-asyncapi
-  namespace: camel-k-mesh-{{.Values.lob}}
-data:
-  asyncapi.yaml: |
-{{ .Values.asyncapispec | indent 4 }}

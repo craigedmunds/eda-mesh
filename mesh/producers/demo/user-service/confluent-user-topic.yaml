@@ -7,3 +7,4 @@ spec:
   replicas: 0
   configs:
     cleanup.policy: "compact"
+    min.insync.replicas: 1

@@ -1,8 +1,7 @@
 # Camel K Integration YAML (rendered by Helm)
 {{- $lob := .Values.lob }}
 {{- $service := .Values.name }}
-{{- $asyncapispec := fromYaml .Values.asyncapispec }}
-{{- range $k, $v := $asyncapispec.channels }}
+{{- range $k, $v := .Values.channels }}
 {{- $event := lower $k }}
 
 - route:

@@ -23,39 +23,25 @@ spec:
       sources:
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
           ref: lob
-          directory:
-            recurse: true
-            include: '**/*.yaml'
+          # directory:
+          #   recurse: true
+          #   include: '**/*.yaml'
+
+        # - repoURL: https://github.com/craigedmunds/argocd-eda.git
+        #   targetRevision: HEAD
+        #   path: 'kustomize/mesh-lob-service'
+
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
           targetRevision: HEAD
           path: 'helm/mesh-lob-service'
           helm:
-            valueFiles:
-            - $lob/mesh/lobs/{{.Values.name}}/{{`{{ .values.service }}`}}/asyncapi.yaml
-            values: |
-              apiDefinition: |
-                asyncapi: '3.0.0'
-                info:
-                  title: User Service
-                  version: '1.0.0'
-                  description: |
-                    This specification describes user-related events published by the User Service.
-                    The `UserCreated` event is emitted when a new user account is successfully created.
-
-                defaultContentType: application/cloudevents+json
-
-            # valuesObject:
-            #   apiDefinition:
-            #     asyncapi: '3.0.0'
-            #     info:
-            #       title: User Service
-            #       version: '1.0.0'
-            #       description: |
-            #         This specification describes user-related events published by the User Service.
-            #         The `UserCreated` event is emitted when a new user account is successfully created.
-
-            #     defaultContentType: application/cloudevents+json
-
+            fileParameters:
+            - name: asyncapispec
+              path: $lob/mesh/lobs/{{.Values.name}}/{{`{{ .values.service }}`}}/asyncapi.yaml
+        
+            # valueFiles:
+            # - $lob/mesh/lobs/{{.Values.name}}/{{`{{ .values.service }}`}}/asyncapi.yaml
+            
             parameters:
               - name: lob
                 value: "{{.Values.name}}"

@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
 - cluster.yaml
-# - secret-reader-role.yaml
+- ingress.yaml

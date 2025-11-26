@@ -1,6 +1,0 @@
-dependencies:
-- name: camel-k
-  repository: https://apache.github.io/camel-k/charts/
-  version: 2.8.0
-digest: sha256:f946ab610a22bdc2d735fb2711c7ef00bc300dadd5010a7db2a82ffdc482d67c
-generated: "2025-11-18T11:07:48.367704Z"
