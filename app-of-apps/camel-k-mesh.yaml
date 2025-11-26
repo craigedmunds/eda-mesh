@@ -11,30 +11,7 @@ spec:
     kustomize:
       enableHelm: true
       buildOptions: "--enable-helm"
-  # source:
-  #   chart: camel-k
-  #   repoURL: https://apache.github.io/camel-k/charts
-  #   targetRevision: 2.8.0
-
-  #   kustomize:
-  #     patches:
-  #     - patch: |-
-  #         apiVersion: apps/v1
-  #         kind: Deployment
-  #         metadata:
-  #           name: camel-k-operator
-  #         spec:
-  #           template:
-  #             spec:
-  #               containers:
-  #               - name: camel-k-operator
-  #                 env:
-  #                   - name: WATCH_NAMESPACE
-  #                     # todo : drive this from configuration
-  #                     value: camel-k-mesh,camel-k-mesh-demo
-  #                     valueFrom: null
-      
-
+  
   destination:
     server: https://kubernetes.default.svc
     namespace: camel-k-mesh
@@ -45,7 +22,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    # hooks:
-    #   - type: PostSync
-    #     command: ["helm"]
-    #     args: ["dependency", "update"]

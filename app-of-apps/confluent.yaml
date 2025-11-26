@@ -8,13 +8,7 @@ spec:
   source:
     repoURL: https://github.com/craigedmunds/argocd-eda.git
     path: kustomize/confluent
-    # kustomize:
-    #   enableHelm: true
-    #   buildOptions: "--enable-helm"
-
-    # repoURL: https://github.com/craigedmunds/confluent-kubernetes-examples.git
-    # path: quickstart-deploy/kraft-quickstart/confluent-platform-c3++
-    # targetRevision: feature/restructure-kraft-quickstart
+    
   destination:
     server: https://kubernetes.default.svc
     namespace: confluent
