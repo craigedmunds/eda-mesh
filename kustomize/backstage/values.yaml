@@ -11,11 +11,16 @@ ingress:
     enabled: true
     secretName: backstage-tls
 
+# https://artifacthub.io/packages/helm/backstage/backstage
+serviceAccount:
+  create: true
+  name: backstage
+
 backstage:
   image:
     # registry: ghcr.io
     repository: craigedmunds/backstage
-    tag: '0.1'
+    tag: '0.2'
     pullSecrets:
       - ghcr-creds
   extraEnvVars:
@@ -29,10 +34,29 @@ backstage:
     - name: backstage-users
       configMap:
         name: backstage-users
+    - name: catalog-components
+      projected:
+        sources:
+        - configMap:
+            name: catalog-component-camel-k-mesh-demo
+        - configMap:
+            name: catalog-component-camel-k-mesh-demo-user-service
+    #   configMap:
+    #     name: catalog-component-camel-k-mesh-demo
+    # - name: catalog-components-demo-user-service
+    #   configMap:
+    #     name: catalog-component-camel-k-mesh-demo-user-service
   extraVolumeMounts:
     - name: backstage-users
       mountPath: /etc/backstage/catalog
       readOnly: true
+    - name: catalog-components
+      mountPath: /etc/backstage/catalog/components
+      readOnly: true
+    # - name: catalog-components-demo-user-service
+    #   mountPath: /etc/backstage/catalog/components
+    #   readOnly: true
+
   appConfig:
     app:
       title: Backstage
@@ -71,6 +95,22 @@ backstage:
           target: /etc/backstage/catalog/users.yaml
           rules:
             - allow: [User, Group]
+        - type: file
+          target: /etc/backstage/catalog/components/*.yaml
+          rules:
+            - allow: [Domain, Component, System, Resource, API, Location, User, Group]
+      providers:
+        kubernetes:
+          local-cluster:
+            cluster: in-cluster
+            processor:
+              namespaceOverride: default
+              defaultOwner: apim
+            schedule:
+              frequency:
+                seconds: 30
+              timeout:
+                seconds: 5
     signIn:
       resolvers:
         - resolver: github
@@ -90,3 +130,4 @@ backstage:
               url: https://kubernetes.default.svc
               authProvider: serviceAccount
               skipTLSVerify: true
+      

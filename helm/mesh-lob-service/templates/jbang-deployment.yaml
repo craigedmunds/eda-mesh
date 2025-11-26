@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
+    backstage.io/kubernetes-id: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
   name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-deployment
   namespace: camel-k-mesh-{{.Values.lob}}
 spec:
