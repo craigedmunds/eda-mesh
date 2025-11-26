@@ -4,7 +4,9 @@ kind: Kustomization
 resources:
 - producers.yaml
 - consumers.yaml
+- services.yaml
 - lob-applications.yaml
 - kyverno-copy-rabbit-secret.yaml
 - kyverno-rbac.yaml
 - rabbitmq
+- backstage.yaml

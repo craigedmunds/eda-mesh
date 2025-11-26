@@ -1,0 +1,34 @@
+{{- $service := .Values.name }}
+
+{{- $subscriptions := fromYamlArray .Values.subscriptions }}
+
+{{- range $v := $subscriptions  }}
+{{- $event := lower $v.event }}
+{{- $lob := $v.lob }}
+{{- $lobService := $v.service }}
+
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: consumer-{{ $service }}-{{ $lob }}-{{ $lobService }}-{{ $event }}
+  namespace: camel-k-mesh
+spec:
+  name: q.{{ $service }}.{{ $lob }}.{{ $lobService }}.{{ $event }}
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: camel-k-mesh
+
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: consumer-{{ $service }}-{{ $lob }}-{{ $lobService }}-{{ $event }}-binding
+  namespace: camel-k-mesh
+spec:
+  source: ex.{{ $lob }}.{{ $lobService }}.{{ $event }}
+  destination: q.{{ $service }}.{{ $lob }}.{{ $lobService }}.{{ $event }}
+  destinationType: queue
+  rabbitmqClusterReference:
+    name: camel-k-mesh
+{{- end }}

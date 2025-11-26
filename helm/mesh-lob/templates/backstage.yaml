@@ -14,57 +14,11 @@ data:
       owner: apim
     ---
     apiVersion: backstage.io/v1alpha1
-    kind: Domain
-    metadata:
-      name: users
-      description: Everything about users
-    spec:
-      owner: apim
-      subdomainOf: {{.Values.name}}
-    ---
-    apiVersion: backstage.io/v1alpha1
     kind: System
     metadata:
-      name: {{.Values.name}}
-      description: A lob system
+      name: {{.Values.name}}-lob
+      description: The {{.Values.name}} lob
     spec:
       owner: apim
       domain: {{.Values.name}}
-    ---
-    apiVersion: backstage.io/v1alpha1
-    kind: Component
-    metadata:
-      name: {{.Values.name}}
-      annotations:
-        backstage.io/kubernetes-id: camel-k-mesh-{{.Values.name}}
-    spec:
-      type: service
-      lifecycle: production
-      owner: apim
-      system: {{.Values.name}}
-    ---
-    apiVersion: backstage.io/v1alpha1
-    kind: API
-    metadata:
-      name: {{.Values.name}}-sample-api
-      description: Does stuff
-    spec:
-      type: openapi
-      lifecycle: production
-      owner: apim
-      system: {{.Values.name}}
-      component: {{.Values.name}}
-      apiProvidedBy: {{.Values.name}}
-      definition: |
-        openapi: "3.0.0"
-        info:
-          version: 1.0.0
-          title: Artist API
-          license:
-            name: MIT
-        servers:
-          - url: http://artist.spotify.net/v1
-        paths:
-          /artists:
-            get:
-              summary: List all artists
+    

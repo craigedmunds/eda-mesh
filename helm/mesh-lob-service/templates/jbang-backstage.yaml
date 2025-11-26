@@ -6,6 +6,18 @@ metadata:
 data:
   catalog-component-camel-k-mesh-{{.Values.lob}}-{{.Values.name}}.yaml: |
     apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: {{.Values.lob}}-{{.Values.name}}
+      annotations:
+        backstage.io/kubernetes-id: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
+    spec:
+      type: service
+      lifecycle: production
+      owner: apim
+      system: {{.Values.lob}}-lob
+    ---
+    apiVersion: backstage.io/v1alpha1
     kind: API
     metadata:
       name: {{.Values.lob}}-{{.Values.name}}
@@ -14,7 +26,7 @@ data:
       type: asyncapi
       lifecycle: production
       owner: apim
-      system: {{.Values.lob}}
+      system: {{.Values.lob}}-lob
       component: {{.Values.lob}}-{{.Values.name}}
       apiProvidedBy: {{.Values.lob}}
       definition: |

@@ -38,14 +38,14 @@ backstage:
       projected:
         sources:
         - configMap:
+            name: catalog-component-camel-k-mesh-sample
+        - configMap:
             name: catalog-component-camel-k-mesh-demo
         - configMap:
             name: catalog-component-camel-k-mesh-demo-user-service
-    #   configMap:
-    #     name: catalog-component-camel-k-mesh-demo
-    # - name: catalog-components-demo-user-service
-    #   configMap:
-    #     name: catalog-component-camel-k-mesh-demo-user-service
+        - configMap:
+            name: catalog-component-camel-k-mesh-consumer-my-simple-http-service
+
   extraVolumeMounts:
     - name: backstage-users
       mountPath: /etc/backstage/catalog

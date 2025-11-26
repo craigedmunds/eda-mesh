@@ -1,0 +1,11 @@
+name: "dummy-service"
+
+# TODO : should events be grouped by "lob", "domain", etc?
+# Are event names globally unique or do they need to be qualified by domain/lob?
+
+subscriptions: |
+  - event: dummyEvent
+    lob: dummy
+    service: dummy-service
+    destination:
+      uri: http://sample-service/v1/notifications

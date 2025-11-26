@@ -2,8 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    
+
     # These two labels are currently used by kyverno to add the rabbit secret
-    apim/service.type: mesh-lob
+    apim/service.type: mesh-consumer
     apim/deps.rabbitmq: 'true'
-  name: camel-k-mesh-{{.Values.name}}
+  name: camel-k-mesh-consumer-{{.Values.name}}

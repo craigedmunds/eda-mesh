@@ -1,3 +1,5 @@
 - event: userCreated
+  lob: demo
+  service: user-service
   destination:
-    uri: http://my-simple-http-service.default.svc.cluster.local/notifications
+    uri: http://http-service.camel-k-mesh-service-my-simple-http-service.svc.cluster.local:9021/v1/notifications
