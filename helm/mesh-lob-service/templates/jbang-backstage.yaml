@@ -11,7 +11,7 @@ data:
       name: {{.Values.lob}}-{{.Values.name}}
       description: Does stuff
     spec:
-      type: openapi
+      type: asyncapi
       lifecycle: production
       owner: apim
       system: {{.Values.lob}}
