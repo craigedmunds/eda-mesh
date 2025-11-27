@@ -29,6 +29,8 @@ spec:
           parameters:
             - name: name
               value: '{{.path.basename}}'
+            - name: argocd.lob_services.branch
+              value: main
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:

@@ -4,6 +4,44 @@ metadata:
   name: catalog-component-camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
   namespace: backstage            # or your app ns; just mount it where Backstage runs
 data:
+
+{{- $lob := .Values.lob }}
+{{- $service := .Values.name }}
+
+{{- $asyncapispec := fromYaml .Values.asyncapispec }}
+{{- range $k, $v := $asyncapispec.channels }}
+
+{{- $event := lower $k }}
+
+  catalog-component-camel-k-mesh-{{ $lob }}-{{ $service }}-{{ $event }}.yaml: |
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: {{ $lob }}-{{ $service }}-{{ $event }}
+      annotations:
+        backstage.io/kubernetes-id: camel-k-mesh-{{ $lob }}-{{ $service }}-{{ $event }}
+    spec:
+      type: service
+      lifecycle: production
+      owner: apim
+      system: {{ $lob }}-lob
+      subcomponentOf: {{ $lob }}-{{ $service }}
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: {{ $lob }}-{{ $service }}-{{ $event }}-topic
+      annotations:
+        backstage.io/kubernetes-id: camel-k-mesh-{{ $lob }}-{{ $service }}-{{ $event }}-topic
+    spec:
+      type: topic
+      lifecycle: production
+      owner: apim
+      system: {{ $lob }}-lob
+      subcomponentOf: {{ $lob }}-{{ $service }}-{{ $event }}
+    ---
+{{- end }}
+
   catalog-component-camel-k-mesh-{{.Values.lob}}-{{.Values.name}}.yaml: |
     apiVersion: backstage.io/v1alpha1
     kind: Component

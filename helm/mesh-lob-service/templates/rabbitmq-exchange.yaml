@@ -1,6 +1,9 @@
 {{- $lob := .Values.lob }}
 {{- $service := .Values.name }}
-{{- range $k, $v := .Values.channels }}
+
+{{- $asyncapispec := fromYaml .Values.asyncapispec }}
+{{- range $k, $v := $asyncapispec.channels }}
+
 {{- $event := lower $k }}
 
 apiVersion: rabbitmq.com/v1beta1
@@ -8,6 +11,8 @@ kind: Exchange
 metadata:
   name: lob-{{$lob}}-{{$service}}-{{ $event }}
   namespace: camel-k-mesh
+  labels:
+    backstage.io/kubernetes-id: camel-k-mesh-{{$lob}}-{{$service}}-{{ $event }}-topic
 spec:
   name: ex.{{$lob}}.{{$service}}.{{ $event }}
   type: headers # default to 'direct' if not provided; can be set to 'direct', 'fanout', 'headers', and 'topic'
@@ -20,10 +25,13 @@ spec:
 apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
-  name: lob-{{$lob}}-{{$service}}-sample-{{ $event }}
+  name: lob-{{ $lob }}-{{ $service }}-sample-{{ $event }}
   namespace: camel-k-mesh
+
+  labels:
+    backstage.io/kubernetes-id: camel-k-mesh-{{ $lob }}-{{ $service }}-{{ $event }}-topic
 spec:
-  name: q.{{$lob}}.{{$service}}.sample.{{ $event }} # name of the queue
+  name: q.{{ $lob }}.{{ $service }}.sample.{{ $event }} # name of the queue
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
@@ -33,11 +41,14 @@ spec:
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
-  name: lob-{{$lob}}-{{$service}}-sample-{{ $event }}-binding
+  name: lob-{{ $lob }}-{{ $service }}-sample-{{ $event }}-binding
   namespace: camel-k-mesh
+
+  labels:
+    backstage.io/kubernetes-id: camel-k-mesh-{{ $lob }}-{{ $service }}-{{ $event }}-topic
 spec:
-  source: ex.{{$lob}}.{{$service}}.{{ $event }} # an existing exchange (the rabbit mq internal name)
-  destination: q.{{$lob}}.{{$service}}.sample.{{ $event }} # an existing queue (the rabbit mq internal name)
+  source: ex.{{ $lob }}.{{ $service }}.{{ $event }} # an existing exchange (the rabbit mq internal name)
+  destination: q.{{ $lob }}.{{ $service }}.sample.{{ $event }} # an existing queue (the rabbit mq internal name)
   destinationType: queue # can be 'queue' or 'exchange'
   rabbitmqClusterReference:
     name: camel-k-mesh

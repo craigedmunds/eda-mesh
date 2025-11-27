@@ -6,16 +6,5 @@ spec:
 
   source:
     
-    # Set the eda project to use a feature branch
     targetRevision: feature/branch-based
     path: kustomize/seed/overlays/feature-branch-based
-
-    # kustomize:
-    #   patches:
-    #   - target:
-    #       kind: Application
-    #       name: camel-k-mesh
-    #     patch: |-
-    #       - op: replace
-    #         path: /spec/source/path
-    #         value: kustomize/mesh/overlays/feature-branch-based

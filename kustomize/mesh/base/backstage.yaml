@@ -4,6 +4,27 @@ metadata:
   name: catalog-component-camel-k-mesh-sample
   namespace: backstage
 data:
+  catalog-component-camel-k-mesh.yaml: |
+    apiVersion: backstage.io/v1alpha1
+    kind: System
+    metadata:
+      name: camel-k-mesh
+      description: A POC event mesh system built with Camel-K
+    spec:
+      owner: apim
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: camel-k-mesh-rabbit-mq-cluster
+      annotations:
+        backstage.io/kubernetes-id: camel-k-mesh-rabbit-mq-cluster
+    spec:
+      type: service
+      lifecycle: production
+      owner: apim
+      system: camel-k-mesh
+
   catalog-component-camel-k-mesh-sample.yaml: |
     apiVersion: backstage.io/v1alpha1
     kind: Domain

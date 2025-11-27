@@ -10,6 +10,14 @@ configMapGenerator:
     literals:
       - targetRevision=feature/branch-based
 
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: ApplicationSet
+      name: camel-k-mesh-lob-applications
+    path: patch-feature-branch.yaml
+
 generatorOptions:
   disableNameSuffixHash: true
 
