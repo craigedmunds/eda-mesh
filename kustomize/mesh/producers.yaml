@@ -25,6 +25,9 @@ spec:
       # this path is escaped for consumption by argocd rather than kustomize.
       name: 'camel-k-mesh-producer-{{.values.producer}}-{{.values.service}}'
 
+      labels:
+        repo: argocd-eda
+
     spec:
       project: "eventing"
       source:

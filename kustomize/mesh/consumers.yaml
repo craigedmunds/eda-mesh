@@ -18,6 +18,8 @@ spec:
   template:
     metadata:     
       name: 'camel-k-mesh-consumer-{{.values.consumer}}'
+      labels:
+        repo: argocd-eda
 
     spec:
       project: "eventing"

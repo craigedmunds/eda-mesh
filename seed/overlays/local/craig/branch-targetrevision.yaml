@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: ReplacementTransformer
+metadata:
+  name: argocd-eda-kustomize-seed-branch-targetrevision
+replacements:
+  - source:
+      value: feature/branch-based
+    targets:
+      - select:
+          kind: Application
+          labelSelector: repo=argocd-eda
+        fieldPaths:
+          - spec.source.targetRevision

@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: confluent
+  name: eda-bootstrap
   namespace: argocd
 spec:
+
   project: eventing
   source:
-    repoURL: https://github.com/craigedmunds/argocd-eda.git
-    path: kustomize/confluent
-    
+    repoURL: https://github.com/craigedmunds/argocd-eda
+    path: kustomize/seed
+    targetRevision: main
   destination:
     server: https://kubernetes.default.svc
-    namespace: confluent
+    namespace: argocd
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+

@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eda-bootstrap
+spec:
+
+  source:
+    # Set the eda project to use a feature branch
+    targetRevision: feature/branch-based
+    path: kustomize/seed/overlays/rancher-desktop
+
+    # Patch all of the applications from the argocd-eda to use the feature branch too
+    # (relies on the application having the appropriate label)
+    # kustomize:
+    #   patches:
+    #   - target:
+    #       kind: Application
+    #       # name: backstage
+    #       labelSelector: repo=argocd-eda
+    #     patch: |-
+    #       - op: replace
+    #         path: /spec/source/targetRevision
+    #         value: feature/branch-based

@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../base
+  - argocd-projects.yaml
+  - branch-targetrevision.yaml
+patches:
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Application
+      name: eda-bootstrap
+    path: patch-argocd-eda-bootstrap.yaml
+    #  path: mesh-branch-patch.yaml
+
+# configMapGenerator:
+#   - name: branch-vars
+#     literals:
+#       - branch=feature/branch-based
