@@ -39,3 +39,227 @@ spec:
     message ExampleMessage {
       string example = 1;
     };
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: example-asyncapi-api
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  definition: |
+    asyncapi: '3.0.0'
+    info:
+      title: User Service
+      version: '1.0.0'
+      description: |
+        This specification describes user-related events published by the User Service.
+        The `UserCreated` event is emitted when a new user account is successfully created.
+
+    defaultContentType: application/cloudevents+json
+
+    servers:
+      production:
+        host: kafka.confluent.svc.cluster.local:9092
+        protocol: kafka
+        description: Production Kafka cluster
+
+    operations:
+      sendUserCreated:
+        action: send
+        channel:
+          $ref: '#/channels/userCreated'
+        messages:
+          - $ref: '#/channels/userCreated/messages/UserCreated'
+
+    channels:
+      userCreated:
+        description: Topic containing user created events.
+        address: user/signedup
+        bindings:
+          kafka:
+            topic: users
+        messages:
+          UserCreated:
+            $ref: '#/components/messages/UserCreated'
+
+    components:
+      messages:
+        UserCreated:
+          name: UserCreated
+          title: User Created
+          summary: Emitted when a new user is created in the system.
+          contentType: application/cloudevents+json
+          payload:
+            $ref: '#/components/schemas/UserCreatedPayload'
+          headers:
+            type: object
+            required:
+              - specversion
+              - id
+              - source
+              - type
+              - time
+            properties:
+              specversion:
+                type: string
+                const: "1.0"
+              id:
+                type: string
+                format: uuid
+                description: Unique event ID
+              source:
+                type: string
+                description: URI identifying the origin of the event, e.g. `urn:gov:identity-service`
+              type:
+                type: string
+                const: "user.created"
+                description: Event type name
+              time:
+                type: string
+                format: date-time
+                description: Time when the event occurred
+
+      schemas:
+        UserCreatedPayload:
+          type: object
+          required:
+            - userId
+            - email
+            - createdAt
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: Unique identifier of the user
+            email:
+              type: string
+              format: email
+              description: The user's email address
+            displayName:
+              type: string
+              description: Optional name shown in user interfaces
+            createdAt:
+              type: string
+              format: date-time
+              description: Timestamp when the user record was created
+            roles:
+              type: array
+              items:
+                type: string
+              description: List of assigned role identifiers
+            metadata:
+              type: object
+              additionalProperties: true
+              description: Arbitrary additional data about the user
+---
+apiVersion: eda.io/v1alpha1
+kind: Event
+metadata:
+  name: userCreated
+spec:
+  type: asyncapi
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  definition: |
+    asyncapi: '3.0.0'
+    info:
+      title: User Service
+      version: '1.0.0'
+      description: |
+        This specification describes user-related events published by the User Service.
+        The `UserCreated` event is emitted when a new user account is successfully created.
+
+    defaultContentType: application/cloudevents+json
+
+    operations:
+      sendUserCreated:
+        action: send
+        channel:
+          $ref: '#/channels/userCreated'
+        messages:
+          - $ref: '#/channels/userCreated/messages/UserCreated'
+
+    channels:
+      userCreated:
+        description: Topic containing user created events.
+        address: user/signedup
+        bindings:
+          kafka:
+            topic: users
+        messages:
+          UserCreated:
+            $ref: '#/components/messages/UserCreated'
+
+    components:
+      messages:
+        UserCreated:
+          name: UserCreated
+          title: User Created
+          summary: Emitted when a new user is created in the system.
+          contentType: application/cloudevents+json
+          payload:
+            $ref: '#/components/schemas/UserCreatedPayload'
+          headers:
+            type: object
+            required:
+              - specversion
+              - id
+              - source
+              - type
+              - time
+            properties:
+              specversion:
+                type: string
+                const: "1.0"
+              id:
+                type: string
+                format: uuid
+                description: Unique event ID
+              source:
+                type: string
+                description: URI identifying the origin of the event, e.g. `urn:gov:identity-service`
+              type:
+                type: string
+                const: "user.created"
+                description: Event type name
+              time:
+                type: string
+                format: date-time
+                description: Time when the event occurred
+
+      schemas:
+        UserCreatedPayload:
+          type: object
+          required:
+            - userId
+            - email
+            - createdAt
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: Unique identifier of the user
+            email:
+              type: string
+              format: email
+              description: The user's email address
+            displayName:
+              type: string
+              description: Optional name shown in user interfaces
+            createdAt:
+              type: string
+              format: date-time
+              description: Timestamp when the user record was created
+            roles:
+              type: array
+              items:
+                type: string
+              description: List of assigned role identifiers
+            metadata:
+              type: object
+              additionalProperties: true
+              description: Arbitrary additional data about the user
