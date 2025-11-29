@@ -2,10 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    app: camel-k-mesh-producer-demo-user-service
-    backstage.io/kubernetes-id: camel-k-mesh-producer-demo-user-service
-  name: camel-k-mesh-producer-demo-user-service-jbang-config
-  namespace: camel-k-mesh-producer-demo-user-service
+    app: camel-k-mesh-producer-demo-user-created
+    backstage.io/kubernetes-id: camel-k-mesh-producer-demo-user-created
+  name: camel-k-mesh-producer-jbang-config
+  namespace: camel-k-mesh-producer-demo-user-created
 data:
   integration.yaml: |
     - route:

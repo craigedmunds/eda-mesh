@@ -34,7 +34,7 @@ backstage:
     - name: backstage-users
       configMap:
         name: backstage-users
-    - name: catalog-components
+    - name: catalog-mesh
       projected:
         sources:
         - configMap:
@@ -50,8 +50,8 @@ backstage:
     - name: backstage-users
       mountPath: /etc/backstage/catalog
       readOnly: true
-    - name: catalog-components
-      mountPath: /etc/backstage/catalog/components
+    - name: catalog-mesh
+      mountPath: /etc/backstage/catalog/mesh
       readOnly: true
     # - name: catalog-components-demo-user-service
     #   mountPath: /etc/backstage/catalog/components
@@ -96,7 +96,7 @@ backstage:
           rules:
             - allow: [User, Group]
         - type: file
-          target: /etc/backstage/catalog/components/*.yaml
+          target: /etc/backstage/catalog/mesh/*.yaml
           rules:
             - allow: [Domain, Component, System, Resource, API, Location, User, Group]
       providers:

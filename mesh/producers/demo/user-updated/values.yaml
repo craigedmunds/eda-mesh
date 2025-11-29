@@ -1,0 +1,3 @@
+name: camel-k-mesh-producer
+namespace: camel-k-mesh-producer-demo-user-updated
+configmap: camel-k-mesh-producer-jbang-config

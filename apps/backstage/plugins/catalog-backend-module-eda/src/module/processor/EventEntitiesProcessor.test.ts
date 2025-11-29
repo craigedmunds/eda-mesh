@@ -1,4 +1,3 @@
-import { processingResult } from '@backstage/plugin-catalog-node';
 import { LoggerService } from '@backstage/backend-plugin-api';
 import yaml from 'js-yaml';
 import { EventEntitiesProcessor } from './EventEntitiesProcessor';
