@@ -20,7 +20,7 @@ backstage:
   image:
     # registry: ghcr.io
     repository: craigedmunds/backstage
-    tag: '0.4'
+    tag: '0.3'
     pullSecrets:
       - ghcr-creds
   extraEnvVars:
@@ -31,30 +31,27 @@ backstage:
   extraEnvVarsSecrets:
     - backstage-github-auth
   extraVolumes:
-    - name: backstage-users
+    - name: backstage-root-location
       configMap:
-        name: backstage-users
-    - name: catalog-mesh
-      projected:
-        sources:
-        - configMap:
-            name: catalog-component-camel-k-mesh
-        # - configMap:
-        #     name: catalog-component-camel-k-mesh-demo
-        - configMap:
-            name: catalog-component-camel-k-mesh-demo-user-service
-        - configMap:
-            name: catalog-component-camel-k-mesh-consumer-my-simple-http-service
+        name: backstage-root-location
+    - name: backstage-catalog
+      configMap:
+        name: backstage-catalog
+    # - name: catalog-mesh
+    #   projected:
+    #     sources:
+    #     - configMap:
+    #         name: catalog-component-camel-k-mesh-consumer-my-simple-http-service
 
   extraVolumeMounts:
-    - name: backstage-users
+    - name: backstage-root-location
       mountPath: /etc/backstage/catalog
       readOnly: true
-    - name: catalog-mesh
-      mountPath: /etc/backstage/catalog/mesh
+    - name: backstage-catalog
+      mountPath: /etc/backstage/catalog/catalog-items
       readOnly: true
-    # - name: catalog-components-demo-user-service
-    #   mountPath: /etc/backstage/catalog/components
+    # - name: catalog-mesh
+    #   mountPath: /etc/backstage/catalog/mesh
     #   readOnly: true
 
   appConfig:
@@ -71,6 +68,10 @@ backstage:
       auth:
         keys:
           - secret: ${BACKEND_SECRET}
+      reading:
+        allow:
+          # Could use "*.svc.cluster.local" if we end up with more
+          - host: backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local
     auth:
       environment: production
       providers:
@@ -92,13 +93,17 @@ backstage:
     catalog:
       locations:
         - type: file
-          target: /etc/backstage/catalog/users.yaml
+          target: /etc/backstage/catalog/rootlocation.yaml
           rules:
-            - allow: [User, Group]
-        - type: file
-          target: /etc/backstage/catalog/mesh/*.yaml
+            - allow: [Location, User, Group, Domain, Component, System, Resource, API]
+          presence: required
+        - type: url
+          metadata:
+            name: mesh-backstage-catalog-api
+          target: http://backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local/
           rules:
             - allow: [Domain, Component, System, Resource, API, Location, User, Group]
+          presence: required
       providers:
         kubernetes:
           local-cluster:
