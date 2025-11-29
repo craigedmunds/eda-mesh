@@ -5,7 +5,7 @@ name: "dummy-service"
 
 subscriptions: |
   - event: dummyEvent
-    lob: dummy
-    service: dummy-service
+    domain: dummy
+    subdomain: subdummy
     destination:
       uri: http://sample-service/v1/notifications

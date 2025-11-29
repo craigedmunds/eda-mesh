@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: backstage-users
+  name: backstage-catalog
   namespace: backstage
 data:
   users.yaml: |

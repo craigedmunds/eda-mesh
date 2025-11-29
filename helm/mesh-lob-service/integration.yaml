@@ -1,4 +1,7 @@
 # Camel K Integration YAML (rendered by Helm)
+{{- $domain := .Values.domain }}
+{{- $subdomain := .Values.subdomain }}
+
 {{- $lob := .Values.lob }}
 {{- $service := .Values.name }}
 {{- $asyncapispec := fromYaml .Values.asyncapispec }}
@@ -15,7 +18,7 @@
           parameters:
             host: "camel-k-mesh.camel-k-mesh.svc.cluster.local"
             port: 5672
-            exchangeName: "ex.{{$lob}}.{{$service}}.{{ $event }}"
+            exchangeName: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
             username: "{{`{{secret:camel-k-mesh-rabbit-user/username}}`}}"
             password: "{{`{{secret:camel-k-mesh-rabbit-user/password}}`}}"
 {{- end }}

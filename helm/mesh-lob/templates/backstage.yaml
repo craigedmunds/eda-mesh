@@ -3,6 +3,8 @@
 # metadata:
 #   name: catalog-component-camel-k-mesh-{{.Values.name}}
 #   namespace: backstage
+  # labels:
+  #   backstage-catalog: "true"
 # data:
 #   catalog-component-camel-k-mesh-{{.Values.name}}.yaml: |
 #     apiVersion: backstage.io/v1alpha1
