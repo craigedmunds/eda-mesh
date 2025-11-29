@@ -71,3 +71,15 @@ Create an overlay for the root seed application (e.g. seed/overlays/local/craig)
 Re-Apply the seed with the overlay:
 
 `kustomize build seed/overlays/local/craig | kubectl apply -f -`
+
+# Backstage
+
+Backstage is used for the service catalogue; the helm charts in the eda create config maps with backstage resources that represent the services, APIs, events and relationships between them.
+
+The source for the backstage app is in apps/backstage and this is manually built into a docker image and published to github:
+
+`yarn build-image --tag ghcr.io/craigedmunds/backstage:0.2`
+
+`docker push ghcr.io/craigedmunds/backstage:0.2`
+
+A custom plugin, catalog-backend-module-eda, provides the "Event" related capabilities.

@@ -6,7 +6,7 @@ import {
 
 import { catalogProcessingExtensionPoint } from '@backstage/plugin-catalog-node/alpha';
 
-import { EventEntitiesProcessor } from '../module/processor/EventEntitiesProcessor';
+import { EventEntitiesProcessor } from './module/processor/EventEntitiesProcessor';
 
 export const catalogModuleEda = createBackendModule({
   pluginId: 'catalog',
