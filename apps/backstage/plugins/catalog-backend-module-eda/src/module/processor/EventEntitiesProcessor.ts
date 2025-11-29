@@ -16,6 +16,7 @@ import {
   EventEntityV1alpha1,
   eventEntityV1alpha1Validator,
 } from '@internal/backstage-plugin-eda-common';
+import eventSchema from '@internal/backstage-plugin-eda-common/src/schema/kinds/Event.v1alpha1.schema.json';
 
 export class EventEntitiesProcessor implements CatalogProcessor {
   private logger: LoggerService;
@@ -47,7 +48,7 @@ export class EventEntitiesProcessor implements CatalogProcessor {
 
   async postProcessEntity(
     entity: Entity,
-    _location: LocationSpec,
+    location: LocationSpec,
     emit: CatalogProcessorEmit,
   ): Promise<Entity> {
     const selfRef = getCompoundEntityRef(entity);
@@ -101,6 +102,64 @@ export class EventEntitiesProcessor implements CatalogProcessor {
 
                 const eventName = `${entity.metadata.name}-${messageName}`;
                 const parentRef = stringifyEntityRef(entity);
+                const baseSpec: Record<string, any> = {};
+                eventSpecKeys.forEach(key => {
+                  if (entity.spec && key in entity.spec) {
+                    baseSpec[key] = (entity.spec as any)[key];
+                  }
+                });
+                if (!baseSpec.definition) {
+                  baseSpec.definition = def;
+                }
+
+                // Build minimal definition for this event
+                const eventDefinition: any = {
+                  asyncapi: parsed?.asyncapi ?? '3.0.0',
+                  info: parsed?.info,
+                  defaultContentType: parsed?.defaultContentType,
+                  servers: parsed?.servers,
+                  channels: {
+                    [channelName]: {
+                      ...channelValue,
+                      messages: {
+                        [messageName]: resolvedMessage,
+                      },
+                    },
+                  },
+                };
+
+                // include the message in components if referenced
+                if (ref && ref.startsWith('#/components/messages/')) {
+                  const refName = ref.split('/').pop() ?? messageName;
+                  eventDefinition.components = eventDefinition.components ?? {};
+                  eventDefinition.components.messages =
+                    eventDefinition.components.messages ?? {};
+                  eventDefinition.components.messages[refName] = resolvedMessage;
+                }
+
+                // include referenced schemas
+                const schemaRefs: string[] = [];
+                const maybeAddRef = (r?: string) => {
+                  if (r && r.startsWith('#/components/schemas/')) {
+                    const name = r.split('/').pop();
+                    if (name) schemaRefs.push(name);
+                  }
+                };
+                maybeAddRef(resolvedMessage?.payload?.$ref);
+                maybeAddRef(resolvedMessage?.headers?.$ref);
+                if (schemaRefs.length > 0 && parsed?.components?.schemas) {
+                  eventDefinition.components = eventDefinition.components ?? {};
+                  eventDefinition.components.schemas =
+                    eventDefinition.components.schemas ?? {};
+                  schemaRefs.forEach(name => {
+                    if (parsed.components.schemas[name]) {
+                      eventDefinition.components.schemas[name] =
+                        parsed.components.schemas[name];
+                    }
+                  });
+                }
+
+                baseSpec.definition = yaml.dump(eventDefinition);
                 const eventEntity: EventEntityV1alpha1 = {
                   apiVersion: 'eda.io/v1alpha1',
                   kind: 'Event',
@@ -111,18 +170,10 @@ export class EventEntitiesProcessor implements CatalogProcessor {
                     },
                   },
                   spec: {
-                    type: 'asyncapi',
-                    lifecycle: entity.spec?.lifecycle ?? 'experimental',
-                    owner: entity.spec?.owner,
-                    system: entity.spec?.system,
-                    channel: channelName,
-                    topic,
-                    messageName,
-                    message: resolvedMessage,
-                    apiRef: parentRef,
+                    ...baseSpec,
                   },
                 };
-                emit(processingResult.entity(eventEntity));
+                emit(processingResult.entity(location, eventEntity));
               },
             );
           });
@@ -150,3 +201,9 @@ export class EventEntitiesProcessor implements CatalogProcessor {
     return entity;
   }
 }
+const eventSpecKeys: string[] =
+  (eventSchema as any)?.allOf?.[1]?.properties?.spec?.properties
+    ? Object.keys(
+        (eventSchema as any).allOf[1].properties.spec.properties,
+      )
+    : ['type', 'lifecycle', 'owner', 'system', 'definition'];

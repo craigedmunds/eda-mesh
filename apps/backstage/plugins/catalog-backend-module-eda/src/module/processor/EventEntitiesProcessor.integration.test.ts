@@ -20,6 +20,8 @@ describe('EventEntitiesProcessor integration (examples/entities.yaml)', () => {
       '..',
       '..',
       '..',
+      '..',
+      '..',
       'examples',
       'entities.yaml',
     );
@@ -36,20 +38,21 @@ describe('EventEntitiesProcessor integration (examples/entities.yaml)', () => {
     const processor = new EventEntitiesProcessor({ logger: noopLogger });
     const emitted: any[] = [];
     const emit = (result: any) => {
-      if (result.type === processingResult.entity({}).type) {
-        emitted.push(result);
+      if (result.type === 'entity' && result.entity) {
+        emitted.push(result.entity);
       }
     };
 
     await processor.postProcessEntity(apiEntity as any, {} as any, emit);
 
-    const names = emitted.map(e => e.entity.metadata.name);
+    const names = emitted.map(e => e.metadata.name);
     expect(names).toContain('example-asyncapi-api-usercreated');
     const userCreated = emitted.find(
-      e => e.entity.metadata.name === 'example-asyncapi-api-usercreated',
+      e => e.metadata.name === 'example-asyncapi-api-usercreated',
     );
-    expect(userCreated.entity.spec.topic).toBe('users');
-    expect(userCreated.entity.spec.channel).toBe('userCreated');
-    expect(userCreated.entity.spec.messageName).toBe('UserCreated');
+    const def = yaml.load(userCreated.spec.definition) as any;
+    expect(Object.keys(def.channels ?? {})).toEqual(['userCreated']);
+    expect(def.channels.userCreated?.messages?.UserCreated).toBeDefined();
+    expect(def.components?.messages?.UserCreated?.payload).toBeDefined();
   });
 });
