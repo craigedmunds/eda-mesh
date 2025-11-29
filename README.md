@@ -78,8 +78,14 @@ Backstage is used for the service catalogue; the helm charts in the eda create c
 
 The source for the backstage app is in apps/backstage and this is manually built into a docker image and published to github:
 
-`yarn build-image --tag ghcr.io/craigedmunds/backstage:0.2`
+`yarn tsc`
+
+`yarn build:all`
+
+`yarn build-image --tag ghcr.io/craigedmunds/backstage:0.x` (where x is an incrementation from previous)
 
 `docker push ghcr.io/craigedmunds/backstage:0.2`
+
+And then update the version number in 
 
 A custom plugin, catalog-backend-module-eda, provides the "Event" related capabilities.
