@@ -96,7 +96,7 @@ export class EventEntitiesProcessor implements CatalogProcessor {
                     messageValue;
                 }
 
-                const eventName = `${entity.metadata.name}-${messageName}`;
+                const eventName = `${messageName}`;
                 const parentRef = stringifyEntityRef(entity);
                 const baseSpec: Record<string, any> = {};
                 eventSpecKeys.forEach(key => {
