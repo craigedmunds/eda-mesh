@@ -84,11 +84,7 @@ export class EventEntitiesProcessor implements CatalogProcessor {
           const channels = parsed?.channels ?? {};
           Object.entries(channels).forEach(([channelName, channelValue]: any) => {
             const messages = channelValue?.messages ?? {};
-            const topic =
-              channelValue?.bindings?.kafka?.topic ??
-              channelValue?.address ??
-              channelName;
-
+            
             Object.entries(messages).forEach(
               ([messageName, messageValue]: any) => {
                 let resolvedMessage: any = messageValue;
@@ -110,6 +106,15 @@ export class EventEntitiesProcessor implements CatalogProcessor {
                 });
                 if (!baseSpec.definition) {
                   baseSpec.definition = def;
+                }
+                if (!baseSpec.type) {
+                  baseSpec.type = 'asyncapi';
+                }
+                if (!baseSpec.lifecycle) {
+                  baseSpec.lifecycle = 'experimental';
+                }
+                if (!baseSpec.owner) {
+                  baseSpec.owner = 'unknown';
                 }
 
                 // Build minimal definition for this event
@@ -169,10 +174,13 @@ export class EventEntitiesProcessor implements CatalogProcessor {
                       'backstage.io/parent': parentRef,
                     },
                   },
-                  spec: {
-                    ...baseSpec,
-                  },
+                  spec: baseSpec as EventEntityV1alpha1['spec'],
                 };
+
+                this.logger.info(
+                  `EventEntitiesProcessor postProcessEntity emitting event entity.metadata.name=${eventEntity.metadata.name}`,
+                );
+
                 emit(processingResult.entity(location, eventEntity));
               },
             );

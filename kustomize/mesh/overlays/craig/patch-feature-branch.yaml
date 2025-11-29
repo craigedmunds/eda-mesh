@@ -11,4 +11,4 @@ spec:
             - name: name
               value: '{{.path.basename}}'
             - name: argocd.lob_services.branch
-              value: feature/branch-based
+              value: feature/backstage-events

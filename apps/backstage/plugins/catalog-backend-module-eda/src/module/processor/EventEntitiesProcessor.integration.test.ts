@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
-import { processingResult } from '@backstage/plugin-catalog-node';
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { EventEntitiesProcessor } from './EventEntitiesProcessor';
 
