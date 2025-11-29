@@ -9,6 +9,72 @@ spec:
     repoURL: https://charts.verdaccio.org
     chart: verdaccio
     targetRevision: 4.28.0
+    helm:
+      values: |
+        ingress:
+          enabled: true
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+          hosts:
+            - verdaccio.127.0.0.1.nip.io
+
+        extraInitContainers:
+          - name: install-age-filter
+            image: node:20-alpine
+            command: ["/bin/sh", "-c"]
+            args:
+              - cd /plugins && npm install --no-audit --no-cache --no-package-lock verdaccio-package-age-filter
+            volumeMounts:
+              - name: verdaccio-plugins
+                mountPath: /plugins
+
+        persistence:
+          volumes:
+            - name: verdaccio-plugins
+              emptyDir: {}
+          mounts:
+            - name: verdaccio-plugins
+              mountPath: /verdaccio/plugins
+
+        configMap: |
+          storage: /verdaccio/storage/data
+          plugins: /verdaccio/plugins/node_modules
+
+          web:
+            title: Verdaccio
+
+          auth:
+            htpasswd:
+              file: /verdaccio/storage/htpasswd
+
+          uplinks:
+            npmjs:
+              url: https://registry.npmjs.org/
+              agent_options:
+                keepAlive: true
+                maxSockets: 40
+                maxFreeSockets: 10
+
+          packages:
+            '@*/*':
+              access: $all
+              publish: $authenticated
+              proxy: npmjs
+
+            '**':
+              access: $all
+              publish: $authenticated
+              proxy: npmjs
+
+          middlewares:
+            audit:
+              enabled: true
+            package-age-filter:
+              enabled: true
+              maxAgeDays: 7
+
+          log: {type: stdout, format: pretty, level: http}
   destination:
     server: https://kubernetes.default.svc
     namespace: verdaccio
