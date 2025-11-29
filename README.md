@@ -84,7 +84,7 @@ The source for the backstage app is in apps/backstage and this is manually built
 
 `yarn build-image --tag ghcr.io/craigedmunds/backstage:0.x` (where x is an incrementation from previous)
 
-`docker push ghcr.io/craigedmunds/backstage:0.2`
+`docker push ghcr.io/craigedmunds/backstage:0.x`
 
 And then update the version number in 
 

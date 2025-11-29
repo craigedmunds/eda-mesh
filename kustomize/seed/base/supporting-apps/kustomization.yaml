@@ -10,3 +10,4 @@ resources:
   - kyverno.yaml
   - prometheus.yaml
   - rabbitmq.yaml
+  - verdaccio.yaml

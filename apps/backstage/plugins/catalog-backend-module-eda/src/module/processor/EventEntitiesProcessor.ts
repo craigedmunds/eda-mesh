@@ -16,7 +16,7 @@ import {
   EventEntityV1alpha1,
   eventEntityV1alpha1Validator,
 } from '@internal/backstage-plugin-eda-common';
-import eventSchema from '@internal/backstage-plugin-eda-common/src/schema/kinds/Event.v1alpha1.schema.json';
+import eventSchema from '@internal/backstage-plugin-eda-common/schema/kinds/Event.v1alpha1.schema.json';
 
 export class EventEntitiesProcessor implements CatalogProcessor {
   private logger: LoggerService;
@@ -122,7 +122,8 @@ export class EventEntitiesProcessor implements CatalogProcessor {
                   asyncapi: parsed?.asyncapi ?? '3.0.0',
                   info: parsed?.info,
                   defaultContentType: parsed?.defaultContentType,
-                  servers: parsed?.servers,
+                  // We don't want the producers server details block in the event
+                  // servers: parsed?.servers,
                   channels: {
                     [channelName]: {
                       ...channelValue,

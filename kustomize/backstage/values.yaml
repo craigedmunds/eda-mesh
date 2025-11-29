@@ -20,7 +20,7 @@ backstage:
   image:
     # registry: ghcr.io
     repository: craigedmunds/backstage
-    tag: '0.3'
+    tag: '0.4'
     pullSecrets:
       - ghcr-creds
   extraEnvVars:
