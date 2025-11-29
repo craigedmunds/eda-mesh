@@ -1,24 +1,15 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: catalog-component-camel-k-mesh-{{.Values.name}}
-  namespace: backstage
-data:
-  catalog-component-camel-k-mesh-{{.Values.name}}.yaml: |
-    apiVersion: backstage.io/v1alpha1
-    kind: Domain
-    metadata:
-      name: {{.Values.name}}
-      description: Everything about {{.Values.name}}
-    spec:
-      owner: apim
-    ---
-    apiVersion: backstage.io/v1alpha1
-    kind: System
-    metadata:
-      name: {{.Values.name}}-lob
-      description: The {{.Values.name}} lob
-    spec:
-      owner: apim
-      domain: {{.Values.name}}
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: catalog-component-camel-k-mesh-{{.Values.name}}
+#   namespace: backstage
+# data:
+#   catalog-component-camel-k-mesh-{{.Values.name}}.yaml: |
+#     apiVersion: backstage.io/v1alpha1
+#     kind: Domain
+#     metadata:
+#       name: {{.Values.name}}
+#       description: Everything about {{.Values.name}}
+#     spec:
+#       owner: apim
     

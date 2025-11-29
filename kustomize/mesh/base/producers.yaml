@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: camel-k-mesh-producers
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - git:
+      repoURL: https://github.com/craigedmunds/argocd-eda.git
+      revision: HEAD
+      directories:
+      - path: mesh/producers/*/*
+      values:
+        producer: "{{index .path.segments 2}}"
+        service: "{{.path.basename}}"
+
+  template:
+    metadata:
+      
+      # this path is escaped for consumption by argocd rather than helm.
+      # name: '{{ "camel-k-mesh-producer-{{index .path.segments 0}}-{{index .path.segments 1}}" }}'
+
+      # this path is escaped for consumption by argocd rather than kustomize.
+      name: 'camel-k-mesh-producer-{{.values.producer}}-{{.values.service}}'
+
+      labels:
+        repo: argocd-eda
+
+    spec:
+      project: "eventing"
+      source:
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        targetRevision: HEAD
+        path: 'mesh/producers/{{.values.producer}}/{{.values.service}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "camel-k-mesh-producer-{{.values.producer}}-{{.values.service}}"
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true

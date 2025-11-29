@@ -1,0 +1,11 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eda-bootstrap
+spec:
+
+  source:
+    
+    # Set the eda project to use a feature branch
+    targetRevision: feature/branch-based
+    path: kustomize/mesh/overlays/feature-branch-based

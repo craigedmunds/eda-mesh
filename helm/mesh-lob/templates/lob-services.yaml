@@ -9,7 +9,7 @@ spec:
   generators:
   - git:
       repoURL: https://github.com/craigedmunds/argocd-eda.git
-      revision: HEAD
+      revision: {{ .Values.argocd.lob_services.branch }}
       directories:
       - path: 'mesh/lobs/{{.Values.name}}/*'
       values:
@@ -22,18 +22,19 @@ spec:
       project: "eventing"
       sources:
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
+          targetRevision: {{ .Values.argocd.lob_services.branch }}
           ref: lob
 
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
-          targetRevision: HEAD
+          targetRevision: {{ .Values.argocd.lob_services.branch }}
           path: 'helm/mesh-lob-service'
           helm:
             fileParameters:
             - name: asyncapispec
               path: $lob/mesh/lobs/{{.Values.name}}/{{`{{ .values.service }}`}}/asyncapi.yaml
         
-            # valueFiles:
-            # - $lob/mesh/lobs/{{.Values.name}}/{{`{{ .values.service }}`}}/asyncapi.yaml
+            valueFiles:
+            - $lob/mesh/lobs/{{.Values.name}}/{{`{{ .values.service }}`}}/service.yaml
             
             parameters:
               - name: lob

@@ -2,8 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- base
-# - rabbitmq
+- producers.yaml
+- consumers.yaml
+- services.yaml
+- lob-applications.yaml
+- kyverno-copy-rabbit-secret.yaml
+- kyverno-rbac.yaml
+- backstage.yaml
 
 # components:
 #   - ../_common/components/argocd-branch-targetrevision

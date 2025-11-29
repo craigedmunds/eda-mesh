@@ -1,9 +1,17 @@
-lob: mistake
+lob: mistake-lob
 name: mistake-service
-
-channels: []
+domain: mistake-domain
+subdomain: mistake-subdomain
+owner: mistakeOwner
 
 asyncapispec: |
   asyncapi: '3.0.0'
   info:
     title: Example Service
+
+  channels:
+    mistakeEvent:
+      description: Mistake Topic 
+      bindings:
+        kafka:
+          topic: mistake-topic

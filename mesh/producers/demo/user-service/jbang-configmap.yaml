@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: camel-k-mesh-producer-demo-user-service
+    backstage.io/kubernetes-id: camel-k-mesh-producer-demo-user-service
+  name: camel-k-mesh-producer-demo-user-service-jbang-config
+  namespace: camel-k-mesh-producer-demo-user-service
+data:
+  integration.yaml: |
+    - route:
+        from:
+          uri: "timer:tick?period=30s"
+          steps:
+          - setProperty:
+              name: userId
+              simple: "${uuid}"
+          - setProperty:
+              name: createdAt
+              simple: "${date:now:yyyy-MM-dd'T'HH:mm:ssXXX}"
+
+          - setHeaders:
+              headers:
+                - name: kafka.PARTITION_KEY
+                  constant: 0
+                - name: kafka.KEY
+                  constant: "${exchangeProperty.userId}"
+                - name: Content-Type
+                  constant: application/cloudevents+json
+          - setBody:
+              simple: >
+                {
+                  "specversion": "1.0",
+                  "id": "${exchangeProperty.userId}",
+                  "source": "urn:eda:camel-k-mesh-producer-demo-user-service",
+                  "type": "user.created",
+                  "time": "${exchangeProperty.createdAt}",
+                  "data": {
+                    "userId": "${exchangeProperty.userId}",
+                    "email": "user@example.com",
+                    "createdAt": "${exchangeProperty.createdAt}"
+                  }
+                }
+          - marshal:
+              json: {}
+          - log: Enqueing message to kafka headers=${headers} body=${body}
+          - to:
+              uri: "kafka:users?brokers=kafka.confluent.svc.cluster.local:9092"
+          - log: "Message written"
+                

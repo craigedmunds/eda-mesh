@@ -1,18 +1,18 @@
-apiVersion: platform.confluent.io/v1beta1
-kind: Connector
-metadata:
-  name: mesh-producers-demo-user-service-source
-  namespace: confluent
+# apiVersion: platform.confluent.io/v1beta1
+# kind: Connector
+# metadata:
+#   name: mesh-producers-demo-user-service-source
+#   namespace: confluent
 
-# based on https://github.com/confluentinc/kafka-connect-datagen/blob/master/config/connector_users.config
-spec:
-  class: "io.confluent.kafka.connect.datagen.DatagenConnector"
-  taskMax: 1
-  configs:
-    kafka.topic: "users"
-    quickstart: "users"
-    key.converter: "org.apache.kafka.connect.storage.StringConverter"
-    value.converter: "org.apache.kafka.connect.json.JsonConverter"
-    value.converter.schemas.enable: "false"
-    max.interval: "1000"
-    iterations: "10000000"
+# # based on https://github.com/confluentinc/kafka-connect-datagen/blob/master/config/connector_users.config
+# spec:
+#   class: "io.confluent.kafka.connect.datagen.DatagenConnector"
+#   taskMax: 1
+#   configs:
+#     kafka.topic: "users"
+#     quickstart: "users"
+#     key.converter: "org.apache.kafka.connect.storage.StringConverter"
+#     value.converter: "org.apache.kafka.connect.json.JsonConverter"
+#     value.converter.schemas.enable: "false"
+#     max.interval: "1000"
+#     iterations: "10000000"

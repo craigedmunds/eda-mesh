@@ -34,6 +34,34 @@ data:
       children: []
     ---
     apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: live-services
+      description: The Live Services Team
+    spec:
+      type: business-unit
+      profile:
+        displayName: Live Services
+        email: live@example.com
+        picture: https://example.com/groups/bu-infrastructure.jpeg
+      members: []
+      children: []
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: crm
+      description: The CRM Team
+    spec:
+      type: business-unit
+      profile:
+        displayName: CRM
+        email: crm@example.com
+        picture: https://example.com/groups/bu-infrastructure.jpeg
+      members: []
+      children: []
+    ---
+    apiVersion: backstage.io/v1alpha1
     kind: User
     metadata:
       name: craigedmunds

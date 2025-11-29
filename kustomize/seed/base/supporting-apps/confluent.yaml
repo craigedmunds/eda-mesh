@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: confluent
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+spec:
+  project: eventing
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    path: kustomize/confluent
+    targetRevision: HEAD
+    
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: confluent
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

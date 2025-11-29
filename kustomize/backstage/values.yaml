@@ -38,9 +38,9 @@ backstage:
       projected:
         sources:
         - configMap:
-            name: catalog-component-camel-k-mesh-sample
-        - configMap:
-            name: catalog-component-camel-k-mesh-demo
+            name: catalog-component-camel-k-mesh
+        # - configMap:
+        #     name: catalog-component-camel-k-mesh-demo
         - configMap:
             name: catalog-component-camel-k-mesh-demo-user-service
         - configMap:

@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: camel-k-mesh-lob-applications
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - git:
+      repoURL: https://github.com/craigedmunds/argocd-eda.git
+      revision: HEAD
+      directories:
+      - path: mesh/lobs/*
+  template:
+    metadata:
+      
+      # this path is escaped for consumption by argocd rather than helm.
+      name: 'camel-k-mesh-{{.path.basename}}'
+    spec:
+      project: "eventing"
+      source:
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        targetRevision: HEAD
+        path: 'helm/mesh-lob'
+        helm:
+          parameters:
+            - name: name
+              value: '{{.path.basename}}'
+            - name: argocd.lob_services.branch
+              value: main
+      destination:
+        server: https://kubernetes.default.svc
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
