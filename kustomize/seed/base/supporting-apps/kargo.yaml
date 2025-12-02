@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo
+  namespace: argocd
+spec:
+  project: eventing
+  source:
+    repoURL: oci://ghcr.io/akuity/kargo-charts/kargo
+    targetRevision: 1.8.4
+    chart: kargo
+    helm:
+      values: |
+        api:
+          host: kargo.127.0.0.1.nip.io
+          secret:
+            name: kargo-admin-credentials
+          adminAccount:
+            enabled: true
+          tls:
+            enabled: false
+          ingress:
+            enabled: true
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              traefik.ingress.kubernetes.io/router.tls: "true"
+            pathType: Prefix
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kargo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
