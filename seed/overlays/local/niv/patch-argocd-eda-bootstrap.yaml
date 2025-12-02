@@ -4,5 +4,6 @@ metadata:
   name: eda-bootstrap
 spec:
   source:
-    targetRevision: main
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    targetRevision: niv-test
     path: kustomize/seed
