@@ -16,7 +16,7 @@ patches:
       version: v1alpha1
       kind: Application
       name: camel-k-mesh
-   path: patch-camel-k-mesh-app.yaml
+   path: patch-camel-k-mesh.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

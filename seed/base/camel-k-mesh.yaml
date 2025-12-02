@@ -6,15 +6,9 @@ metadata:
 spec:
   project: eventing
   source:
-    repoURL: https://github.com/YOUR/repo.git
+    repoURL: https://github.com/craigedmunds/argocd-eda
+    targetRevision: main
     path: kustomize/camel-k-mesh
-    targetRevision: niv-test
   destination:
     server: https://kubernetes.default.svc
     namespace: camel-k-mesh
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
