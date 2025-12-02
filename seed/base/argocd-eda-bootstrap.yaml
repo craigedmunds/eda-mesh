@@ -6,7 +6,6 @@ metadata:
   labels:
     repo: argocd-eda
 spec:
-
   project: eventing
   source:
     repoURL: https://github.com/craigedmunds/argocd-eda

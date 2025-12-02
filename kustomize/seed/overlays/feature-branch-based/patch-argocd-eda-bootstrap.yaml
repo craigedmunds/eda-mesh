@@ -7,5 +7,5 @@ spec:
   source:
     
     # Set the eda project to use a feature branch
-    targetRevision: feature/branch-based
+    targetRevision: main
     path: kustomize/mesh/overlays/feature-branch-based

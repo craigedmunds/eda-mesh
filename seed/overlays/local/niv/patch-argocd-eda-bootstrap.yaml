@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: eda-bootstrap
 spec:
-
   source:
-    
     targetRevision: main
-    path: kustomize/seed/overlays/feature-branch-based
+    path: kustomize/seed

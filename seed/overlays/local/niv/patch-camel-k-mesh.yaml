@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: camel-k-mesh
+  namespace: argocd
+spec:
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    path: kustomize/mesh
+    targetRevision: main
