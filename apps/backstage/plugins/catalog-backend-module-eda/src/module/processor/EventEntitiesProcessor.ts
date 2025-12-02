@@ -15,8 +15,8 @@ import {
 import {
   EventEntityV1alpha1,
   eventEntityV1alpha1Validator,
+  eventSchemaV1alpha1,
 } from '@internal/backstage-plugin-eda-common';
-import eventSchema from '@internal/backstage-plugin-eda-common/schema/kinds/Event.v1alpha1.schema.json';
 
 export class EventEntitiesProcessor implements CatalogProcessor {
   private logger: LoggerService;
@@ -211,8 +211,8 @@ export class EventEntitiesProcessor implements CatalogProcessor {
   }
 }
 const eventSpecKeys: string[] =
-  (eventSchema as any)?.allOf?.[1]?.properties?.spec?.properties
+  (eventSchemaV1alpha1 as any)?.allOf?.[1]?.properties?.spec?.properties
     ? Object.keys(
-        (eventSchema as any).allOf[1].properties.spec.properties,
+        (eventSchemaV1alpha1 as any).allOf[1].properties.spec.properties,
       )
     : ['type', 'lifecycle', 'owner', 'system', 'definition'];
