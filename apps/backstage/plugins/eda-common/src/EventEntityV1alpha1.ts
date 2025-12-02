@@ -21,6 +21,8 @@ export interface EventEntityV1alpha1 extends Entity {
     owner: string;
     definition: string;
     system?: string;
+    domain?: string;
+    subdomain?: string;
   };
 }
 

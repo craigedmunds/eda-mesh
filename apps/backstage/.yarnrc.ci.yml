@@ -1,0 +1,8 @@
+enableStrictSsl: true
+
+nodeLinker: node-modules
+
+# Use public npm registry in CI
+npmRegistryServer: "https://registry.npmjs.org"
+
+yarnPath: .yarn/releases/yarn-4.4.1.cjs

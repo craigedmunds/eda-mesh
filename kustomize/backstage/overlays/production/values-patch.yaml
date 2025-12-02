@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-values
+data:
+  values.yaml: |
+    backstage:
+      image:
+        repository: ghcr.io/craigedmunds/backstage
+        tag: 1.0.0  # Kargo will update this
+      
+      replicas: 3  # More replicas in production
+      
+      appConfig:
+        app:
+          title: Backstage
+          baseUrl: https://backstage.127.0.0.1.nip.io
+        backend:
+          baseUrl: https://backstage.127.0.0.1.nip.io
+          cors:
+            origin: https://backstage.127.0.0.1.nip.io
+    
+    ingress:
+      host: backstage.127.0.0.1.nip.io

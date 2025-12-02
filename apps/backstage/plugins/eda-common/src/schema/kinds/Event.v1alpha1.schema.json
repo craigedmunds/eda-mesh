@@ -70,6 +70,18 @@
               "type": "string",
               "description": "The definition of the Event",
               "minLength": 1
+            },
+            "domain": {
+              "type": "string",
+              "description": "The business domain that this event belongs to.",
+              "examples": ["user-management", "payments", "inventory"],
+              "minLength": 1
+            },
+            "subdomain": {
+              "type": "string",
+              "description": "The subdomain within the business domain.",
+              "examples": ["authentication", "billing", "warehouse"],
+              "minLength": 1
             }
           }
         }
