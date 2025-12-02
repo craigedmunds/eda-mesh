@@ -6,10 +6,6 @@
   "description": "Common functionalities for the eda plugin",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "exports": {
-    ".": "./dist/index.cjs.js",
-    "./schema/*": "./dist/schema/*"
-  },
   "publishConfig": {
     "access": "public",
     "main": "dist/index.cjs.js",
@@ -22,7 +18,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "backstage-cli package build && mkdir -p dist/schema && cp -R src/schema/* dist/schema/",
+    "build": "mkdir -p ../../dist-types/plugins/eda-common/src/schema && cp -R src/schema/* ../../dist-types/plugins/eda-common/src/schema/ && backstage-cli package build && mkdir -p dist/schema && cp -R src/schema/* dist/schema/",
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
