@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backstage-health-check
+  namespace: backstage-kargo
+spec:
+  metrics:
+    - name: health-check
+      interval: 30s
+      successCondition: result == "Healthy"
+      provider:
+        web:
+          url: "http://backstage.{{ .Stage }}.svc.cluster.local:7007/healthcheck"
+          jsonPath: "{$.status}"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backstage-smoke-tests
+  namespace: backstage-kargo
+spec:
+  metrics:
+    - name: catalog-api
+      count: 3
+      interval: 10s
+      successCondition: result.status == 200
+      provider:
+        web:
+          url: "http://backstage.{{ .Stage }}.svc.cluster.local:7007/api/catalog/entities"
+          jsonPath: "{$.status}"
+    
+    - name: auth-check
+      count: 3
+      interval: 10s
+      successCondition: result != null
+      provider:
+        web:
+          url: "http://backstage.{{ .Stage }}.svc.cluster.local:7007/api/auth/guest/refresh"
+          jsonPath: "{$.token}"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backstage-load-tests
+  namespace: backstage-kargo
+spec:
+  metrics:
+    - name: response-time
+      interval: 1m
+      successCondition: result < 500
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{
+                job="backstage",
+                namespace="{{ .Stage }}"
+              }[5m])) by (le)
+            ) * 1000

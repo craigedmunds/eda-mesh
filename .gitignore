@@ -1,2 +1,6 @@
 .temp
 .DS_Store
+
+# Argo CD secrets
+argocd/secrets/
+*.secret.yaml
