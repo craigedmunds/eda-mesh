@@ -1,0 +1,266 @@
+name: Build and Push Backstage
+
+on:
+  push:
+    branches:
+      - main
+      - feature/backstage-events
+    paths:
+      - 'apps/backstage/**'
+      - '.github/workflows/backstage.yml'
+  
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: craigedmunds/backstage  # Use explicit username instead of repository_owner
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write  # Required for OIDC
+      attestations: write  # Required for provenance
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Get current version
+        id: current_version
+        run: |
+          cd apps/backstage
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Determine version bump type
+        id: bump_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ inputs.version_bump }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-detect from commit message
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            if echo "$COMMIT_MSG" | grep -qiE '\[major\]|breaking change'; then
+              echo "type=major" >> $GITHUB_OUTPUT
+            elif echo "$COMMIT_MSG" | grep -qiE '\[minor\]|feat:'; then
+              echo "type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Bump version
+        id: new_version
+        run: |
+          cd apps/backstage
+          BUMP_TYPE="${{ steps.bump_type.outputs.type }}"
+          
+          # Parse current version
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          # Increment based on type
+          case $BUMP_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+          
+          # Update package.json
+          npm version $NEW_VERSION --no-git-tag-version
+
+      - name: Configure Yarn for CI
+        run: |
+          cd apps/backstage
+          # Use CI-specific Yarn config (public npm registry instead of local Verdaccio)
+          cp .yarnrc.ci.yml .yarnrc.yml
+
+      - name: Install dependencies
+        run: |
+          cd apps/backstage
+          yarn install --immutable
+
+      - name: Build Backstage
+        run: |
+          cd apps/backstage
+          yarn tsc
+          yarn build:all
+        env:
+          NODE_ENV: production
+      
+      - name: Verify plugin builds
+        run: |
+          cd apps/backstage
+          echo "=== Verifying plugin dist folders ==="
+          
+          echo "Checking eda-common..."
+          if [ -d "plugins/eda-common/dist" ]; then
+            echo "✓ eda-common/dist exists"
+            ls -la plugins/eda-common/dist/ | head -10
+          else
+            echo "✗ eda-common/dist MISSING!"
+            exit 1
+          fi
+          
+          echo ""
+          echo "Checking backend bundle..."
+          if tar -tzf packages/backend/dist/bundle.tar.gz | grep -q "eda-common/dist/index.cjs.js"; then
+            echo "✓ eda-common/dist is in bundle"
+          else
+            echo "✗ eda-common/dist NOT in bundle!"
+            echo "Bundle contents:"
+            tar -tzf packages/backend/dist/bundle.tar.gz | grep "eda-common"
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Debug - Check token permissions
+        run: |
+          echo "Checking GitHub token permissions..."
+          echo "Actor: ${{ github.actor }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository Owner: ${{ github.repository_owner }}"
+          echo "Event: ${{ github.event_name }}"
+          
+          # Try to check if we can access the package
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               https://api.github.com/user/packages/container/backstage 2>&1 || echo "Cannot access package API"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          # Using GHCR_TOKEN (PAT) if available, falls back to GITHUB_TOKEN
+          # To create GHCR_TOKEN:
+          # 1. Go to https://github.com/settings/tokens
+          # 2. Generate new token (classic) with write:packages scope
+          # 3. Add as repository secret named GHCR_TOKEN
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.new_version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/backstage
+          file: ./apps/backstage/packages/backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Notify Kargo of new Freight
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          echo "New image available: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$NEW_VERSION"
+          echo "Kargo will automatically detect this new image via the Warehouse subscription"
+          echo "The image will be promoted through: dev → staging → production"
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          TAG="backstage-v${{ steps.new_version.outputs.version }}"
+          if gh release view "$TAG" &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release $TAG already exists, skipping creation"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: backstage-v${{ steps.new_version.outputs.version }}
+          release_name: Backstage v${{ steps.new_version.outputs.version }}
+          body: |
+            ## Backstage Release v${{ steps.new_version.outputs.version }}
+            
+            ### Docker Image
+            ```
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.new_version.outputs.version }}
+            ```
+            
+            ### Changes
+            ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false
+      
+      - name: Commit version bump
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          git add apps/backstage/package.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(backstage): bump version to $NEW_VERSION [skip ci]
+
+            - Built and pushed Docker image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$NEW_VERSION
+            - Kargo will manage promotion through environments
+            - Dev: Auto-promoted
+            - Staging: Manual approval required
+            - Production: Manual approval + verification required"
+            git push
+          fi
