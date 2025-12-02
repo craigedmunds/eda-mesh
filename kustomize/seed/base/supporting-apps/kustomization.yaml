@@ -8,5 +8,6 @@ resources:
   - confluent.yaml
   # - grafana.yaml
   - kyverno.yaml
+  - kyverno-rbac.yaml   
   - prometheus.yaml
   - rabbitmq.yaml
