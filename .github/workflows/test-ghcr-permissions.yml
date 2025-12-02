@@ -1,6 +1,7 @@
 name: Test GHCR Permissions
 
 on:
+  # Test workflow - only run manually
   workflow_dispatch:
 
 env:
@@ -45,7 +46,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
       
       - name: Test Docker Push (Minimal Image)
         run: |

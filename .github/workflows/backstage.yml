@@ -1,15 +1,14 @@
 name: Build and Push Backstage
 
 on:
-  # Temporarily disabled - run test-ghcr-permissions.yml first to verify setup
-  # push:
-  #   branches:
-  #     - main
-  #     - master
-  #   paths:
-  #     - 'apps/backstage/**'
+  push:
+    branches:
+      - main
+      - feature/backstage-events
+    paths:
+      - 'apps/backstage/**'
+      - '.github/workflows/backstage.yml'
   
-  # Manual trigger only until permissions are verified
   workflow_dispatch:
     inputs:
       version_bump:
@@ -148,12 +147,12 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          # NOTE: If you get 403 Forbidden:
-          # 1. Check repository Settings → Actions → General → Workflow permissions
-          #    Must be set to "Read and write permissions"
-          # 2. Ensure GHCR package is linked to this repository
-          # See .github/GHCR-SETUP.md for detailed instructions
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          # Using GHCR_TOKEN (PAT) if available, falls back to GITHUB_TOKEN
+          # To create GHCR_TOKEN:
+          # 1. Go to https://github.com/settings/tokens
+          # 2. Generate new token (classic) with write:packages scope
+          # 3. Add as repository secret named GHCR_TOKEN
 
       - name: Extract metadata
         id: meta
