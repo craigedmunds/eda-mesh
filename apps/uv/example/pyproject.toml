@@ -1,0 +1,12 @@
+[project]
+name = "example-api"
+version = "0.1.0"
+description = "Example UV application"
+requires-python = ">=3.12"
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pyyaml",
+    "kubernetes",
+]

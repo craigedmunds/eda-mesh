@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: backstage-catalog-api-api
+    backstage.io/kubernetes-id: backstage-catalog-api-api
+  name: backstage-catalog-api-api-jbang-config
+# TODO : Can be pull in the files rather than embed it directly?
+data:
+  integration.java: |
+    // camel-jbang: dependency=camel-kubernetes
+
+    import org.apache.camel.Exchange;
+    import org.apache.camel.builder.RouteBuilder;
+    import org.apache.camel.component.kubernetes.model.ConfigMapList;
+    import io.fabric8.kubernetes.api.model.ConfigMap;
+
+    public class Integration extends RouteBuilder {
+
+        @Override
+        public void configure() {
+
+            restConfiguration()
+                .component("platform-http")
+                .bindingMode("off");
+
+            // ---------------------------------------------------------------------
+            // GET /
+            // ---------------------------------------------------------------------
+            rest("/")
+                .get()
+                    .route()
+                        .setProperty("proto")
+                            .simple("${headers.X-Forwarded-Proto} != null ? ${headers.X-Forwarded-Proto} : ${headers.CamelHttpScheme}")
+                        .setProperty("host")
+                            .simple("${headers.X-Forwarded-Host} != null ? ${headers.X-Forwarded-Host} : ${headers.Host}")
+                        .toD(
+                            "kubernetes-config-maps:///?"
+                            + "operation=listConfigMaps"
+                            + "&labelKey=backstage-catalog"
+                            + "&labelValue=true"
+                            + "&kubernetesClient=#kubernetesClient"
+                        )
+                        .process(this::buildLocationYaml)
+                    .endRest();
+
+            // ---------------------------------------------------------------------
+            // GET /{namespace}/{configmap}
+            // ---------------------------------------------------------------------
+            rest("/{namespace}/{configmap}")
+                .get()
+                    .route()
+                        .toD(
+                            "kubernetes-config-maps:///${header.namespace}/${header.configmap}"
+                            + "?operation=getConfigMap"
+                            + "&kubernetesClient=#kubernetesClient"
+                        )
+                        .process(this::buildConfigMapYaml)
+                    .endRest();
+        }
+
+        // -------------------------------------------------------------------------
+        // Build Backstage Location YAML
+        // -------------------------------------------------------------------------
+        private void buildLocationYaml(Exchange ex) {
+            ConfigMapList list = ex.getMessage().getBody(ConfigMapList.class);
+            String proto = ex.getProperty("proto", String.class);
+            String host  = ex.getProperty("host", String.class);
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("apiVersion: backstage.io/v1alpha1\n");
+            sb.append("kind: Location\n");
+            sb.append("spec:\n");
+            sb.append("  targets:\n");
+
+            list.getItems().forEach(cm -> {
+                sb.append("    - ");
+                sb.append(proto);
+                sb.append("://");
+                sb.append(host);
+                sb.append("/");
+                sb.append(cm.getMetadata().getNamespace());
+                sb.append("/");
+                sb.append(cm.getMetadata().getName());
+                sb.append("\n");
+            });
+
+            ex.getMessage().setHeader("Content-Type", "application/yaml");
+            ex.getMessage().setBody(sb.toString());
+        }
+
+        // -------------------------------------------------------------------------
+        // Build YAML from ConfigMap.data
+        // -------------------------------------------------------------------------
+        private void buildConfigMapYaml(Exchange ex) {
+            ConfigMap cm = ex.getMessage().getBody(ConfigMap.class);
+
+            StringBuilder sb = new StringBuilder();
+
+            if (cm.getData() == null || cm.getData().isEmpty()) {
+                sb.append("# No data found\n");
+            } else {
+                cm.getData().values().forEach(v -> {
+                    sb.append(v);
+                    sb.append("\n");
+                });
+            }
+
+            ex.getMessage().setHeader("Content-Type", "application/yaml");
+            ex.getMessage().setBody(sb.toString());
+        }
+    }
+
+    // --- END ---
