@@ -1,12 +1,15 @@
 name: Build and Push Backstage
 
 on:
-  push:
-    # branches:
-    #   - main
-    #   - master
-    paths:
-      - 'apps/backstage/**'
+  # Temporarily disabled - run test-ghcr-permissions.yml first to verify setup
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+  #   paths:
+  #     - 'apps/backstage/**'
+  
+  # Manual trigger only until permissions are verified
   workflow_dispatch:
     inputs:
       version_bump:
