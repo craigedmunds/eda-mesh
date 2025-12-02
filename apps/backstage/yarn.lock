@@ -5751,10 +5751,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@internal/backstage-plugin-eda-common@workspace:plugins/eda-common":
+"@internal/backstage-plugin-eda-common@workspace:^, @internal/backstage-plugin-eda-common@workspace:plugins/eda-common":
   version: 0.0.0-use.local
   resolution: "@internal/backstage-plugin-eda-common@workspace:plugins/eda-common"
   dependencies:
+    "@backstage/catalog-model": "npm:^1.7.6"
     "@backstage/cli": "npm:^0.34.5"
   languageName: unknown
   linkType: soft
@@ -15035,6 +15036,7 @@ __metadata:
     "@backstage/plugin-signals-backend": "npm:^0.3.10"
     "@backstage/plugin-techdocs-backend": "npm:^2.1.2"
     "@internal/backstage-plugin-catalog-backend-module-eda": "workspace:^"
+    "@internal/backstage-plugin-eda-common": "workspace:^"
     app: "link:../app"
     better-sqlite3: "npm:^12.0.0"
     node-gyp: "npm:^10.0.0"
@@ -29319,6 +29321,7 @@ __metadata:
     node-gyp: "npm:^10.0.0"
     prettier: "npm:^2.3.2"
     typescript: "npm:~5.8.0"
+    verdaccio-package-age-filter: "npm:^1.0.2"
   languageName: unknown
   linkType: soft
 
@@ -32442,6 +32445,13 @@ __metadata:
   version: 1.1.2
   resolution: "vary@npm:1.1.2"
   checksum: 10c0/f15d588d79f3675135ba783c91a4083dcd290a2a5be9fcb6514220a1634e23df116847b1cc51f66bfb0644cf9353b2abb7815ae499bab06e46dd33c1a6bf1f4f
+  languageName: node
+  linkType: hard
+
+"verdaccio-package-age-filter@npm:^1.0.2":
+  version: 1.0.2
+  resolution: "verdaccio-package-age-filter@npm:1.0.2"
+  checksum: 10c0/12720e90d9c7c8d7a53f3b7c5398f7b7958e07c9fdcfb75d71e86663872a04768534aa4c613de3bcf556db3946fd1a90e80925a0eb19495694d9af55a96b38f3
   languageName: node
   linkType: hard
 

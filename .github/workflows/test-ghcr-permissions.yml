@@ -1,0 +1,113 @@
+name: Test GHCR Permissions
+
+on:
+  # Test workflow - only run manually
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: craigedmunds/backstage
+
+jobs:
+  test-permissions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      
+    steps:
+      - name: Check GitHub Token Scopes
+        run: |
+          echo "=== GitHub Token Information ==="
+          echo "Actor: ${{ github.actor }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository Owner: ${{ github.repository_owner }}"
+          echo ""
+          
+          echo "=== Testing GitHub API Access ==="
+          # Check if we can read packages
+          echo "Testing package read access..."
+          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               https://api.github.com/users/${{ github.repository_owner }}/packages/container/backstage \
+               | jq -r '.name // "ERROR: Cannot read package"'
+          
+          echo ""
+          echo "=== Testing Token Permissions ==="
+          # Get token permissions
+          curl -s -I -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               https://api.github.com/user \
+               | grep -i "x-oauth-scopes" || echo "No scopes header found"
+
+      - name: Test Docker Login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+      
+      - name: Test Docker Push (Minimal Image)
+        run: |
+          echo "=== Testing Docker Push ==="
+          
+          # Create a minimal test image
+          echo "FROM alpine:latest" > Dockerfile.test
+          echo "RUN echo 'Permission test'" >> Dockerfile.test
+          
+          TEST_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:permission-test"
+          
+          echo "Building test image: $TEST_TAG"
+          docker build -f Dockerfile.test -t "$TEST_TAG" .
+          
+          echo "Attempting to push test image..."
+          if docker push "$TEST_TAG"; then
+            echo "✅ SUCCESS: Can push to GHCR!"
+            echo "Permissions are correctly configured."
+          else
+            echo "❌ FAILED: Cannot push to GHCR"
+            echo "Check the error above for details."
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== Cleaning up test image ==="
+          docker rmi "$TEST_TAG" || true
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "✅ GHCR Permissions Test PASSED"
+          echo "=========================================="
+          echo ""
+          echo "Your workflow can successfully:"
+          echo "  ✓ Authenticate to GHCR"
+          echo "  ✓ Push images to ${{ env.IMAGE_NAME }}"
+          echo ""
+          echo "You can now run the full build workflow."
+          echo "=========================================="
+      
+      - name: Failure Summary
+        if: failure()
+        run: |
+          echo "=========================================="
+          echo "❌ GHCR Permissions Test FAILED"
+          echo "=========================================="
+          echo ""
+          echo "Common fixes:"
+          echo ""
+          echo "1. Repository Settings:"
+          echo "   → Go to: https://github.com/${{ github.repository }}/settings/actions"
+          echo "   → Set 'Workflow permissions' to 'Read and write permissions'"
+          echo ""
+          echo "2. Link Package to Repository:"
+          echo "   → Go to: https://github.com/users/${{ github.repository_owner }}/packages/container/backstage/settings"
+          echo "   → Connect to repository: ${{ github.repository }}"
+          echo ""
+          echo "3. Check Package Visibility:"
+          echo "   → Ensure package is Public or repository has access"
+          echo ""
+          echo "See .github/GHCR-SETUP.md for detailed instructions"
+          echo "=========================================="

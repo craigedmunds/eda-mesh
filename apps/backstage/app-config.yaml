@@ -79,7 +79,7 @@ catalog:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Component, System, API, Resource, Location, Event]
+    - allow: [Domain, Component, System, API, Resource, Location, Event]
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file

@@ -20,7 +20,7 @@ backstage:
   image:
     # registry: ghcr.io
     repository: craigedmunds/backstage
-    tag: '0.5'
+    tag: '0.6.2'
     pullSecrets:
       - ghcr-creds
   extraEnvVars:
@@ -95,14 +95,14 @@ backstage:
         - type: file
           target: /etc/backstage/catalog/rootlocation.yaml
           rules:
-            - allow: [Location, User, Group, Domain, Component, System, Resource, API]
+            - allow: [Location, User, Group, Domain, Component, System, Resource, API, Event]
           presence: required
         - type: url
           metadata:
             name: mesh-backstage-catalog-api
           target: http://backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local/
           rules:
-            - allow: [Domain, Component, System, Resource, API, Location, User, Group]
+            - allow: [Domain, Component, System, Resource, API, Location, User, Group, Event]
           presence: required
       providers:
         kubernetes:
