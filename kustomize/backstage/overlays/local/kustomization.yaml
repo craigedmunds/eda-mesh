@@ -4,11 +4,10 @@ kind: Kustomization
 namespace: backstage
 
 resources:
-  - ../../
+  - ../../base
+  - ../../kargo
 
-patchesStrategicMerge:
-  - values-patch.yaml
-
+# Image will be updated by Kargo
 images:
   - name: ghcr.io/craigedmunds/backstage
-    newTag: 1.0.0  # Kargo will update this
+    newTag: 0.6.2  # Kargo will update this

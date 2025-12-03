@@ -5,12 +5,13 @@ metadata:
   namespace: argocd
   labels:
     repo: argocd-eda
+    environment: local
 spec:
   project: eventing
   source:
     repoURL: https://github.com/craigedmunds/argocd-eda.git
     targetRevision: HEAD
-    path: kustomize/backstage
+    path: kustomize/backstage/overlays/local
       
   destination:
     server: https://kubernetes.default.svc
