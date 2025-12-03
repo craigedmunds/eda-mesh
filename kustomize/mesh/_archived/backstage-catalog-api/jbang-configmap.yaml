@@ -37,7 +37,7 @@ data:
                         .toD(
                             "kubernetes-config-maps:///?"
                             + "operation=listConfigMaps"
-                            + "&labelKey=backstage-catalog"
+                            + "&labelKey=eda.io/backstage-catalog"
                             + "&labelValue=true"
                             + "&kubernetesClient=#kubernetesClient"
                         )

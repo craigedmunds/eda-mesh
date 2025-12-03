@@ -5,7 +5,7 @@ metadata:
   namespace: backstage 
   
   labels:
-    backstage-catalog: "true"
+    eda.io/backstage-catalog: "true"
 data:
 
 {{- $lob := .Values.lob }}

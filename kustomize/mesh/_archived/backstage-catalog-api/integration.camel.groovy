@@ -28,10 +28,10 @@ rest("/")
                 "headers.X-Forwarded-Host : headers.Host"
             )
 
-            // List ConfigMaps with selector backstage-catalog=true
+            // List ConfigMaps with selector eda.io/backstage-catalog=true
             .toD("kubernetes-config-maps:///?"
                 + "operation=listConfigMaps"
-                + "&labelKey=backstage-catalog"
+                + "&labelKey=eda.io/backstage-catalog"
                 + "&labelValue=true"
                 + "&kubernetesClient=#kubernetesClient")
 

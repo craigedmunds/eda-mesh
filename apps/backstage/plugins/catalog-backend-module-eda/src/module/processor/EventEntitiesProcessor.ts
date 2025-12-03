@@ -82,7 +82,7 @@ export class EventEntitiesProcessor implements CatalogProcessor {
 
         try {
           const channels = parsed?.channels ?? {};
-          Object.entries(channels).forEach(([channelName, channelValue]: any) => {
+          Object.entries(channels).forEach(([_, channelValue]: any) => {
             const messages = channelValue?.messages ?? {};
             
             Object.entries(messages).forEach(
