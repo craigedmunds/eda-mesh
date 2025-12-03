@@ -6,12 +6,16 @@ metadata:
   labels:
     repo: argocd-eda
     environment: local
+    branch-strategy: multisource
 spec:
   project: eventing
-  source:
-    repoURL: https://github.com/craigedmunds/argocd-eda.git
-    targetRevision: HEAD
-    path: kustomize/backstage/overlays/local
+  sources:
+    - repoURL: https://github.com/craigedmunds/argocd-eda.git
+      targetRevision: HEAD
+      path: kustomize/backstage/overlays/local
+    - repoURL: https://github.com/craigedmunds/argocd-eda.git
+      targetRevision: HEAD
+      path: kustomize/backstage/kargo
       
   destination:
     server: https://kubernetes.default.svc

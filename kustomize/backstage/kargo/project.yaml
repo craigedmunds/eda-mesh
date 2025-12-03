@@ -1,12 +1,8 @@
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Project
 metadata:
-  name: backstage
+  name: backstage-kargo
 spec:
   promotionPolicies:
-    - stage: dev
+    - stage: local
       autoPromotionEnabled: true
-    - stage: staging
-      autoPromotionEnabled: false
-    - stage: production
-      autoPromotionEnabled: false

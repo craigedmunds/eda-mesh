@@ -25,6 +25,51 @@ spec:
               traefik.ingress.kubernetes.io/router.entrypoints: websecure
               traefik.ingress.kubernetes.io/router.tls: "true"
             pathType: Prefix
+        
+        extraObjects:
+          - apiVersion: kyverno.io/v1
+            kind: ClusterPolicy
+            metadata:
+              name: sync-ghcr-secret-to-kargo
+              annotations:
+                policies.kyverno.io/title: Sync GHCR Secret to Kargo Namespaces
+                policies.kyverno.io/category: Sync
+                policies.kyverno.io/subject: Secret
+                policies.kyverno.io/minversion: 1.6.0
+                policies.kyverno.io/description: Syncs the GHCR credentials secret to Kargo project namespaces in the format Kargo expects
+            spec:
+              rules:
+              - name: sync-ghcr-secret
+                match:
+                  any:
+                  - resources:
+                      kinds:
+                      - Namespace
+                      selector:
+                        matchLabels:
+                          kargo.akuity.io/project: "true"
+                          kargo.deps/ghcr: "true"
+                context:
+                - name: sourceSecret
+                  apiCall:
+                    urlPath: /api/v1/namespaces/backstage/secrets/ghcr-creds
+                    jmesPath: data.".dockerconfigjson" | base64_decode(@) | parse_json(@).auths."ghcr.io"
+                generate:
+                  apiVersion: v1
+                  kind: Secret
+                  type: Opaque
+                  name: ghcr-credentials
+                  namespace: "{{`{{ request.object.metadata.name }}`}}"
+                  synchronize: true
+                  data:
+                    metadata:
+                      labels:
+                        kargo.akuity.io/cred-type: image
+                    stringData:
+                      repoURL: ghcr.io/craigedmunds/backstage
+                      username: "{{`{{ sourceSecret.username }}`}}"
+                      password: "{{`{{ sourceSecret.password }}`}}"
+
   destination:
     server: https://kubernetes.default.svc
     namespace: kargo

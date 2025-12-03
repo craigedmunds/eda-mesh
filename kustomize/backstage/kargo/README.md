@@ -4,17 +4,14 @@ This directory contains Kargo resources for managing the Backstage deployment pi
 
 ## Resources
 
-- **project.yaml** - Kargo Project with promotion policies
+- **project.yaml** - Kargo Project with auto-promotion for local
 - **warehouse.yaml** - Watches `ghcr.io/craigedmunds/backstage` for new images
-- **stage-dev.yaml** - Dev environment (auto-promotes)
-- **stage-staging.yaml** - Staging environment (manual promotion)
-- **stage-production.yaml** - Production environment (manual promotion + verification)
-- **analysis-template.yaml** - Argo Rollouts AnalysisTemplates for health checks and smoke tests
+- **stage-local.yaml** - Local environment (auto-promotes)
 
 ## Pipeline Flow
 
 ```
-Warehouse (GHCR) → Dev (auto) → Staging (manual) → Production (manual + verify)
+Warehouse (GHCR) → Local (auto)
 ```
 
 ## Applying

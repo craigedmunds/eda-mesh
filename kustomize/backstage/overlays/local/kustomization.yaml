@@ -5,7 +5,6 @@ namespace: backstage
 
 resources:
   - ../../base
-  - ../../kargo
 
 # Image will be updated by Kargo
 images:
