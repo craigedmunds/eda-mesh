@@ -46,7 +46,7 @@ data:
         proto, host = detect_scheme_host(request)
 
         cms = v1.list_config_map_for_all_namespaces(
-            label_selector="backstage-catalog=true"
+            label_selector="eda.io/backstage-catalog=true"
         )
 
         targets = []

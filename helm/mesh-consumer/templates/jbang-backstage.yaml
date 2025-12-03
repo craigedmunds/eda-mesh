@@ -4,7 +4,7 @@ metadata:
   name: catalog-component-camel-k-mesh-consumer-{{.Values.name}}
   namespace: backstage
   labels:
-    backstage-catalog: "true"
+    eda.io/backstage-catalog: "true"
 data:
   catalog: |
     apiVersion: backstage.io/v1alpha1
