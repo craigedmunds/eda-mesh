@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: image-factory-kargo
+  labels:
+    kargo.akuity.io/project: "true"
+    kargo.deps/ghcr: "true"

@@ -1,46 +1,42 @@
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
-  name: production
-  namespace: backstage-project
+  name: local
+  namespace: backstage-kargo
 spec:
   requestedFreight:
     - origin:
         kind: Warehouse
         name: backstage
       sources:
-        stages:
-          - staging
-  
-  verification:
-    analysisTemplates:
-      - name: backstage-health-check
+        direct: true
   
   promotionTemplate:
     spec:
       steps:
         - uses: git-clone
           config:
-            repoURL: https://github.com/craigedmunds/backstage-demo.git
+            repoURL: https://github.com/craigedmunds/argocd-eda.git
             checkout:
-              - branch: main
+              # TODO : fix feature branch issue
+              - branch: feature/backstage-events
                 path: ./repo
         
         - uses: kustomize-set-image
           as: update-image
           config:
-            path: ./repo/kustomize/backstage/overlays/production
+            path: ./repo/kustomize/backstage/overlays/local
             images:
               - image: ghcr.io/craigedmunds/backstage
+                tag: ${{ imageFrom("ghcr.io/craigedmunds/backstage").Tag }}
         
         - uses: git-commit
           as: commit
           config:
             path: ./repo
-            messageFromSteps:
-              - update-image
+            message: ${{ outputs['update-image'].commitMessage }}
         
         - uses: git-push
           config:
             path: ./repo
-            targetBranch: main
+            targetBranch: feature/backstage-events

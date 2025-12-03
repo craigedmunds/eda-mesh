@@ -1,0 +1,24 @@
+# Image Factory Enrollment Registry
+# Add images here to enroll them in automated rebuild tracking
+# The system will discover dependencies and maintain state in state/ directory
+#
+# IMPORTANT: The Image Factory treats all enrolled images as external,
+# even if their source code happens to be in this repo. It only cares
+# about published container images and their base image dependencies.
+
+images:
+  - name: backstage
+    registry: ghcr.io
+    repository: craigedmunds/backstage
+    source:
+      provider: github  # github or gitlab
+      repo: craigedmunds/argocd-eda  # Source repo (happens to be this repo)
+      branch: main
+      dockerfile: apps/backstage/packages/backend/Dockerfile
+      # For GitHub:
+      workflow: backstage.yml
+      # For GitLab:
+      # pipeline: .gitlab-ci.yml
+      # job: build-backstage
+    rebuildDelay: 7d    # Wait 7 days after base image update
+    autoRebuild: true   # Automatically trigger rebuilds

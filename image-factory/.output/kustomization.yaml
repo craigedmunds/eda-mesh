@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: image-factory-kargo
+
+resources:
+  - project.yaml
+  - warehouse-node-22.yaml
+  - warehouse-ghcr.io-craigedmunds-backstage.yaml
+  # - stage-local.yaml
+  - namespace-patch.yaml
