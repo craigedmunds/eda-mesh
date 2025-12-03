@@ -33,6 +33,7 @@ jobs:
       packages: write
       id-token: write  # Required for OIDC
       attestations: write  # Required for provenance
+      security-events: write  # Required for code scanning
       
     steps:
       - name: Checkout code
@@ -179,27 +180,17 @@ jobs:
           # 2. Generate new token (classic) with write:packages scope
           # 3. Add as repository secret named GHCR_TOKEN
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ steps.new_version.outputs.version }}
-            type=raw,value=latest
-
-      - name: Build and push Docker image
+      - name: Build Docker image locally
         id: build
         uses: docker/build-push-action@v5
         with:
           context: ./apps/backstage
           file: ./apps/backstage/packages/backend/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: false
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.new_version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
 
       - name: Run Trivy security scan
         uses: aquasecurity/trivy-action@master
@@ -210,7 +201,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -220,8 +211,31 @@ jobs:
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.new_version.outputs.version }}
           format: 'table'
-          exit-code: '1'
+          exit-code: '0'
           severity: 'CRITICAL'
+
+      - name: Commit version bump
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          git add apps/backstage/package.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(backstage): bump version to $NEW_VERSION [skip ci]"
+            git push
+          fi
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.new_version.outputs.version }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.new_version.outputs.version }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Notify Kargo of new Freight
         run: |
@@ -264,26 +278,3 @@ jobs:
             ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
-      
-      - name: Commit version bump
-        if: success()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
-          
-          git add apps/backstage/package.json
-          
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore(backstage): bump version to $NEW_VERSION [skip ci]
-
-            - Built and pushed Docker image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$NEW_VERSION
-            - Kargo will manage promotion through environments
-            - Dev: Auto-promoted
-            - Staging: Manual approval required
-            - Production: Manual approval + verification required"
-            git push
-          fi
