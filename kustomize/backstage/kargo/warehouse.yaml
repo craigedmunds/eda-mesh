@@ -1,0 +1,11 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: backstage
+  namespace: backstage-project
+spec:
+  subscriptions:
+    - image:
+        repoURL: ghcr.io/craigedmunds/backstage
+        semverConstraint: ">=0.6.0"
+        discoveryLimit: 10
