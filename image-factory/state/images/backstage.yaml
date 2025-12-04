@@ -1,0 +1,6 @@
+baseImages:
+- node-22-bookworm-slim
+currentDigest: sha256:33c24d2bdf82be089608c099ced4077e7b85b2ffa8f5d98cbbdc9f212bbb2263
+currentVersion: 0.6.3
+lastDiscovery: '2025-12-04T21:46:49.150098Z'
+name: backstage

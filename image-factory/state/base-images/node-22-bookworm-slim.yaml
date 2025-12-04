@@ -1,0 +1,4 @@
+dependentImages:
+- backstage
+fullImage: node:22-bookworm-slim
+name: node-22-bookworm-slim
