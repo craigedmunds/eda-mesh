@@ -32,14 +32,61 @@ spec:
             metadata:
               name: sync-ghcr-secret-to-kargo
               annotations:
-                policies.kyverno.io/title: Sync GHCR Secret to Kargo Namespaces
+                policies.kyverno.io/title: Sync GHCR Secret to Kargo Warehouses
                 policies.kyverno.io/category: Sync
                 policies.kyverno.io/subject: Secret
                 policies.kyverno.io/minversion: 1.6.0
-                policies.kyverno.io/description: Syncs the GHCR credentials secret to Kargo project namespaces in the format Kargo expects
+                policies.kyverno.io/description: Automatically creates GHCR credentials for each Warehouse that uses ghcr.io/craigedmunds
             spec:
               rules:
-              - name: sync-ghcr-secret
+              # Create credentials for each Warehouse using ghcr.io/craigedmunds
+              - name: sync-ghcr-secret-for-warehouse
+                match:
+                  any:
+                  - resources:
+                      kinds:
+                      - kargo.akuity.io/v1alpha1/Warehouse
+                      namespaces:
+                      - image-factory-kargo
+                preconditions:
+                  all:
+                  - key: "{{`{{ request.object.spec.subscriptions[0].image.repoURL || '' | starts_with(@, 'ghcr.io/craigedmunds') }}`}}"
+                    operator: Equals
+                    value: true
+                context:
+                - name: sourceSecret
+                  apiCall:
+                    urlPath: /api/v1/namespaces/backstage/secrets/ghcr-creds
+                    jmesPath: data.".dockerconfigjson" | base64_decode(@) | parse_json(@).auths."ghcr.io"
+                generate:
+                  apiVersion: v1
+                  kind: Secret
+                  name: "{{`{{ request.object.metadata.name }}`}}-ghcr-creds"
+                  namespace: "{{`{{ request.object.metadata.namespace }}`}}"
+                  synchronize: true
+                  data:
+                    type: Opaque
+                    metadata:
+                      labels:
+                        kargo.akuity.io/cred-type: image
+                    stringData:
+                      repoURL: "{{`{{ request.object.spec.subscriptions[0].image.repoURL }}`}}"
+                      username: "{{`{{ sourceSecret.username }}`}}"
+                      password: "{{`{{ sourceSecret.password }}`}}"
+          
+          - apiVersion: kyverno.io/v1
+            kind: ClusterPolicy
+            metadata:
+              name: sync-docker-pull-secret-to-kargo
+              annotations:
+                policies.kyverno.io/title: Sync Docker Pull Secret to Kargo Namespaces
+                policies.kyverno.io/category: Sync
+                policies.kyverno.io/subject: Secret
+                policies.kyverno.io/minversion: 1.6.0
+                policies.kyverno.io/description: Syncs the GHCR Docker pull secret to Kargo project namespaces for image pulls
+            spec:
+              rules:
+              - name: sync-docker-pull-secret
                 match:
                   any:
                   - resources:
@@ -53,22 +100,17 @@ spec:
                 - name: sourceSecret
                   apiCall:
                     urlPath: /api/v1/namespaces/backstage/secrets/ghcr-creds
-                    jmesPath: data.".dockerconfigjson" | base64_decode(@) | parse_json(@).auths."ghcr.io"
+                    jmesPath: data
                 generate:
                   apiVersion: v1
                   kind: Secret
-                  type: Opaque
-                  name: ghcr-credentials
+                  name: ghcr-pull-secret
                   namespace: "{{`{{ request.object.metadata.name }}`}}"
                   synchronize: true
                   data:
-                    metadata:
-                      labels:
-                        kargo.akuity.io/cred-type: image
-                    stringData:
-                      repoURL: ghcr.io/craigedmunds/backstage
-                      username: "{{`{{ sourceSecret.username }}`}}"
-                      password: "{{`{{ sourceSecret.password }}`}}"
+                    type: kubernetes.io/dockerconfigjson
+                    data:
+                      .dockerconfigjson: "{{`{{ sourceSecret.\".dockerconfigjson\" }}`}}"
 
   destination:
     server: https://kubernetes.default.svc

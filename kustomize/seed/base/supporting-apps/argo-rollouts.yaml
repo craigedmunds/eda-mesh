@@ -21,6 +21,17 @@ spec:
             hosts:
               - argo-rollouts.127.0.0.1.nip.io
             pathType: Prefix
+        
+        # Configure log streaming for AnalysisRuns
+        controller:
+          component: rollouts-controller
+          logLevel: info
+        
+        # Add ConfigMap data for log streaming
+        configMap:
+          create: true
+          data:
+            logLevel: info
   destination:
     server: https://kubernetes.default.svc
     namespace: argo-rollouts

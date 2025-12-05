@@ -1,0 +1,13 @@
+[project]
+name = "cdk8s-cli"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "constructs~=10.4.3",
+    "pyyaml"
+]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+
