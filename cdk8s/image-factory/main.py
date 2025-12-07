@@ -230,20 +230,19 @@ def create_analysis_template(chart: Chart):
                                     "containers": [
                                         {
                                             "name": "analyzer",
-                                            "image": "ghcr.io/craigedmunds/uv:latest",
-                                            "imagePullPolicy": "Always",
+                                            "image": "ghcr.io/craigedmunds/uv:0.1.0",
+                                            "imagePullPolicy": "IfNotPresent",
                                             "command": [
                                                 "/bin/sh",
-                                                "/scripts/run.sh",
-                                                "app.py",
-                                                "--image", "{{args.imageName}}",
-                                                "--tag", "{{args.imageTag}}",
-                                                "--digest", "{{args.imageDigest}}",
-                                                "--dockerfile", "{{args.dockerfile}}",
-                                                "--source-repo", "{{args.sourceRepo}}",
-                                                "--source-provider", "{{args.sourceProvider}}",
-                                                "--git-repo", "{{args.gitRepo}}",
-                                                "--git-branch", "{{args.gitBranch}}"
+                                                "-c",
+                                                """
+                                                set -e
+                                                echo "Cloning repository..."
+                                                git clone --depth 1 --branch {{args.gitBranch}} {{args.gitRepo}} /workspace/repo
+                                                cd /workspace/repo
+                                                echo "Running analysis..."
+                                                /scripts/run.sh app.py --image {{args.imageName}} --tag {{args.imageTag}} --digest {{args.imageDigest}} --dockerfile {{args.dockerfile}} --source-repo {{args.sourceRepo}} --source-provider {{args.sourceProvider}} --git-repo {{args.gitRepo}} --git-branch {{args.gitBranch}} --image-factory-dir /workspace/repo/image-factory
+                                                """
                                             ],
                                             "volumeMounts": [
                                                 {
@@ -495,6 +494,17 @@ def create_docker_pull_secret(chart: Chart):
     }))
 
 
+def create_github_token_secret(chart: Chart):
+    """
+    Note: GitHub token secret is managed by Kyverno.
+    This function is a placeholder for documentation purposes.
+    The secret 'github-token' should exist in the namespace with key 'GITHUB_TOKEN'.
+    """
+    logging.warning("GitHub token secret is managed by Kyverno (not created by cdk8s)")
+    # Secret is managed externally by Kyverno
+    pass
+
+
 def create_ghcr_pull_secret(chart: Chart):
     """Create a pull secret for GHCR with broader repoURL pattern."""
     logging.warning("Creating GHCR pull secret for image discovery")
@@ -526,6 +536,84 @@ def create_ghcr_pull_secret(chart: Chart):
     secret.add_json_patch(JsonPatch.add("/type", "Opaque"))
 
 
+def create_rebuild_trigger_stage(chart: Chart, base_image: dict, dependent_images: list):
+    """
+    Create a stage that watches a base image and triggers rebuilds of dependent images.
+    
+    When the base image updates, this stage will:
+    1. Detect the new freight
+    2. Trigger GitHub workflow_dispatch via HTTP API
+    """
+    base_name = base_image.get("name")
+    logging.warning("Creating rebuild-trigger stage for base image %s with %d dependents", 
+                   base_name, len(dependent_images))
+    
+    # Build HTTP steps to trigger each dependent workflow
+    http_steps = []
+    
+    for dep_image in dependent_images:
+        dep_name = dep_image.get("name")
+        source = dep_image.get("enrollment", {}).get("source", {})
+        workflow_file = source.get("workflow", f"{dep_name}.yml")
+        repo = source.get("repo", "")
+        branch = source.get("branch", "main")
+        
+        if not repo:
+            logging.warning("Skipping %s - no repo configured", dep_name)
+            continue
+        
+        # GitHub workflow_dispatch API call
+        # Uses github-credentials secret managed by Kyverno
+        http_steps.append({
+            "uses": "http",
+            "as": f"trigger-{dep_name}",
+            "config": {
+                "url": f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/dispatches",
+                "method": "POST",
+                "headers": [
+                    {"name": "Accept", "value": "application/vnd.github.v3+json"},
+                    {"name": "Authorization", "value": "Bearer ${secret.github-credentials.password}"},
+                    {"name": "Content-Type", "value": "application/json"}
+                ],
+                "body": f'{{"ref":"{branch}","inputs":{{"version_bump":"patch","triggered_by":"kargo-base-image-update","base_image":"{base_name}"}}}}'
+            }
+        })
+    
+    if not http_steps:
+        logging.warning("No valid dependents for %s, skipping rebuild-trigger stage", base_name)
+        return
+    
+    from cdk8s import JsonPatch
+    stage = ApiObject(
+        chart,
+        f"stage-rebuild-trigger-{base_name}",
+        api_version="kargo.akuity.io/v1alpha1",
+        kind="Stage",
+        metadata={
+            "name": f"rebuild-trigger-{base_name}"
+        }
+    )
+    
+    stage.add_json_patch(JsonPatch.add("/spec", {
+        "requestedFreight": [
+            {
+                "origin": {
+                    "kind": "Warehouse",
+                    "name": base_name
+                },
+                "sources": {
+                    "direct": True
+                }
+            }
+        ],
+        "promotionTemplate": {
+            "spec": {
+                "steps": http_steps
+            }
+        }
+    }))
+
+
 class ImageFactoryChart(Chart):
     """CDK8s Chart for Image Factory Kargo resources."""
     
@@ -544,6 +632,7 @@ class ImageFactoryChart(Chart):
         create_analysis_configmap(self)
         create_service_account(self)
         create_docker_pull_secret(self)
+        create_github_token_secret(self)
         
         # Load and merge all images
         images_by_name = merge_images(IMAGES_YAML, STATE_IMAGES_DIR, STATE_BASE_IMAGES_DIR)
@@ -570,6 +659,21 @@ class ImageFactoryChart(Chart):
         # Generate Stages for each managed image
         for image in managed_images:
             create_stage_for_managed_image(self, image)
+        
+        # Build dependency graph: base_image -> [dependent_images]
+        base_to_dependents = {}
+        for image in managed_images:
+            base_images = image.get("baseImages", [])
+            for base_name in base_images:
+                if base_name not in base_to_dependents:
+                    base_to_dependents[base_name] = []
+                base_to_dependents[base_name].append(image)
+        
+        # Create rebuild-trigger stages for base images with dependents
+        for base_name, dependents in base_to_dependents.items():
+            base_image = images_by_name.get(base_name)
+            if base_image:
+                create_rebuild_trigger_stage(self, base_image, dependents)
 
 
 # Main entry point

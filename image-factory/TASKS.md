@@ -3,9 +3,10 @@
 ## Current Status
 
 ### Small TODOs
-* Fix logging : [unimplemented] AnalysisRun log streaming is not configured
-* Refactor image factory cdk8s project to make it easier to read
+* We should link the kargo process such that if a change is detected on an external image we trigger and images that depend on it. How should we trigger the build, which is in github?
+* Refactor image factory cdk8s project to make it easier to read, and ideally avoid the stage.add_json_patch(JsonPatch" stuff
 * Scan "external" images - trivy? Where could we put the "result" of the scan?
+* Refactor the docker image build github actions for re-use
 
 
 ### ✅ Complete

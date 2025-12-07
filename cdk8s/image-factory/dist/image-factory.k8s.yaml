@@ -496,6 +496,17 @@ metadata:
   name: image-factory
   namespace: image-factory-kargo
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    kyverno.io/source: backstage/ghcr-creds
+  name: ghcr-pull-secret
+  namespace: image-factory-kargo
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: e30K
+---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
@@ -583,28 +594,26 @@ spec:
                   - name: ghcr-pull-secret
                 containers:
                   - name: analyzer
-                    image: ghcr.io/craigedmunds/uv:latest
-                    imagePullPolicy: Always
+                    image: ghcr.io/craigedmunds/uv:0.1.0
+                    imagePullPolicy: IfNotPresent
                     command:
                       - /bin/sh
-                      - /scripts/run.sh
-                      - app.py
-                      - --image
-                      - "{{args.imageName}}"
-                      - --tag
-                      - "{{args.imageTag}}"
-                      - --digest
-                      - "{{args.imageDigest}}"
-                      - --dockerfile
-                      - "{{args.dockerfile}}"
-                      - --source-repo
-                      - "{{args.sourceRepo}}"
-                      - --source-provider
-                      - "{{args.sourceProvider}}"
-                      - --git-repo
-                      - "{{args.gitRepo}}"
-                      - --git-branch
-                      - "{{args.gitBranch}}"
+                      - -c
+                      - "
+
+                        \                                                set -e
+
+                        \                                                echo \"Cloning repository...\"
+
+                        \                                                git clone --depth 1 --branch {{args.gitBranch}} {{args.gitRepo}} /workspace/repo
+
+                        \                                                cd /workspace/repo
+
+                        \                                                echo \"Running analysis...\"
+
+                        \                                                /scripts/run.sh app.py --image {{args.imageName}} --tag {{args.imageTag}} --digest {{args.imageDigest}} --dockerfile {{args.dockerfile}} --source-repo {{args.sourceRepo}} --source-provider {{args.sourceProvider}} --git-repo {{args.gitRepo}} --git-branch {{args.gitBranch}} --image-factory-dir /workspace/repo/image-factory
+
+                        \                                                "
                     volumeMounts:
                       - name: analyzer-script
                         mountPath: /integration
@@ -702,3 +711,61 @@ spec:
         value: https://github.com/craigedmunds/argocd-eda.git
       - name: gitBranch
         value: main
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: rebuild-trigger-node-22-bookworm-slim
+  namespace: image-factory-kargo
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: node-22-bookworm-slim
+      sources:
+        direct: true
+  promotionTemplate:
+    spec:
+      steps:
+        - uses: http
+          as: trigger-backstage
+          config:
+            url: https://api.github.com/repos/craigedmunds/argocd-eda/actions/workflows/backstage.yml/dispatches
+            method: POST
+            headers:
+              - name: Accept
+                value: application/vnd.github.v3+json
+              - name: Authorization
+                value: Bearer ${secret.github-credentials.password}
+              - name: Content-Type
+                value: application/json
+            body: '{"ref":"main","inputs":{"version_bump":"patch","triggered_by":"kargo-base-image-update","base_image":"node-22-bookworm-slim"}}'
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: rebuild-trigger-python-3.12-slim
+  namespace: image-factory-kargo
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: python-3.12-slim
+      sources:
+        direct: true
+  promotionTemplate:
+    spec:
+      steps:
+        - uses: http
+          as: trigger-uv
+          config:
+            url: https://api.github.com/repos/craigedmunds/argocd-eda/actions/workflows/uv.yml/dispatches
+            method: POST
+            headers:
+              - name: Accept
+                value: application/vnd.github.v3+json
+              - name: Authorization
+                value: Bearer ${secret.github-credentials.password}
+              - name: Content-Type
+                value: application/json
+            body: '{"ref":"main","inputs":{"version_bump":"patch","triggered_by":"kargo-base-image-update","base_image":"python-3.12-slim"}}'
