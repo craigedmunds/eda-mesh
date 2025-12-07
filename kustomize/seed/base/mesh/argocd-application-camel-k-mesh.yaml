@@ -11,9 +11,6 @@ spec:
     repoURL: https://github.com/craigedmunds/argocd-eda.git
     path: kustomize/mesh
     targetRevision: HEAD
-    kustomize:
-      enableHelm: true
-      buildOptions: "--enable-helm"
   
   destination:
     server: https://kubernetes.default.svc
