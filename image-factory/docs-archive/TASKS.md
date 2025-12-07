@@ -3,10 +3,12 @@
 ## Current Status
 
 ### Small TODOs
-* Fix logging : [unimplemented] AnalysisRun log streaming is not configured
-* Refactor image factory cdk8s project to make it easier to read
+* Reorganise the documentation
+* Reconsider how we commit version increments as atm if multiple images are built from a commit, they conflict. Either commit it immediately, only build one image at a time to prevent it being a problem, or another solution?
+* Refactor image factory cdk8s project to make it easier to read, and ideally avoid the stage.add_json_patch(JsonPatch" stuff
 * Scan "external" images - trivy? Where could we put the "result" of the scan?
-
+* Refactor the docker image build github actions for re-use
+* Represent the image factory in backstage
 
 ### ✅ Complete
 
@@ -20,8 +22,6 @@
    - Runs as a Python script in the uv container
    - Accepts command-line arguments from Kargo AnalysisTemplate
 
-### To be verified
-
 2. **Kargo Resources** (`kustomize/image-factory/`)
    - Warehouse for backstage image (managed)
    - AnalysisTemplate that runs the tool
@@ -32,8 +32,15 @@
    - Reads BOTH images.yaml AND state files
    - Merges them (images.yaml takes precedence)
    - Generates Kargo Warehouse resources ONLY for images with repoURL + allowTags
-   - Creates warehouses for base images and external images
-   - Does NOT create warehouses for managed images
+   - Creates warehouses for each different image type
+
+5. **Updated uv run.sh** (`apps/uv/run.sh`)
+   - Accepts script name as first argument
+   - Allows K8s jobs to run different Python scripts
+   - Maintains backward compatibility for uvicorn server
+
+
+### To be verified
 
 4. **Tests**
    - Unit tests for the analysis tool (`apps/image-factory/test_app.py`)
@@ -41,114 +48,11 @@
    - Integration tests verifying tool → state → CDK8s workflow (`image-factory/test_integration.py`)
    - Tests verify data alignment between tool output and CDK8s input
 
-5. **Updated uv run.sh** (`apps/uv/run.sh`)
-   - Accepts script name as first argument
-   - Allows K8s jobs to run different Python scripts
-   - Maintains backward compatibility for uvicorn server
-
 6. **Documentation**
    - REQUIREMENTS.md - Functional requirements including managed vs external images
    - DESIGN.md - Architecture with data alignment contract
    - README.md - Concise user guide
    - WORKFLOW.md - Detailed workflow documentation
-
-## 🚧 In Progress
-
-### Task 1: Verify Data Alignment
-
-**Objective:** Ensure the analysis tool outputs align with CDK8s input requirements
-
-**Steps:**
-
-1. Verify analysis tool outputs correct warehouse config for base images
-   ```bash
-   cd apps/image-factory && pytest test_app.py::TestImageFactoryTool::test_generate_base_image_state -v
-   ```
-
-2. Verify analysis tool does NOT output warehouse config for managed images
-   ```bash
-   cd apps/image-factory && pytest test_app.py::TestImageFactoryTool::test_generate_image_state_managed -v
-   ```
-
-3. Verify CDK8s only generates warehouses for images with repoURL + allowTags
-   ```bash
-   cd cdk8s/image-factory && pytest test_main.py::TestImageFactoryChart::test_chart_skips_images_without_warehouse_config -v
-   ```
-
-4. Run integration tests to verify tool → state → CDK8s alignment
-   ```bash
-   cd image-factory && pytest test_integration.py -v
-   ```
-
-5. Check that backstage (managed) does NOT get a warehouse from CDK8s
-   ```bash
-   cd cdk8s/image-factory && cdk8s synth && (grep -q "name: backstage" dist/image-factory.k8s.yaml && echo "FAIL: Backstage warehouse found" || echo "PASS: No backstage warehouse")
-   ```
-
-### Task 2: Test Current Implementation
-
-#### 2.1 Apply kustomize resources to cluster
-```bash
-kubectl apply -k kustomize/image-factory/
-```
-
-#### 2.2 Verify Warehouse detects backstage image
-```bash
-kubectl get warehouse backstage -n image-factory-kargo -o yaml
-```
-
-#### 2.3 Verify Analysis job runs successfully
-```bash
-kubectl get jobs -n image-factory-kargo -l analysisrun.argoproj.io/metric-name=dockerfile-analysis
-kubectl logs -n image-factory-kargo -l analysisrun.argoproj.io/metric-name=dockerfile-analysis --tail=50
-```
-
-#### 2.4 Verify state files are created/updated with correct structure
-```bash
-cat image-factory/state/images/backstage.yaml
-```
-
-#### 2.5 Verify base image state has warehouse config
-```bash
-cat image-factory/state/base-images/node-22-bookworm-slim.yaml* | grep -A 2 "repoURL\|allowTags"
-```
-
-#### 2.6 Check git commits from analysis job
-```bash
-git log --oneline --all -- image-factory/state/ | head -5
-```
-
-### Task 3: Base Image Warehouse Generation
-
-#### 3.1 Run cdk8s synth after analysis completes
-```bash
-cd cdk8s/image-factory
-cdk8s synth
-cat dist/image-factory.k8s.yaml
-```
-
-#### 3.2 Verify Warehouse generated for node-22-bookworm-slim (base image)
-```bash
-cd cdk8s/image-factory
-grep -A 10 "name: node-22-bookworm-slim" dist/image-factory.k8s.yaml
-```
-
-#### 3.3 Verify NO Warehouse generated for backstage (managed image)
-```bash
-cd cdk8s/image-factory
-grep "name: backstage" dist/image-factory.k8s.yaml && echo "FAIL: Found backstage" || echo "PASS: No backstage warehouse"
-```
-
-#### 3.4 Apply generated warehouse to cluster
-```bash
-kubectl apply -f cdk8s/image-factory/dist/image-factory.k8s.yaml
-```
-
-#### 3.5 Verify Kargo monitors base image
-```bash
-kubectl get warehouse node-22-bookworm-slim -n image-factory-kargo -o yaml
-kubectl get freight -n image-factory-kargo
-```
 
 ## 📋 Backlog
 
