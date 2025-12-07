@@ -11,7 +11,7 @@ configMapGenerator:
   - name: argocd-branch-targetrevision
     behavior: add
     literals:
-      - targetRevision=feature/branch-based
+      - targetRevision=feature/backstage-events
 
 patches:
  - target:

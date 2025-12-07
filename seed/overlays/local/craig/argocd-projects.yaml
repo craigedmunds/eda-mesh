@@ -12,6 +12,8 @@ spec:
     - https://charts.bitnami.com/bitnami
     - https://apache.github.io/camel-k/charts/
     - https://backstage.github.io/charts
+    - https://charts.verdaccio.org
+    - oci://ghcr.io/akuity/kargo-charts/kargo 
   sourceNamespaces: []
   destinations:
   - namespace: '*'

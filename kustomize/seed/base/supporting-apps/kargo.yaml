@@ -1,0 +1,120 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo
+  namespace: argocd
+spec:
+  project: eventing
+  source:
+    repoURL: oci://ghcr.io/akuity/kargo-charts/kargo
+    targetRevision: 1.8.4
+    chart: kargo
+    helm:
+      values: |
+        api:
+          host: kargo.127.0.0.1.nip.io
+          secret:
+            name: kargo-admin-credentials
+          adminAccount:
+            enabled: true
+          tls:
+            enabled: false
+          ingress:
+            enabled: true
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              traefik.ingress.kubernetes.io/router.tls: "true"
+            pathType: Prefix
+        
+        extraObjects:
+          - apiVersion: kyverno.io/v1
+            kind: ClusterPolicy
+            metadata:
+              name: sync-ghcr-secret-to-kargo
+              annotations:
+                policies.kyverno.io/title: Sync GHCR Secret to Kargo Warehouses
+                policies.kyverno.io/category: Sync
+                policies.kyverno.io/subject: Secret
+                policies.kyverno.io/minversion: 1.6.0
+                policies.kyverno.io/description: Automatically creates GHCR credentials for each Warehouse that uses ghcr.io/craigedmunds
+            spec:
+              rules:
+              # Create credentials for each Warehouse using ghcr.io/craigedmunds
+              - name: sync-ghcr-secret-for-warehouse
+                match:
+                  any:
+                  - resources:
+                      kinds:
+                      - kargo.akuity.io/v1alpha1/Warehouse
+                      namespaces:
+                      - image-factory-kargo
+                preconditions:
+                  all:
+                  - key: "{{`{{ request.object.spec.subscriptions[0].image.repoURL || '' | starts_with(@, 'ghcr.io/craigedmunds') }}`}}"
+                    operator: Equals
+                    value: true
+                context:
+                - name: sourceSecret
+                  apiCall:
+                    urlPath: /api/v1/namespaces/backstage/secrets/ghcr-creds
+                    jmesPath: data.".dockerconfigjson" | base64_decode(@) | parse_json(@).auths."ghcr.io"
+                generate:
+                  apiVersion: v1
+                  kind: Secret
+                  name: "{{`{{ request.object.metadata.name }}`}}-ghcr-creds"
+                  namespace: "{{`{{ request.object.metadata.namespace }}`}}"
+                  synchronize: true
+                  data:
+                    type: Opaque
+                    metadata:
+                      labels:
+                        kargo.akuity.io/cred-type: image
+                    stringData:
+                      repoURL: "{{`{{ request.object.spec.subscriptions[0].image.repoURL }}`}}"
+                      username: "{{`{{ sourceSecret.username }}`}}"
+                      password: "{{`{{ sourceSecret.password }}`}}"
+          
+          - apiVersion: kyverno.io/v1
+            kind: ClusterPolicy
+            metadata:
+              name: sync-docker-pull-secret-to-kargo
+              annotations:
+                policies.kyverno.io/title: Sync Docker Pull Secret to Kargo Namespaces
+                policies.kyverno.io/category: Sync
+                policies.kyverno.io/subject: Secret
+                policies.kyverno.io/minversion: 1.6.0
+                policies.kyverno.io/description: Syncs the GHCR Docker pull secret to Kargo project namespaces for image pulls
+            spec:
+              rules:
+              - name: sync-docker-pull-secret
+                match:
+                  any:
+                  - resources:
+                      kinds:
+                      - Namespace
+                      selector:
+                        matchLabels:
+                          kargo.akuity.io/project: "true"
+                          kargo.deps/ghcr: "true"
+                context:
+                - name: sourceSecret
+                  apiCall:
+                    urlPath: /api/v1/namespaces/backstage/secrets/ghcr-creds
+                    jmesPath: data
+                generate:
+                  apiVersion: v1
+                  kind: Secret
+                  name: ghcr-pull-secret
+                  namespace: "{{`{{ request.object.metadata.name }}`}}"
+                  synchronize: true
+                  data:
+                    type: kubernetes.io/dockerconfigjson
+                    data:
+                      .dockerconfigjson: "{{`{{ sourceSecret.\".dockerconfigjson\" }}`}}"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kargo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

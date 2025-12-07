@@ -1,0 +1,5 @@
+apiVersion: v2
+name: uv-service
+description: Creates a kubernetes deployment and service for a simple UV based python application
+type: application
+version: 0.1.0

@@ -13,7 +13,7 @@
     "lint": "backstage-cli package lint",
     "test": "backstage-cli package test",
     "clean": "backstage-cli package clean",
-    "build-image": "docker build ../.. -f Dockerfile --tag backstage"
+    "build:image": "docker build --add-host verdaccio.127.0.0.1.nip.io:127.0.0.1 ../.. -f Dockerfile --tag backstage"
   },
   "dependencies": {
     "@backstage/backend-defaults": "^0.13.1",
@@ -43,6 +43,8 @@
     "@backstage/plugin-search-backend-node": "^1.3.17",
     "@backstage/plugin-signals-backend": "^0.3.10",
     "@backstage/plugin-techdocs-backend": "^2.1.2",
+    "@internal/backstage-plugin-catalog-backend-module-eda": "workspace:^",
+    "@internal/backstage-plugin-eda-common": "workspace:^",
     "app": "link:../app",
     "better-sqlite3": "^12.0.0",
     "node-gyp": "^10.0.0",

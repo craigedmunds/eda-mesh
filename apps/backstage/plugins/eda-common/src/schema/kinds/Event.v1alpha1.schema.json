@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "EventV1alpha1",
+  "description": "An API describes an event that can be exposed by a component. The event is to be defined with AsyncAPI",
+  "examples": [
+    {
+      "apiVersion": "eda.io/v1alpha1",
+      "kind": "Event",
+      "metadata": {
+        "name": "newArtist",
+        "description": "New artist on the platform",
+        "labels": {
+          "product_name": "Random value Generator"
+        },
+        "annotations": {
+          "docs": "https://github.com/..../tree/develop/doc"
+        }
+      },
+      "spec": {
+        "type": "asyncapi",
+        "lifecycle": "production",
+        "owner": "artist-relations-team",
+        "system": "artist-engagement-portal",
+        "definition": "asyncapi: \"3.0.0\"\ninfo:..."
+      }
+    }
+  ],
+  "allOf": [
+    {
+      "$ref": "Entity"
+    },
+    {
+      "type": "object",
+      "required": ["spec"],
+      "properties": {
+        "apiVersion": {
+          "enum": ["eda.io/v1alpha1", "eda.io/v1beta1"]
+        },
+        "kind": {
+          "enum": ["Event"]
+        },
+        "spec": {
+          "type": "object",
+          "required": ["type", "lifecycle", "owner", "definition"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The type of the API definition.",
+              "examples": ["asyncapi"],
+              "minLength": 1
+            },
+            "lifecycle": {
+              "type": "string",
+              "description": "The lifecycle state of the API.",
+              "examples": ["experimental", "production", "deprecated"],
+              "minLength": 1
+            },
+            "owner": {
+              "type": "string",
+              "description": "An entity reference to the owner of the API.",
+              "examples": ["artist-relations-team", "user:john.johnson"],
+              "minLength": 1
+            },
+            "system": {
+              "type": "string",
+              "description": "An entity reference to the system that the API belongs to.",
+              "minLength": 1
+            },
+            "definition": {
+              "type": "string",
+              "description": "The definition of the Event",
+              "minLength": 1
+            },
+            "domain": {
+              "type": "string",
+              "description": "The business domain that this event belongs to.",
+              "examples": ["user-management", "payments", "inventory"],
+              "minLength": 1
+            },
+            "subdomain": {
+              "type": "string",
+              "description": "The subdomain within the business domain.",
+              "examples": ["authentication", "billing", "warehouse"],
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  ]
+}

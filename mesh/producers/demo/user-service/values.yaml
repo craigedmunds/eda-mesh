@@ -1,3 +1,0 @@
-name: camel-k-mesh-producer-demo-user-service
-namespace: camel-k-mesh-producer-demo-user-service
-configmap: camel-k-mesh-producer-demo-user-service-jbang-config

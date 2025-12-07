@@ -6,5 +6,5 @@ spec:
 
   source:
     
-    targetRevision: feature/branch-based
-    path: kustomize/seed/overlays/feature-branch-based
+    targetRevision: feature/backstage-events
+    path: kustomize/seed/overlays/craig

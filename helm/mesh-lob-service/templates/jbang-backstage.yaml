@@ -2,7 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: catalog-component-camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
-  namespace: backstage            # or your app ns; just mount it where Backstage runs
+  namespace: backstage 
+  
+  labels:
+    eda.io/backstage-catalog: "true"
 data:
 
 {{- $lob := .Values.lob }}
@@ -14,8 +17,7 @@ data:
 
 {{- $asyncapispec := fromYaml .Values.asyncapispec }}
 
-
-  catalog-component-camel-k-mesh-{{ $domain }}-{{ $subdomain }}.yaml: |
+  catalog: |
     apiVersion: backstage.io/v1alpha1
     kind: System
     metadata:
@@ -53,11 +55,10 @@ data:
       system: {{ $lob }}-{{ $service }}
       definition: |
 {{ .Values.asyncapispec | indent 8 }}
-
+    ---
 {{- range $k, $v := $asyncapispec.channels }}
 {{- $event := lower $k }}
-
-  catalog-component-camel-k-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}.yaml: |
+    
     apiVersion: backstage.io/v1alpha1
     kind: Component
     metadata:

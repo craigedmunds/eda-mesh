@@ -6,7 +6,7 @@
     "plugins/*/src",
     "plugins/*/config.d.ts",
     "plugins/*/dev",
-    "plugins/*/migrations"
+    "plugins/*/migrations",
   ],
   "exclude": ["node_modules"],
   "compilerOptions": {

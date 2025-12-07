@@ -71,3 +71,37 @@ Create an overlay for the root seed application (e.g. seed/overlays/local/craig)
 Re-Apply the seed with the overlay:
 
 `kustomize build seed/overlays/local/craig | kubectl apply -f -`
+
+## Kargo
+
+If including kargo, it expects a secret to be pre
+
+# Run this once to create the secret
+pass=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
+echo "Password: $pass"
+hashed_pass=$(htpasswd -bnBC 10 "" $pass | tr -d ':\n')
+signing_key=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
+
+kubectl create secret generic kargo-admin-credentials \
+  --from-literal=passwordHash="$hashed_pass" \
+  --from-literal=tokenSigningKey="$signing_key" \
+  -n argocd
+
+
+# Backstage
+
+Backstage is used for the service catalogue; the helm charts in the eda create config maps with backstage resources that represent the services, APIs, events and relationships between them.
+
+The source for the backstage app is in apps/backstage and this is manually built into a docker image and published to github:
+
+`yarn tsc`
+
+`yarn build:all`
+
+`yarn build-image --tag ghcr.io/craigedmunds/backstage:0.x` (where x is an incrementation from previous)
+
+`docker push ghcr.io/craigedmunds/backstage:0.x`
+
+And then update the version number in 
+
+A custom plugin, catalog-backend-module-eda, provides the "Event" related capabilities.

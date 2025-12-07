@@ -4,30 +4,33 @@
 
 {{- range $v := $subscriptions  }}
 {{- $event := lower $v.event }}
+
+{{- $domain := $v.domain }}
+{{- $subdomain := $v.subdomain }}
+
 {{- $lob := $v.lob }}
 {{- $lobService := $v.service }}
 
 apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
-  name: consumer-{{ $service }}-{{ $lob }}-{{ $lobService }}-{{ $event }}
+  name: consumer-{{ $service }}-{{ $domain }}-{{ $subdomain }}{{ $event }}
   namespace: camel-k-mesh
 spec:
-  name: q.{{ $service }}.{{ $lob }}.{{ $lobService }}.{{ $event }}
+  name: q.{{ $service }}.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
     name: camel-k-mesh
-
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
-  name: consumer-{{ $service }}-{{ $lob }}-{{ $lobService }}-{{ $event }}-binding
+  name: consumer-{{ $service }}-{{ $domain }}-{{ $subdomain }}-{{ $event }}-binding
   namespace: camel-k-mesh
 spec:
-  source: ex.{{ $lob }}.{{ $lobService }}.{{ $event }}
-  destination: q.{{ $service }}.{{ $lob }}.{{ $lobService }}.{{ $event }}
+  destination: q.{{ $service }}.{{ $domain }}.{{ $subdomain }}.{{ $event }}
+  source: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   destinationType: queue
   rabbitmqClusterReference:
     name: camel-k-mesh

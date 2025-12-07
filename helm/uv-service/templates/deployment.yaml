@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.name }}
+    backstage.io/kubernetes-id: {{ .Values.name }}
+  name: {{ .Values.name }}-uv
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.name }}
+        backstage.io/kubernetes-id: {{ .Values.name }}
+    spec:
+      containers:
+      - name: integration
+        image: ghcr.io/craigedmunds/uv
+        workingDir: /app
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: UV_SYSTEM_PYTHON
+          value: "1"
+        - name: UV_PROJECT_ENVIRONMENT
+          value: "/app/cache"
+        volumeMounts:
+        - mountPath: /integration
+          name: integration
+        - mountPath: /app
+          name: uv-app
+      volumes:
+      - name: integration
+        configMap: 
+          name: {{ .Values.configmap }}
+          
+      - name: uv-app
+        emptyDir: {}
+      imagePullSecrets:
+      - name: ghcr-creds

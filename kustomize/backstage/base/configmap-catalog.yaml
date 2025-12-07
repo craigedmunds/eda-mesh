@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-catalog
+  namespace: backstage
+data:
+  users.yaml: |
+    apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: hip
+      description: The HIP Team
+    spec:
+      type: business-unit
+      profile:
+        displayName: HIP
+        email: hip@example.com
+        picture: https://example.com/groups/bu-infrastructure.jpeg
+      children: [apim]
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: apim
+      description: The APIM Team
+    spec:
+      type: business-unit
+      profile:
+        displayName: APIM
+        email: apim@example.com
+        picture: https://example.com/groups/bu-infrastructure.jpeg
+      parent: hip
+      members: [craigedmunds]
+      children: []
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: live-services
+      description: The Live Services Team
+    spec:
+      type: business-unit
+      profile:
+        displayName: Live Services
+        email: live@example.com
+        picture: https://example.com/groups/bu-infrastructure.jpeg
+      members: []
+      children: []
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: crm
+      description: The CRM Team
+    spec:
+      type: business-unit
+      profile:
+        displayName: CRM
+        email: crm@example.com
+        picture: https://example.com/groups/bu-infrastructure.jpeg
+      members: []
+      children: []
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: User
+    metadata:
+      name: craigedmunds
+    spec:
+      profile:
+        displayName: Craig Edmunds
+        email: craig.edmunds@gmail.com
+      memberOf: []

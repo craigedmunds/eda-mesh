@@ -3,8 +3,10 @@ kind: ConfigMap
 metadata:
   name: catalog-component-camel-k-mesh-consumer-{{.Values.name}}
   namespace: backstage
+  labels:
+    eda.io/backstage-catalog: "true"
 data:
-  catalog-component-camel-k-mesh-consumer-{{.Values.name}}.yaml: |
+  catalog: |
     apiVersion: backstage.io/v1alpha1
     kind: System
     metadata:
@@ -30,5 +32,7 @@ data:
 {{- $event := lower $v.event }}
 {{- $lob := $v.lob }}
 {{- $lobService := $v.service }}
-        - {{ $lob}}-{{ $lobService }}
+{{- $domain := $v.domain }}
+{{- $subdomain := $v.subdomain }}
+        - {{ $domain }}-{{ $subdomain }}
 {{- end }} 

@@ -8,6 +8,7 @@ asyncapispec: |
   asyncapi: '3.0.0'
   info:
     title: Example Service
+    version: '1.0.0'
 
   channels:
     mistakeEvent:

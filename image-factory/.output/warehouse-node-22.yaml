@@ -1,0 +1,12 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: node-22-bookworm-slim
+  namespace: image-factory-kargo
+spec:
+  subscriptions:
+    - image:
+        repoURL: docker.io/library/node
+        allowTags: ^22-bookworm-slim$
+        imageSelectionStrategy: Lexical
+        discoveryLimit: 10
