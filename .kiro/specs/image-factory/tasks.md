@@ -227,6 +227,19 @@
   - [ ] 30.10 Test with real GHCR and Docker Hub data
   - _Requirements: 12.1, 12.2, 12.5, 12.7, 12.8_
 
+- [-] 31. GitHub Actions Integration
+  - [ ] 31.1 Install @backstage/plugin-github-actions package
+  - [ ] 31.2 Verify GitHub integration configuration in app-config.yaml
+  - [ ] 31.3 Add github.com/workflows annotation to ManagedImage entities
+  - [ ] 31.4 Create custom ManagedImage entity page component
+  - [ ] 31.5 Add EntityGithubActionsContent card to ManagedImage page
+  - [ ] 31.6 Configure card layout and positioning
+  - [ ] 31.7 Test workflow filtering with monorepo workflows
+  - [ ] 31.8 Verify workflow runs display correctly
+  - [ ] 31.9 Test re-run functionality (if permissions available)
+  - [ ] 31.10 Update example entities with workflow annotations
+  - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
+
 ## Phase 5: Documentation and Operations 📚
 
 - [ ] 18. User Documentation
