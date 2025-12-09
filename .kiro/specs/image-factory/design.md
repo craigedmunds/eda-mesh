@@ -748,6 +748,87 @@ PR merged → Analysis runs → State updated
 - Sensitive data (credentials, tokens) not included in entities
 - Annotations contain only public metadata
 
+### Container Registry Integration
+
+**Overview:**
+
+Display container image versions and tags directly in Backstage entity pages using a custom card component that fetches data from container registries.
+
+**Architecture:**
+
+```
+Backstage Entity Page
+    ↓
+ImageVersionsCard (React Component)
+    ↓
+Backend API Proxy
+    ↓
+Container Registry API (GHCR, Docker Hub, etc.)
+    ↓
+Returns: versions, tags, digests, metadata
+```
+
+**Components:**
+
+1. **ImageVersionsCard** - Frontend React component
+   - Displays table of image versions
+   - Shows tag, digest, size, published date
+   - Provides copy-to-clipboard for image references
+   - Handles pagination for large version lists
+   - Shows loading and error states
+
+2. **Registry API Proxy** - Backend endpoint
+   - `/api/image-factory/images/:name/versions`
+   - Proxies requests to container registries
+   - Handles authentication (GitHub tokens, Docker Hub credentials)
+   - Caches responses to reduce API calls
+   - Normalizes response format across registries
+
+3. **Registry Adapters** - Backend services
+   - `GitHubPackagesAdapter` - Fetches from GHCR using GitHub API
+   - `DockerHubAdapter` - Fetches from Docker Hub API
+   - `GenericRegistryAdapter` - Fallback for OCI-compliant registries
+
+**Data Model:**
+
+```typescript
+interface ImageVersion {
+  tag: string;
+  digest: string;
+  size: number;
+  publishedAt: string;
+  platform?: string;
+  labels?: Record<string, string>;
+}
+
+interface ImageVersionsResponse {
+  versions: ImageVersion[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+```
+
+**GitHub Packages API Integration:**
+
+```typescript
+// GET /user/packages/container/:package/versions
+// Requires: GitHub token with read:packages scope
+// Returns: List of package versions with metadata
+```
+
+**Caching Strategy:**
+
+- Cache version lists for 5 minutes
+- Invalidate cache on entity refresh
+- Store in memory (Redis for production)
+
+**Error Handling:**
+
+- Registry unavailable: Show cached data or friendly error
+- Authentication failure: Prompt for credentials
+- Rate limiting: Show message and retry after delay
+
 ### Testing Strategy
 
 **Entity Generation Tests:**
@@ -759,13 +840,19 @@ PR merged → Analysis runs → State updated
 - Test all endpoints with various inputs
 - Test PR creation logic
 - Test error handling
+- Test registry API proxying
+- Test version fetching from GHCR and Docker Hub
+- Test caching behavior
 
 **Frontend Tests:**
 - Component unit tests
 - Integration tests for entity pages
 - E2E tests for enrollment workflow
+- Test ImageVersionsCard with mock data
+- Test pagination and error states
 
 **Integration Tests:**
 - Test complete flow: state → ConfigMap → entity → UI
 - Test enrollment flow: UI → API → PR → state → entity
 - Verify entity updates when state changes
+- Test version fetching end-to-end

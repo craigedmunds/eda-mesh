@@ -201,6 +201,32 @@
   - [ ] 28.9 Document enrollment workflow for users
   - _Requirements: 11.9, 11.10, 11.11_
 
+- [ ] 29. Container Registry Integration - Backend
+  - [ ] 29.1 Create registry adapter interface
+  - [ ] 29.2 Implement GitHubPackagesAdapter for GHCR
+  - [ ] 29.3 Implement DockerHubAdapter for Docker Hub
+  - [ ] 29.4 Add GET /api/image-factory/images/:name/versions endpoint
+  - [ ] 29.5 Implement response caching (5 minute TTL)
+  - [ ] 29.6 Add authentication handling for registries
+  - [ ] 29.7 Normalize response format across registries
+  - [ ] 29.8 Add error handling for registry unavailability
+  - [ ] 29.9 Add pagination support for large version lists
+  - [ ] 29.10 Add unit tests for registry adapters
+  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.6_
+
+- [ ] 30. Container Registry Integration - Frontend
+  - [ ] 30.1 Create ImageVersionsCard component
+  - [ ] 30.2 Add table to display versions (tag, digest, size, date)
+  - [ ] 30.3 Implement copy-to-clipboard for image references
+  - [ ] 30.4 Add pagination controls
+  - [ ] 30.5 Add loading and error states
+  - [ ] 30.6 Style component to match Backstage design system
+  - [ ] 30.7 Add ImageVersionsCard to ManagedImage entity page
+  - [ ] 30.8 Add refresh button to fetch latest versions
+  - [ ] 30.9 Add component tests for ImageVersionsCard
+  - [ ] 30.10 Test with real GHCR and Docker Hub data
+  - _Requirements: 12.1, 12.2, 12.5, 12.7, 12.8_
+
 ## Phase 5: Documentation and Operations 📚
 
 - [ ] 18. User Documentation
