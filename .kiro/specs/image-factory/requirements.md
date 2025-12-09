@@ -168,6 +168,21 @@ When public container base images are updated, our internal images that depend o
 7. WHEN viewing an image version, THEN users SHALL be able to copy the full image reference including digest
 8. WHEN multiple pages of versions exist, THEN the System SHALL provide pagination controls to navigate through all versions
 
+### Requirement 13: Build Pipeline Visibility
+
+**User Story:** As a developer, I want to view GitHub Actions workflow runs for my container images in Backstage, so that I can monitor build status and troubleshoot failures without leaving the portal.
+
+#### Acceptance Criteria
+
+1. WHEN viewing a managed image in Backstage, THEN the System SHALL display recent GitHub Actions workflow runs for that image's build workflow
+2. WHEN viewing workflow runs, THEN the System SHALL display run status, duration, commit SHA, and timestamp for each run
+3. WHEN a managed image is built by a specific workflow in a monorepo, THEN the System SHALL filter workflow runs to show only that specific workflow
+4. WHEN viewing a workflow run, THEN users SHALL be able to click through to view the full run details on GitHub
+5. WHEN a workflow run fails, THEN the System SHALL display the failure status prominently
+6. WHEN a workflow run is in progress, THEN the System SHALL display the current status and allow real-time updates
+7. WHEN viewing workflow runs, THEN the System SHALL display the most recent runs first with pagination for older runs
+8. WHEN a user has appropriate permissions, THEN the System SHALL provide the ability to re-run failed workflows
+
 ## Non-Functional Requirements
 
 ### NFR1: Event-Driven Architecture

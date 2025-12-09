@@ -829,6 +829,93 @@ interface ImageVersionsResponse {
 - Authentication failure: Prompt for credentials
 - Rate limiting: Show message and retry after delay
 
+### GitHub Actions Integration
+
+**Overview:**
+
+Display GitHub Actions workflow runs directly on ManagedImage entity pages using the official Backstage GitHub Actions plugin. This provides visibility into build status, history, and logs without leaving Backstage.
+
+**Architecture:**
+
+```
+ManagedImage Entity Page
+    ↓
+GitHub Actions Card (from @backstage/plugin-github-actions)
+    ↓
+Backstage GitHub Integration
+    ↓
+GitHub Actions API
+    ↓
+Returns: workflow runs, status, logs
+```
+
+**Configuration:**
+
+Entities use standard Backstage annotations to link to workflows:
+
+```yaml
+metadata:
+  annotations:
+    github.com/project-slug: craigedmunds/argocd-eda
+    github.com/workflows: backstage.yml
+```
+
+**Key Features:**
+
+1. **Workflow Filtering** - Shows only the specific workflow for each image (critical for monorepos)
+2. **Status Display** - Success, failure, in-progress with visual indicators
+3. **Run Details** - Duration, commit SHA, branch, timestamp
+4. **Direct Links** - Click through to GitHub for full logs and details
+5. **Re-run Support** - Re-trigger failed builds (with permissions)
+
+**Monorepo Support:**
+
+The `github.com/workflows` annotation filters runs to show only the relevant workflow:
+- `backstage.yml` - Shows only Backstage image builds
+- `uv.yml` - Shows only UV image builds
+- Each entity displays its own build history independently
+
+**Authentication:**
+
+Uses existing GitHub integration configuration:
+
+```yaml
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+```
+
+**Entity Page Integration:**
+
+Add the GitHub Actions card to ManagedImage entity pages:
+
+```typescript
+import { EntityGithubActionsContent } from '@backstage/plugin-github-actions';
+
+// In ManagedImage entity page
+<EntitySwitch>
+  <EntitySwitch.Case if={isManagedImageEntity}>
+    <Grid container spacing={3}>
+      <Grid item md={6}>
+        <EntityAboutCard />
+      </Grid>
+      <Grid item md={6}>
+        <EntityGithubActionsContent />
+      </Grid>
+    </Grid>
+  </EntitySwitch.Case>
+</EntitySwitch>
+```
+
+**Benefits:**
+
+- No custom API development needed (uses official plugin)
+- Automatic updates when workflows run
+- Consistent UI with other Backstage GitHub integrations
+- Works seamlessly with existing GitHub authentication
+- Supports monorepo workflows through annotation filtering
+
 ### Testing Strategy
 
 **Entity Generation Tests:**
