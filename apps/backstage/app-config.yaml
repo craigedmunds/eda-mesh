@@ -79,7 +79,7 @@ catalog:
     entityFilename: catalog-info.yaml
     pullRequestBranchName: backstage-integration
   rules:
-    - allow: [Domain, Component, System, API, Resource, Location, Event]
+    - allow: [Domain, Component, System, API, Resource, Location, Event, ManagedImage, BaseImage]
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file
@@ -96,6 +96,12 @@ catalog:
       target: ../../examples/org.yaml
       rules:
         - allow: [User, Group]
+
+    # Image Factory example data
+    - type: file
+      target: ../../examples/images.yaml
+      rules:
+        - allow: [ManagedImage, BaseImage]
 
     ## Uncomment these lines to add more example data
     # - type: url
@@ -123,3 +129,11 @@ kubernetes:
 permission:
   # setting this to `false` will disable permissions
   enabled: true
+
+# Image Factory configuration
+imageFactory:
+  gitRepo: https://github.com/craigedmunds/argocd-eda.git
+  gitBranch: main
+  imagesYamlPath: image-factory/images.yaml
+  github:
+    token: ${GITHUB_TOKEN}

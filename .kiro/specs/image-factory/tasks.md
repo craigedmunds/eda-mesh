@@ -152,27 +152,27 @@
 
 ## Phase 4: Backstage Self-Service Enrollment 🎯
 
-- [ ] 25. Common Package Setup
-  - [ ] 25.1 Create @internal/plugin-image-factory-common package structure
-  - [ ] 25.2 Define ManagedImage and BaseImage entity kind constants
-  - [ ] 25.3 Define TypeScript interfaces for image entities
-  - [ ] 25.4 Create annotation key constants (registry, repository, digest, etc.)
-  - [ ] 25.5 Implement utility functions for parsing entity annotations
-  - [ ] 25.6 Add validation schemas for enrollment data
-  - [ ] 25.7 Export all types and utilities
+- [x] 25. Common Package Setup
+  - [x] 25.1 Create @internal/plugin-image-factory-common package structure
+  - [x] 25.2 Define ManagedImage and BaseImage entity kind constants
+  - [x] 25.3 Define TypeScript interfaces for image entities
+  - [x] 25.4 Create annotation key constants (registry, repository, digest, etc.)
+  - [x] 25.5 Implement utility functions for parsing entity annotations
+  - [x] 25.6 Add validation schemas for enrollment data
+  - [x] 25.7 Export all types and utilities
   - _Requirements: 11.1, 11.2, 11.3_
 
-- [ ] 26. Backend API Implementation
-  - [ ] 26.1 Create @internal/plugin-image-factory-backend package structure
-  - [ ] 26.2 Set up Express router with authentication middleware
-  - [ ] 26.3 Implement POST /api/image-factory/images endpoint for enrollment
-  - [ ] 26.4 Add input validation using common package schemas
-  - [ ] 26.5 Implement GitHub API integration for PR creation
-  - [ ] 26.6 Add logic to create branch, commit images.yaml changes, open PR
-  - [ ] 26.7 Implement error handling and logging
-  - [ ] 26.8 Add GET /api/image-factory/images endpoint for listing
-  - [ ] 26.9 Add GET /api/image-factory/images/:name endpoint for details
-  - [ ] 26.10 Configure backend plugin in Backstage app
+- [x] 26. Backend API Implementation
+  - [x] 26.1 Create @internal/plugin-image-factory-backend package structure
+  - [x] 26.2 Set up Express router with authentication middleware
+  - [x] 26.3 Implement POST /api/image-factory/images endpoint for enrollment
+  - [x] 26.4 Add input validation using common package schemas
+  - [x] 26.5 Implement GitHub API integration for PR creation
+  - [x] 26.6 Add logic to create branch, commit images.yaml changes, open PR
+  - [x] 26.7 Implement error handling and logging
+  - [x] 26.8 Add GET /api/image-factory/images endpoint for listing
+  - [x] 26.9 Add GET /api/image-factory/images/:name endpoint for details
+  - [x] 26.10 Configure backend plugin in Backstage app
   - _Requirements: 11.9, 11.10, 11.11_
 
 - [ ] 27. Frontend Enrollment UI

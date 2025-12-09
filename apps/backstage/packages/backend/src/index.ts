@@ -65,4 +65,6 @@ backend.add(import('@backstage/plugin-notifications-backend'));
 backend.add(import('@backstage/plugin-signals-backend'));
 
 backend.add(import('@internal/backstage-plugin-catalog-backend-module-eda'));
+backend.add(import('@internal/backstage-plugin-catalog-backend-module-image-factory'));
+backend.add(import('@internal/backstage-plugin-image-factory-backend'));
 backend.start();

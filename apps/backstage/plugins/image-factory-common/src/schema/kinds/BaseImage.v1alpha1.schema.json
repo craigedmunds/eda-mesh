@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "BaseImageV1alpha1",
+  "description": "A BaseImage represents an upstream container image that managed images depend on",
+  "examples": [
+    {
+      "apiVersion": "image-factory.io/v1alpha1",
+      "kind": "BaseImage",
+      "metadata": {
+        "name": "node-22-bookworm-slim",
+        "title": "Node 22 Bookworm Slim",
+        "description": "Official Node.js 22 base image (Debian Bookworm slim)",
+        "annotations": {
+          "image-factory.io/registry": "docker.io",
+          "image-factory.io/repository": "library/node",
+          "image-factory.io/tag": "22-bookworm-slim",
+          "image-factory.io/digest": "sha256:def456",
+          "image-factory.io/last-updated": "2024-12-08T15:30:00Z"
+        }
+      },
+      "spec": {
+        "type": "base-image",
+        "lifecycle": "production",
+        "owner": "upstream",
+        "system": "image-factory",
+        "upstream": {
+          "registry": "docker.io",
+          "repository": "library/node",
+          "tag": "22-bookworm-slim"
+        },
+        "dependents": [
+          {
+            "resource": "backstage",
+            "type": "managed-image"
+          }
+        ]
+      }
+    }
+  ],
+  "allOf": [
+    {
+      "$ref": "Entity"
+    },
+    {
+      "type": "object",
+      "required": ["spec"],
+      "properties": {
+        "apiVersion": {
+          "enum": ["image-factory.io/v1alpha1"]
+        },
+        "kind": {
+          "enum": ["BaseImage"]
+        },
+        "spec": {
+          "type": "object",
+          "required": ["type", "lifecycle", "owner", "upstream"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["base-image"],
+              "description": "The type of the image entity"
+            },
+            "lifecycle": {
+              "type": "string",
+              "description": "The lifecycle state of the image",
+              "examples": ["experimental", "production", "deprecated"],
+              "minLength": 1
+            },
+            "owner": {
+              "type": "string",
+              "description": "An entity reference to the owner of the image",
+              "examples": ["upstream", "platform-team"],
+              "minLength": 1
+            },
+            "system": {
+              "type": "string",
+              "description": "An entity reference to the system that the image belongs to",
+              "minLength": 1
+            },
+            "upstream": {
+              "type": "object",
+              "required": ["registry", "repository", "tag"],
+              "properties": {
+                "registry": {
+                  "type": "string",
+                  "description": "The container registry hosting the base image",
+                  "examples": ["docker.io", "ghcr.io", "quay.io"],
+                  "minLength": 1
+                },
+                "repository": {
+                  "type": "string",
+                  "description": "The repository path in the registry",
+                  "examples": ["library/node", "library/python"],
+                  "minLength": 1
+                },
+                "tag": {
+                  "type": "string",
+                  "description": "The image tag to monitor",
+                  "minLength": 1
+                }
+              }
+            },
+            "dependents": {
+              "type": "array",
+              "description": "Managed images that depend on this base image",
+              "items": {
+                "type": "object",
+                "required": ["resource", "type"],
+                "properties": {
+                  "resource": {
+                    "type": "string",
+                    "description": "The name of the managed image entity",
+                    "minLength": 1
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["managed-image"],
+                    "description": "The type of the dependent"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
