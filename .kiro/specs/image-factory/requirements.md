@@ -135,6 +135,24 @@ When public container base images are updated, our internal images that depend o
 4. WHEN base images update, THEN the System SHALL record update events with digest information
 5. WHEN querying system state, THEN the System SHALL provide current status for all tracked images
 
+### Requirement 11: Backstage Integration
+
+**User Story:** As a developer, I want to visualize image relationships and dependencies in Backstage, so that I can understand the impact of base image updates and navigate the image catalog.
+
+#### Acceptance Criteria
+
+1. WHEN a managed image is enrolled, THEN the System SHALL create a Backstage entity representing that image
+2. WHEN a base image is discovered, THEN the System SHALL create a Backstage entity representing that base image
+3. WHEN dependencies exist between images, THEN the System SHALL represent those relationships in Backstage entity metadata
+4. WHEN viewing an image in Backstage, THEN users SHALL see the image's base dependencies and dependent images
+5. WHEN viewing an image in Backstage, THEN users SHALL see current state including digest, last build time, and rebuild status
+6. WHEN base image updates occur, THEN the Backstage entities SHALL reflect the updated state
+7. WHEN navigating the Backstage catalog, THEN users SHALL be able to filter and search for images by type, registry, or dependency
+8. WHEN viewing dependency graphs, THEN users SHALL see visual representations of image relationships
+9. WHEN a developer creates a managed image through Backstage, THEN the System SHALL enroll that image in the configuration
+10. WHEN creating a managed image through Backstage, THEN the developer SHALL provide required information including name, registry, repository, source location, and rebuild policies
+11. WHEN a managed image is created through Backstage, THEN the System SHALL commit the enrollment to version control and trigger initial analysis
+
 ## Non-Functional Requirements
 
 ### NFR1: Event-Driven Architecture
