@@ -51,13 +51,6 @@
   - [x] 5.5 Verify automatic rebuild on base image update
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-- [x]* 6. Testing
-  - [x]* 6.1 Write unit tests for Analysis Tool
-  - [x]* 6.2 Write unit tests for CDK8s App
-  - [x]* 6.3 Write integration tests for complete workflow
-  - [x]* 6.4 Verify data alignment between components
-  - _Requirements: NFR5_
-
 ## Phase 2: Enhanced Functionality 📋
 
 - [ ] 7. Multi-Stage Dockerfile Support
@@ -157,7 +150,58 @@
   - [ ] 17.5 Monitor rate limit usage
   - _Open Question: 3_
 
-## Phase 4: Documentation and Operations 📚
+## Phase 4: Backstage Self-Service Enrollment 🎯
+
+- [ ] 25. Common Package Setup
+  - [ ] 25.1 Create @internal/plugin-image-factory-common package structure
+  - [ ] 25.2 Define ManagedImage and BaseImage entity kind constants
+  - [ ] 25.3 Define TypeScript interfaces for image entities
+  - [ ] 25.4 Create annotation key constants (registry, repository, digest, etc.)
+  - [ ] 25.5 Implement utility functions for parsing entity annotations
+  - [ ] 25.6 Add validation schemas for enrollment data
+  - [ ] 25.7 Export all types and utilities
+  - _Requirements: 11.1, 11.2, 11.3_
+
+- [ ] 26. Backend API Implementation
+  - [ ] 26.1 Create @internal/plugin-image-factory-backend package structure
+  - [ ] 26.2 Set up Express router with authentication middleware
+  - [ ] 26.3 Implement POST /api/image-factory/images endpoint for enrollment
+  - [ ] 26.4 Add input validation using common package schemas
+  - [ ] 26.5 Implement GitHub API integration for PR creation
+  - [ ] 26.6 Add logic to create branch, commit images.yaml changes, open PR
+  - [ ] 26.7 Implement error handling and logging
+  - [ ] 26.8 Add GET /api/image-factory/images endpoint for listing
+  - [ ] 26.9 Add GET /api/image-factory/images/:name endpoint for details
+  - [ ] 26.10 Configure backend plugin in Backstage app
+  - _Requirements: 11.9, 11.10, 11.11_
+
+- [ ] 27. Frontend Enrollment UI
+  - [ ] 27.1 Create @internal/plugin-image-factory package structure
+  - [ ] 27.2 Build EnrollImageDialog component with form fields
+  - [ ] 27.3 Add form fields: name, registry, repository
+  - [ ] 27.4 Add source provider selection (GitHub/GitLab)
+  - [ ] 27.5 Add source fields: repo, branch, dockerfile path, workflow
+  - [ ] 27.6 Add rebuild policy fields: delay, auto-rebuild toggle
+  - [ ] 27.7 Implement form validation with error messages
+  - [ ] 27.8 Add submit handler that calls backend API
+  - [ ] 27.9 Display PR URL on successful enrollment
+  - [ ] 27.10 Add loading states and error handling
+  - [ ] 27.11 Style form to match Backstage design system
+  - _Requirements: 11.9, 11.10, 11.11_
+
+- [ ] 28. Integration and Testing
+  - [ ] 28.1 Test enrollment API with various valid inputs
+  - [ ] 28.2 Test validation with invalid inputs
+  - [ ] 28.3 Test PR creation in GitHub
+  - [ ] 28.4 Test complete flow: UI → API → PR → merge → analysis
+  - [ ] 28.5 Verify new entities appear in Backstage after enrollment
+  - [ ] 28.6 Test error scenarios (API failures, GitHub errors)
+  - [ ] 28.7 Add unit tests for backend endpoints
+  - [ ] 28.8 Add component tests for enrollment form
+  - [ ] 28.9 Document enrollment workflow for users
+  - _Requirements: 11.9, 11.10, 11.11_
+
+## Phase 5: Documentation and Operations 📚
 
 - [ ] 18. User Documentation
   - [ ] 18.1 Write getting started guide
@@ -181,14 +225,15 @@
   - [ ] 20.4 Document backup and recovery procedures
   - [ ] 20.5 Write disaster recovery plan
 
-- [ ] 21. Backstage Integration
-  - [ ] 21.1 Create Backstage entity for Image Factory
-  - [ ] 21.2 Add image catalog to Backstage
-  - [ ] 21.3 Show dependency graph in Backstage
-  - [ ] 21.4 Display rebuild status and history
-  - [ ] 21.5 Add enrollment workflow in Backstage UI
+- [ ] 21. Backstage Self-Service Enrollment (Phase 4)
+  - [ ] 21.1 Create common package with types and entity definitions
+  - [ ] 21.2 Implement backend API for image enrollment
+  - [ ] 21.3 Build enrollment form UI in frontend
+  - [ ] 21.4 Add validation and error handling
+  - [ ] 21.5 Test complete enrollment workflow
+  - _Requirements: 11.9, 11.10, 11.11_
 
-## Phase 5: Optimization and Scaling 🚀
+## Phase 6: Optimization and Scaling 🚀
 
 - [ ] 22. Performance Optimization
   - [ ] 22.1 Implement parallel image processing in Analysis Tool

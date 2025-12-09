@@ -484,3 +484,288 @@ Main Pipeline (Deployment):                                   ↓
 - Current git-based approach is simpler
 
 **Decision:** Stick with current git-based approach for simplicity. Revisit if we need more complex promotion workflows.
+
+## Backstage Integration
+
+### Overview
+
+To provide better visibility into image relationships and enable self-service enrollment, we integrate the Image Factory with Backstage through custom entity kinds and plugins. This allows developers to visualize dependencies, understand impact of base image updates, and enroll new managed images through a UI.
+
+### Architecture
+
+**Components:**
+1. **Backstage Entity Provider** - CDK8s-generated ConfigMaps that Backstage ingests
+2. **Custom Entity Kinds** - ManagedImage and BaseImage entity definitions
+3. **Backstage Plugins** - Frontend, backend, and common packages for UI and API
+4. **Entity Processor** - Transforms Image Factory state into Backstage entities
+
+### Custom Entity Kinds
+
+#### ManagedImage Entity
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: ManagedImage
+metadata:
+  name: backstage
+  title: Backstage
+  description: Backstage developer portal backend
+  annotations:
+    image-factory.io/registry: ghcr.io
+    image-factory.io/repository: craigedmunds/backstage
+    image-factory.io/digest: sha256:abc123...
+    image-factory.io/last-built: "2024-12-09T10:00:00Z"
+    image-factory.io/rebuild-status: up-to-date
+spec:
+  type: managed-image
+  lifecycle: production
+  owner: platform-team
+  system: image-factory
+  source:
+    provider: github
+    repo: craigedmunds/argocd-eda
+    branch: main
+    dockerfile: apps/backstage/packages/backend/Dockerfile
+    workflow: backstage.yml
+  rebuildPolicy:
+    delay: 7d
+    autoRebuild: true
+  dependsOn:
+    - resource:node-22-bookworm-slim
+      type: base-image
+```
+
+#### BaseImage Entity
+
+```yaml
+apiVersion: backstage.io/v1alpha1
+kind: BaseImage
+metadata:
+  name: node-22-bookworm-slim
+  title: Node 22 Bookworm Slim
+  description: Official Node.js 22 base image (Debian Bookworm slim)
+  annotations:
+    image-factory.io/registry: docker.io
+    image-factory.io/repository: library/node
+    image-factory.io/tag: 22-bookworm-slim
+    image-factory.io/digest: sha256:def456...
+    image-factory.io/last-updated: "2024-12-08T15:30:00Z"
+spec:
+  type: base-image
+  lifecycle: production
+  owner: upstream
+  system: image-factory
+  upstream:
+    registry: docker.io
+    repository: library/node
+    tag: 22-bookworm-slim
+  dependents:
+    - resource:backstage
+      type: managed-image
+    - resource:uv
+      type: managed-image
+```
+
+### Data Synchronization via ConfigMaps
+
+Following the existing pattern, the CDK8s App generates ConfigMaps in the `backstage` namespace with the label `eda.io/backstage-catalog: "true"`. Each ConfigMap contains one or more Backstage entities in the `data.catalog` field.
+
+**Generation Approach:**
+- CDK8s App reads state files for all images
+- For each managed image, generates a ManagedImage entity ConfigMap
+- For each base image, generates a BaseImage entity ConfigMap
+- ConfigMaps include appropriate labels for filtering and identification
+
+**Update Mechanism:**
+1. When state files change (via Analysis Tool or manual updates)
+2. CDK8s App regenerates ConfigMaps with updated entity data
+3. ArgoCD detects changes and applies updated ConfigMaps
+4. Backstage's Kubernetes entity provider picks up changes automatically
+5. Entities refresh in the catalog (typically within 1-2 minutes)
+
+### Backstage Plugins
+
+#### Common Package (`@internal/plugin-image-factory-common`)
+
+**Purpose:** Shared types, utilities, and entity definitions
+
+**Provides:**
+- Entity kind constants (ManagedImage, BaseImage)
+- TypeScript interfaces for image entities and metadata
+- Annotation key constants for image-factory.io/* annotations
+- Utility functions for parsing entity annotations
+- Validation schemas for enrollment data
+
+#### Backend Package (`@internal/plugin-image-factory-backend`)
+
+**Purpose:** Enrollment API for creating new managed images
+
+**Single Endpoint:**
+- `POST /api/image-factory/enroll` - Enroll a new managed image
+
+**Enrollment Flow:**
+- Validates enrollment request against schema from common package
+- Creates a new branch in the git repository
+- Adds image entry to images.yaml
+- Commits changes and opens a pull request
+- Returns PR URL for developer review
+- Follows GitOps principles (no direct configuration writes)
+
+**Note:** Reading image data (listing, details, dependencies) uses Backstage's standard catalog API - no custom endpoints needed.
+
+#### Frontend Package (`@internal/plugin-image-factory`)
+
+**Purpose:** UI components for visualization and management
+
+**Key Components:**
+
+1. **ImageCatalogPage** - Browse all managed and base images
+   - Uses Backstage catalog API to query ManagedImage and BaseImage entities
+   - Table view with filtering and search
+   - Links to entity detail pages
+
+2. **ManagedImageEntityPage** - Custom entity page for managed images
+   - Displays image metadata from entity annotations
+   - Shows source information and rebuild policy from spec
+   - Lists base image dependencies with navigation links
+   - Shows build history and rebuild status
+
+3. **BaseImageEntityPage** - Custom entity page for base images
+   - Displays upstream registry information
+   - Shows current digest and last update time
+   - Lists dependent managed images with navigation links
+   - Shows update history
+
+4. **DependencyGraphCard** - Visual dependency graph component
+   - Queries entity relationships via catalog API
+   - Renders interactive graph visualization
+   - Enables navigation between related entities
+   - Highlights update propagation paths
+
+5. **EnrollImageDialog** - Enrollment form component
+   - Form fields for all required enrollment information
+   - Client-side validation using common package schemas
+   - Calls backend enrollment API on submit
+   - Displays PR URL on successful enrollment
+
+### Entity Relationships
+
+Backstage's built-in relation system models dependencies between images:
+- ManagedImage entities include `dependsOn` relations to their BaseImage dependencies
+- BaseImage entities include `dependents` relations to ManagedImage entities that use them
+- Relations are bidirectional and enable navigation between entities
+- Frontend components query these relations via catalog API to build dependency graphs
+
+### Enrollment Workflow
+
+**User Flow:**
+1. Developer clicks "Enroll Image" in Backstage UI
+2. Fills out form with image details:
+   - Name, registry, repository
+   - Source provider (GitHub/GitLab)
+   - Source repo, branch, dockerfile path
+   - Build workflow name
+   - Rebuild delay and auto-rebuild setting
+3. Submits form
+4. Backend creates PR to add entry to images.yaml
+5. Developer reviews and merges PR
+6. ArgoCD detects change and triggers CDK8s synthesis
+7. Analysis stage runs, discovers base images
+8. New entities appear in Backstage catalog
+
+**GitOps Compliance:**
+- All changes go through PR review
+- No direct writes to configuration
+- Audit trail in git history
+- Rollback via git revert
+
+### Data Flow
+
+```
+State Files (git)
+    ↓
+CDK8s App reads state
+    ↓
+Generates ConfigMaps with Backstage entities
+    ↓
+ArgoCD applies ConfigMaps to backstage namespace
+    ↓
+Backstage Kubernetes provider ingests entities
+    ↓
+Entities appear in catalog
+    ↓
+Frontend displays in UI
+    ↓
+User enrolls new image via UI
+    ↓
+Backend creates PR to images.yaml
+    ↓
+PR merged → Analysis runs → State updated
+    ↓
+(Cycle repeats)
+```
+
+### Implementation Phases
+
+**Phase 1: Entity Generation**
+- Add ConfigMap generation to CDK8s App
+- Define ManagedImage and BaseImage entity kinds
+- Generate entities from state files
+- Test entity ingestion in Backstage
+
+**Phase 2: Basic Visualization**
+- Create common package with types
+- Build entity pages for ManagedImage and BaseImage
+- Show basic metadata and relationships
+- Add catalog page for browsing images
+
+**Phase 3: Dependency Visualization**
+- Implement dependency graph component
+- Add interactive visualization
+- Show update propagation paths
+- Highlight stale images
+
+**Phase 4: Self-Service Enrollment**
+- Build backend API for enrollment
+- Implement PR creation logic
+- Create enrollment form UI
+- Add validation and error handling
+
+### Security Considerations
+
+**Authentication:**
+- Backend API uses Backstage's built-in auth
+- GitHub/GitLab API calls use service account tokens
+- PR creation requires appropriate permissions
+
+**Authorization:**
+- Enrollment restricted to authenticated users
+- PR review provides approval gate
+- No direct writes to production configuration
+
+**Data Exposure:**
+- Entities are visible to all Backstage users
+- Sensitive data (credentials, tokens) not included in entities
+- Annotations contain only public metadata
+
+### Testing Strategy
+
+**Entity Generation Tests:**
+- Test ConfigMap generation from state files
+- Verify entity structure matches schema
+- Test relationship generation
+
+**Backend API Tests:**
+- Test all endpoints with various inputs
+- Test PR creation logic
+- Test error handling
+
+**Frontend Tests:**
+- Component unit tests
+- Integration tests for entity pages
+- E2E tests for enrollment workflow
+
+**Integration Tests:**
+- Test complete flow: state → ConfigMap → entity → UI
+- Test enrollment flow: UI → API → PR → state → entity
+- Verify entity updates when state changes
