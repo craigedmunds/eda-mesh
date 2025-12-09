@@ -153,6 +153,21 @@ When public container base images are updated, our internal images that depend o
 10. WHEN creating a managed image through Backstage, THEN the developer SHALL provide required information including name, registry, repository, source location, and rebuild policies
 11. WHEN a managed image is created through Backstage, THEN the System SHALL commit the enrollment to version control and trigger initial analysis
 
+### Requirement 12: Container Registry Integration
+
+**User Story:** As a developer, I want to view container image versions and tags directly in Backstage, so that I can see the version history and select specific versions without leaving the portal.
+
+#### Acceptance Criteria
+
+1. WHEN viewing a managed image in Backstage, THEN the System SHALL display available image tags from the container registry
+2. WHEN viewing image tags, THEN the System SHALL display tag name, digest, size, and published date for each version
+3. WHEN a managed image is stored in GitHub Container Registry, THEN the System SHALL use the GitHub Packages API to retrieve version information
+4. WHEN a managed image is stored in Docker Hub, THEN the System SHALL use the Docker Hub API to retrieve version information
+5. WHEN viewing image versions, THEN the System SHALL display the versions in reverse chronological order with the most recent first
+6. WHEN the container registry is unavailable, THEN the System SHALL display cached version information or a clear error message
+7. WHEN viewing an image version, THEN users SHALL be able to copy the full image reference including digest
+8. WHEN multiple pages of versions exist, THEN the System SHALL provide pagination controls to navigate through all versions
+
 ## Non-Functional Requirements
 
 ### NFR1: Event-Driven Architecture

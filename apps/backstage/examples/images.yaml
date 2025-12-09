@@ -14,6 +14,7 @@ metadata:
     image-factory.io/last-built: "2024-12-09T10:00:00Z"
     image-factory.io/rebuild-status: up-to-date
     github.com/project-slug: craigedmunds/argocd-eda
+    github.com/workflows: backstage.yml
   links:
     - url: https://github.com/craigedmunds/argocd-eda/pkgs/container/backstage
       title: GitHub Container Registry
@@ -50,6 +51,7 @@ metadata:
     image-factory.io/last-built: "2024-12-09T09:30:00Z"
     image-factory.io/rebuild-status: up-to-date
     github.com/project-slug: craigedmunds/argocd-eda
+    github.com/workflows: uv.yml
   links:
     - url: https://github.com/craigedmunds/argocd-eda/pkgs/container/uv
       title: GitHub Container Registry
