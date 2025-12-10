@@ -14,4 +14,6 @@ data:
       type: file
       targets:
         - /etc/backstage/catalog/catalog-items/*.yaml
+      rules:
+        - allow: [Location, User, Group, Domain, Component, System, Resource, API, Event, ManagedImage, BaseImage]
 

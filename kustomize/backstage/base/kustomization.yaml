@@ -15,6 +15,7 @@ resources:
   - k8s-rbac.yaml
   - configmap-catalog.yaml
   - configmap-rootlocation.yaml
+  - kyverno-github-token-sync.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
