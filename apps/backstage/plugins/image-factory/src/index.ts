@@ -5,6 +5,6 @@
  */
 
 export { imageFactoryPlugin } from './plugin';
-export { ImageVersionsCard } from './components/ImageVersionsCard';
+export { ImageVersionsCard, EnrollImageDialog, ImageCatalogPage } from './components';
 export { imageFactoryApiRef, ImageFactoryClient } from './api';
 export type { ImageFactoryApi } from './api';

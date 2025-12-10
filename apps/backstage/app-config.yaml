@@ -117,6 +117,12 @@ catalog:
       rules:
         - allow: [Template]
 
+    # Image Factory enrollment template
+    - type: file
+      target: ../../examples/template/enroll-image-template.yaml
+      rules:
+        - allow: [Template]
+
     # Local example organizational data
     - type: file
       target: ../../examples/org.yaml

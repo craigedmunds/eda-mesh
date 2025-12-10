@@ -1,0 +1,1 @@
+export { imageFactoryScaffolderModule as default } from './module';

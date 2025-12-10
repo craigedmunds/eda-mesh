@@ -1,5 +1,6 @@
 import { DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
-import { ImageFactoryApi, ImageVersionsResponse } from './ImageFactoryApi';
+import { EnrollmentData } from '@internal/backstage-plugin-image-factory-common';
+import { ImageFactoryApi, ImageVersionsResponse, EnrollmentResponse } from './ImageFactoryApi';
 
 /**
  * Client implementation for ImageFactoryApi
@@ -39,6 +40,26 @@ export class ImageFactoryClient implements ImageFactoryApi {
     
     if (!response.ok) {
       throw new Error(`Failed to fetch image versions: ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+
+  async enrollImage(data: EnrollmentData): Promise<EnrollmentResponse> {
+    const baseUrl = await this.discoveryApi.getBaseUrl('image-factory');
+    const url = `${baseUrl}/images`;
+    
+    const response = await this.fetchApi.fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to enroll image: ${response.statusText}`);
     }
     
     return response.json();
