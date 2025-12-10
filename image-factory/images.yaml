@@ -1,24 +1,14 @@
-# Image Factory Enrollment Registry
-# Add images here to enroll them in automated rebuild tracking
-# The system will discover dependencies and maintain state in state/ directory
-#
-
 - name: backstage
   registry: ghcr.io
   repository: craigedmunds/backstage
   source:
-    provider: github  # github or gitlab
-    repo: craigedmunds/argocd-eda  # Source repo (happens to be this repo)
+    provider: github
+    repo: craigedmunds/argocd-eda
     branch: main
     dockerfile: apps/backstage/packages/backend/Dockerfile
-    # For GitHub:
     workflow: backstage.yml
-    # For GitLab:
-    # pipeline: .gitlab-ci.yml
-    # job: build-backstage
-  rebuildDelay: 7d    # Wait 7 days after base image update
-  autoRebuild: true   # Automatically trigger rebuilds
-
+  rebuildDelay: 7d
+  autoRebuild: true
 - name: uv
   registry: ghcr.io
   repository: craigedmunds/uv
@@ -28,5 +18,16 @@
     branch: main
     dockerfile: apps/uv/Dockerfile
     workflow: uv.yml
+  rebuildDelay: 7d
+  autoRebuild: true
+- name: docker-example-e2e-test
+  registry: ghcr.io
+  repository: craigedmunds/docker-example
+  source:
+    provider: github
+    repo: craigedmunds/docker-example
+    branch: main
+    dockerfile: Dockerfile
+    workflow: docker-image.yml
   rebuildDelay: 7d
   autoRebuild: true
