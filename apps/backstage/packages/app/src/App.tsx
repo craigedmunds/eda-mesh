@@ -40,6 +40,8 @@ import { NotificationsPage } from '@backstage/plugin-notifications';
 import { SignalsDisplay } from '@backstage/plugin-signals';
 import { EdaPage } from '@internal/backstage-plugin-eda';
 
+
+
 const app = createApp({
   apis,
   bindRoutes({ bind }) {
@@ -115,6 +117,7 @@ const routes = (
     <Route path="/catalog-graph" element={<CatalogGraphPage />} />
     <Route path="/notifications" element={<NotificationsPage />} />
     <Route path="/eda" element={<EdaPage />} />
+
   </FlatRoutes>
 );
 

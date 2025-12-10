@@ -404,6 +404,10 @@ This contract ensures:
 - GitHub API failure: Log HTTP status code, Stage fails (manual retry)
 - Git commit failure: Job fails, Kubernetes retries with backoff
 
+## Documentation Guidelines
+
+**IMPORTANT**: Do not create excessive markdown files during implementation. Use existing component READMEs and the .kiro folder documentation. Only create new documentation files when explicitly requested by the user.
+
 ## Testing Strategy
 
 ### Unit Tests
@@ -835,86 +839,99 @@ interface ImageVersionsResponse {
 
 Display GitHub Actions workflow runs directly on ManagedImage entity pages using the official Backstage GitHub Actions plugin. This provides visibility into build status, history, and logs without leaving Backstage.
 
+**CRITICAL IMPLEMENTATION NOTES:**
+
+1. **Backend Authentication Required**: The GitHub Actions plugin requires backend authentication, NOT user-level OAuth. Not all Backstage users have GitHub accounts.
+
+2. **Proxy Configuration**: Use Backstage's proxy backend to inject GitHub token from environment variables:
+   ```yaml
+   proxy:
+     endpoints:
+       '/github-api':
+         target: 'https://api.github.com'
+         changeOrigin: true
+         credentials: 'dangerously-allow-unauthenticated'  # Required for frontend access
+         headers:
+           Authorization: 'token ${GITHUB_TOKEN}'
+           Accept: 'application/vnd.github.v3+json'
+   ```
+
+3. **Custom API Client**: Create a custom `GithubActionsApiClient` that uses the proxy endpoint instead of direct GitHub API calls:
+   ```typescript
+   export class GithubActionsApiClient implements GithubActionsApi {
+     constructor(options: { discoveryApi: DiscoveryApi }) {
+       this.discoveryApi = options.discoveryApi;
+     }
+     
+     private async getOctokit(): Promise<Octokit> {
+       const proxyUrl = await this.discoveryApi.getBaseUrl('proxy');
+       return new Octokit({
+         baseUrl: `${proxyUrl}/github-api`,
+         // No auth here - proxy adds it
+       });
+     }
+   }
+   ```
+
+4. **API Registration**: Register the custom client in `apis.ts`:
+   ```typescript
+   createApiFactory({
+     api: githubActionsApiRef,
+     deps: { discoveryApi: discoveryApiRef },
+     factory: ({ discoveryApi }) => new GithubActionsApiClient({ discoveryApi }),
+   })
+   ```
+
+5. **Custom Entity Kinds**: The GitHub Actions plugin components may be hardcoded to work only with `kind: Component`. For custom entity kinds like `ManagedImage`, you need to:
+   - Create wrapper components that use `useEntity()` from `@backstage/plugin-catalog-react`
+   - Use the underlying card components directly (e.g., `RecentWorkflowRunsCard`)
+   - Ensure plugin routes are registered in `App.tsx`
+
+6. **Environment Variables**: Both `GITHUB_TOKEN` and `BACKEND_SECRET` must be set before starting the backend.
+
 **Architecture:**
 
 ```
 ManagedImage Entity Page
     ↓
-GitHub Actions Card (from @backstage/plugin-github-actions)
+Custom Wrapper Component (uses useEntity hook)
     ↓
-Backstage GitHub Integration
+GitHub Actions Card Component
     ↓
-GitHub Actions API
+Custom GithubActionsApiClient
     ↓
-Returns: workflow runs, status, logs
+Backstage Proxy Backend (/api/proxy/github-api)
+    ↓
+GitHub Actions API (with token from env vars)
 ```
 
 **Configuration:**
 
-Entities use standard Backstage annotations to link to workflows:
+Entities use standard Backstage annotations:
 
 ```yaml
 metadata:
   annotations:
     github.com/project-slug: craigedmunds/argocd-eda
-    github.com/workflows: backstage.yml
+    github.com/workflows: backstage.yml  # Optional: filters to specific workflow
 ```
 
-**Key Features:**
+**Verified Working:**
+- ✅ Proxy endpoint configured and tested with curl
+- ✅ GitHub token injection from environment variables
+- ✅ Custom API client implementation
+- ✅ API client registration in Backstage
 
-1. **Workflow Filtering** - Shows only the specific workflow for each image (critical for monorepos)
-2. **Status Display** - Success, failure, in-progress with visual indicators
-3. **Run Details** - Duration, commit SHA, branch, timestamp
-4. **Direct Links** - Click through to GitHub for full logs and details
-5. **Re-run Support** - Re-trigger failed builds (with permissions)
+**Known Issues:**
+- ⚠️ GitHub Actions plugin components may require additional route configuration
+- ⚠️ Plugin may have hardcoded checks for `kind: Component`
+- ⚠️ Some components require parent Router context that may not be compatible with custom entity kinds
 
-**Monorepo Support:**
-
-The `github.com/workflows` annotation filters runs to show only the relevant workflow:
-- `backstage.yml` - Shows only Backstage image builds
-- `uv.yml` - Shows only UV image builds
-- Each entity displays its own build history independently
-
-**Authentication:**
-
-Uses existing GitHub integration configuration:
-
-```yaml
-integrations:
-  github:
-    - host: github.com
-      token: ${GITHUB_TOKEN}
-```
-
-**Entity Page Integration:**
-
-Add the GitHub Actions card to ManagedImage entity pages:
-
-```typescript
-import { EntityGithubActionsContent } from '@backstage/plugin-github-actions';
-
-// In ManagedImage entity page
-<EntitySwitch>
-  <EntitySwitch.Case if={isManagedImageEntity}>
-    <Grid container spacing={3}>
-      <Grid item md={6}>
-        <EntityAboutCard />
-      </Grid>
-      <Grid item md={6}>
-        <EntityGithubActionsContent />
-      </Grid>
-    </Grid>
-  </EntitySwitch.Case>
-</EntitySwitch>
-```
-
-**Benefits:**
-
-- No custom API development needed (uses official plugin)
-- Automatic updates when workflows run
-- Consistent UI with other Backstage GitHub integrations
-- Works seamlessly with existing GitHub authentication
-- Supports monorepo workflows through annotation filtering
+**Alternative Approach:**
+If the official plugin proves incompatible with custom entity kinds, consider:
+1. Building a custom GitHub Actions card component from scratch
+2. Using the GitHub REST API directly through the proxy
+3. Displaying workflow data in a simpler format (table/list) without the full plugin UI
 
 ### Testing Strategy
 
