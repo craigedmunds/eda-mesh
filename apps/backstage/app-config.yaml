@@ -50,6 +50,27 @@ proxy:
   #   '/test':
   #     target: 'https://example.com'
   #     changeOrigin: true
+  
+  # GitHub API proxy for GitHub Actions plugin
+  # This proxies requests to GitHub API with backend authentication
+  endpoints:
+    '/github-api':
+      target: 'https://api.github.com'
+      changeOrigin: true
+      allowedHeaders: ['Authorization', 'Accept']
+      headers:
+        Authorization: 'token ${GITHUB_TOKEN}'
+        Accept: 'application/vnd.github.v3+json'
+      credentials: 'dangerously-allow-unauthenticated'
+    
+    # Docker Hub API proxy for container registry integration
+    '/dockerhub-api':
+      target: 'https://hub.docker.com'
+      changeOrigin: true
+      allowedHeaders: ['Accept']
+      headers:
+        Accept: 'application/json'
+      credentials: 'dangerously-allow-unauthenticated'
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs

@@ -214,30 +214,30 @@
   - [ ] 29.10 Add unit tests for registry adapters
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.6_
 
-- [ ] 30. Container Registry Integration - Frontend
-  - [ ] 30.1 Create ImageVersionsCard component
-  - [ ] 30.2 Add table to display versions (tag, digest, size, date)
-  - [ ] 30.3 Implement copy-to-clipboard for image references
-  - [ ] 30.4 Add pagination controls
-  - [ ] 30.5 Add loading and error states
-  - [ ] 30.6 Style component to match Backstage design system
-  - [ ] 30.7 Add ImageVersionsCard to ManagedImage entity page
-  - [ ] 30.8 Add refresh button to fetch latest versions
-  - [ ] 30.9 Add component tests for ImageVersionsCard
-  - [ ] 30.10 Test with real GHCR and Docker Hub data
+- [x] 30. Container Registry Integration - Frontend ✅
+  - [x] 30.1 Create ImageVersionsCard component ✅
+  - [x] 30.2 Add table to display versions (tag, digest, size, date) ✅
+  - [x] 30.3 Implement copy-to-clipboard for image references ✅
+  - [x] 30.4 Add pagination controls ✅
+  - [x] 30.5 Add loading and error states ✅
+  - [x] 30.6 Style component to match Backstage design system ✅
+  - [x] 30.7 Add ImageVersionsCard to ManagedImage entity page ✅
+  - [x] 30.8 Add refresh button to fetch latest versions ✅
+  - [x] 30.9 Add component tests for ImageVersionsCard ✅
+  - [x] 30.10 Test with real GHCR and Docker Hub data ✅
   - _Requirements: 12.1, 12.2, 12.5, 12.7, 12.8_
 
-- [-] 31. GitHub Actions Integration
-  - [ ] 31.1 Install @backstage/plugin-github-actions package
-  - [ ] 31.2 Verify GitHub integration configuration in app-config.yaml
-  - [ ] 31.3 Add github.com/workflows annotation to ManagedImage entities
-  - [ ] 31.4 Create custom ManagedImage entity page component
-  - [ ] 31.5 Add EntityGithubActionsContent card to ManagedImage page
-  - [ ] 31.6 Configure card layout and positioning
-  - [ ] 31.7 Test workflow filtering with monorepo workflows
-  - [ ] 31.8 Verify workflow runs display correctly
-  - [ ] 31.9 Test re-run functionality (if permissions available)
-  - [ ] 31.10 Update example entities with workflow annotations
+- [x] 31. GitHub Actions Integration
+  - [x] 31.1 Install @backstage/plugin-github-actions package
+  - [x] 31.2 Verify GitHub integration configuration in app-config.yaml
+  - [x] 31.3 Add github.com/workflows annotation to ManagedImage entities
+  - [x] 31.4 Create custom ManagedImage entity page component
+  - [x] 31.5 Add EntityGithubActionsContent card to ManagedImage page
+  - [x] 31.6 Configure card layout and positioning
+  - [x] 31.7 Test workflow filtering with monorepo workflows
+  - [x] 31.8 Verify workflow runs display correctly
+  - [x] 31.9 Test re-run functionality (if permissions available)
+  - [x] 31.10 Update example entities with workflow annotations
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
 
 ## Phase 5: Documentation and Operations 📚

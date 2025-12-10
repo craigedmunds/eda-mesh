@@ -182,6 +182,7 @@ When public container base images are updated, our internal images that depend o
 6. WHEN a workflow run is in progress, THEN the System SHALL display the current status and allow real-time updates
 7. WHEN viewing workflow runs, THEN the System SHALL display the most recent runs first with pagination for older runs
 8. WHEN a user has appropriate permissions, THEN the System SHALL provide the ability to re-run failed workflows
+9. WHEN a user navigates to the CICD tab on an image, auth creds should not be required, not all users will have a github user & access to the repos. Our internal creds should be used, via a proxy. The creds should not be exposed to the end user.
 
 ## Non-Functional Requirements
 
