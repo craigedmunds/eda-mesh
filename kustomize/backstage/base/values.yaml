@@ -28,6 +28,12 @@ backstage:
       value: "true"
     - name: BACKEND_SECRET
       value: dev-backstage-key
+    - name: IMAGE_FACTORY_GIT_REPO
+      value: "https://github.com/craigedmunds/argocd-eda.git"
+    - name: IMAGE_FACTORY_GIT_BRANCH
+      value: "feature/backstage-events"
+    - name: IMAGE_FACTORY_IMAGES_YAML_PATH
+      value: "image-factory/images.yaml"
   extraEnvVarsSecrets:
     - backstage-github-auth
   extraVolumes:
@@ -72,6 +78,27 @@ backstage:
         allow:
           # Could use "*.svc.cluster.local" if we end up with more
           - host: backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local
+    integrations:
+      github:
+        - host: github.com
+          token: ${GITHUB_TOKEN}
+    proxy:
+      endpoints:
+        '/github-api':
+          target: 'https://api.github.com'
+          changeOrigin: true
+          allowedHeaders: ['Authorization', 'Accept']
+          headers:
+            Authorization: 'token ${GITHUB_TOKEN}'
+            Accept: 'application/vnd.github.v3+json'
+          credentials: 'dangerously-allow-unauthenticated'
+        '/dockerhub-api':
+          target: 'https://hub.docker.com'
+          changeOrigin: true
+          allowedHeaders: ['Accept']
+          headers:
+            Accept: 'application/json'
+          credentials: 'dangerously-allow-unauthenticated'
     auth:
       environment: production
       providers:
@@ -135,4 +162,10 @@ backstage:
               url: https://kubernetes.default.svc
               authProvider: serviceAccount
               skipTLSVerify: true
+    imageFactory:
+      gitRepo: ${IMAGE_FACTORY_GIT_REPO}
+      gitBranch: ${IMAGE_FACTORY_GIT_BRANCH}
+      imagesYamlPath: ${IMAGE_FACTORY_IMAGES_YAML_PATH}
+      github:
+        token: ${GITHUB_TOKEN}
       

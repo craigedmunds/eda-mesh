@@ -40,8 +40,8 @@ dist-types
 # MkDocs build output
 site
 
-# Local configuration files
-*.local.yaml
+# All configuration is now in app-config.yaml
+# No separate local config files needed
 
 # Sensitive credentials
 *-credentials.yaml
