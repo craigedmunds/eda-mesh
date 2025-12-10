@@ -1,5 +1,30 @@
 # Argocd Event Driven Architecture
 
+This repository contains an event-driven architecture implementation with ArgoCD, featuring automated container image lifecycle management through the Image Factory system and comprehensive Backstage integration.
+
+## Image Factory - Container Lifecycle Management
+
+The Image Factory provides automated container image lifecycle management with the following key features:
+
+### Backstage Integration
+- **ManagedImage Entities**: Custom entity type for tracking container images
+- **Container Versions Tab**: View and manage image versions from GHCR and Docker Hub
+- **GitHub Actions Integration**: Monitor build workflows and trigger rebuilds
+- **Copy-to-Clipboard**: Easy access to image references and digests
+- **Registry Links**: Direct navigation to container registry pages
+
+### Key Features
+- **Semantic Version Filtering**: Shows only meaningful version tags (1.2.3, v0.6.2) while filtering out SHA-based tags
+- **Multi-Registry Support**: Works with GitHub Container Registry (GHCR) and Docker Hub
+- **Proxy-Based Architecture**: Secure API calls through Backstage backend proxy
+- **Real-time Updates**: Refresh capabilities with loading states and error handling
+
+### Architecture Highlights
+- **Kargo Integration**: Automated freight promotion and dependency tracking
+- **CDK8s Code Generation**: Infrastructure as code for Kubernetes resources
+- **Property-Based Testing**: Comprehensive test coverage with correctness properties
+- **Event-Driven Rebuilds**: Automatic image rebuilds on base image updates
+
 # Using the seed
 
 In order to instantiate this in a new argocd cluster...

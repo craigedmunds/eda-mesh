@@ -160,13 +160,16 @@ When public container base images are updated, our internal images that depend o
 #### Acceptance Criteria
 
 1. WHEN viewing a managed image in Backstage, THEN the System SHALL display available image tags from the container registry
-2. WHEN viewing image tags, THEN the System SHALL display tag name, digest, size, and published date for each version
-3. WHEN a managed image is stored in GitHub Container Registry, THEN the System SHALL use the GitHub Packages API to retrieve version information
-4. WHEN a managed image is stored in Docker Hub, THEN the System SHALL use the Docker Hub API to retrieve version information
-5. WHEN viewing image versions, THEN the System SHALL display the versions in reverse chronological order with the most recent first
-6. WHEN the container registry is unavailable, THEN the System SHALL display cached version information or a clear error message
-7. WHEN viewing an image version, THEN users SHALL be able to copy the full image reference including digest
-8. WHEN multiple pages of versions exist, THEN the System SHALL provide pagination controls to navigate through all versions
+2. WHEN viewing image tags, THEN the System SHALL display tag name, digest, published date, and platform information for each version
+3. WHEN a managed image is stored in GitHub Container Registry, THEN the System SHALL use the GitHub Packages API to retrieve version information through backend proxy
+4. WHEN a managed image is stored in Docker Hub, THEN the System SHALL use the Docker Hub API to retrieve version information through backend proxy
+5. WHEN viewing image versions, THEN the System SHALL filter out non-semantic version tags (SHA tags, "latest", "main", etc.) to show only meaningful versions
+6. WHEN viewing image versions, THEN the System SHALL display the versions in reverse chronological order with the most recent first
+7. WHEN the container registry is unavailable, THEN the System SHALL display cached version information or a clear error message with retry option
+8. WHEN viewing an image version, THEN users SHALL be able to copy the full image reference including both tag and digest formats
+9. WHEN multiple pages of versions exist, THEN the System SHALL provide pagination controls to navigate through all versions
+10. WHEN viewing image versions, THEN users SHALL be able to refresh the data manually to get the latest versions
+11. WHEN clicking on version information, THEN users SHALL be able to navigate to the registry page for that specific version
 
 ### Requirement 13: Build Pipeline Visibility
 
@@ -175,14 +178,34 @@ When public container base images are updated, our internal images that depend o
 #### Acceptance Criteria
 
 1. WHEN viewing a managed image in Backstage, THEN the System SHALL display recent GitHub Actions workflow runs for that image's build workflow
-2. WHEN viewing workflow runs, THEN the System SHALL display run status, duration, commit SHA, and timestamp for each run
+2. WHEN viewing workflow runs, THEN the System SHALL display run status, commit SHA, commit message, and relative timestamp for each run
 3. WHEN a managed image is built by a specific workflow in a monorepo, THEN the System SHALL filter workflow runs to show only that specific workflow
 4. WHEN viewing a workflow run, THEN users SHALL be able to click through to view the full run details on GitHub
-5. WHEN a workflow run fails, THEN the System SHALL display the failure status prominently
-6. WHEN a workflow run is in progress, THEN the System SHALL display the current status and allow real-time updates
-7. WHEN viewing workflow runs, THEN the System SHALL display the most recent runs first with pagination for older runs
-8. WHEN a user has appropriate permissions, THEN the System SHALL provide the ability to re-run failed workflows
-9. WHEN a user navigates to the CICD tab on an image, auth creds should not be required, not all users will have a github user & access to the repos. Our internal creds should be used, via a proxy. The creds should not be exposed to the end user.
+5. WHEN a workflow run has a commit SHA, THEN the System SHALL provide clickable links to the commit on GitHub
+6. WHEN workflow runs have long commit messages, THEN the System SHALL truncate them with tooltips showing the full message
+7. WHEN a workflow run fails, THEN the System SHALL display the failure status prominently with appropriate error icons
+8. WHEN a workflow run is in progress, THEN the System SHALL display the current status with running indicators
+9. WHEN viewing workflow runs, THEN the System SHALL display the most recent runs first with pagination for older runs
+10. WHEN a user has appropriate permissions, THEN the System SHALL provide the ability to re-run failed workflows
+11. WHEN a user navigates to the CI/CD tab on an image, THEN authentication credentials SHALL NOT be required from the user
+12. WHEN accessing GitHub APIs, THEN the System SHALL use backend proxy with service credentials, not user-level OAuth
+13. WHEN GitHub API calls fail, THEN the System SHALL provide clear error messages and retry mechanisms
+14. WHEN formatting timestamps, THEN the System SHALL use relative time format (e.g., "2h ago", "yesterday") for better user experience
+
+### Requirement 14: GitHub Extensions Code Organization
+
+**User Story:** As a platform engineer, I want GitHub Actions and Container Registry functionality organized as reusable components, so that these features can be maintained efficiently and potentially used by other teams.
+
+#### Acceptance Criteria
+
+1. WHEN implementing GitHub Actions functionality, THEN the System SHALL separate reusable components from image-factory specific code
+2. WHEN creating container registry integration, THEN the System SHALL implement registry clients as modular, testable components
+3. WHEN building UI components, THEN the System SHALL create components that can work with any Backstage entity type, not just ManagedImage entities
+4. WHEN implementing API clients, THEN the System SHALL use consistent patterns for backend proxy authentication across all GitHub integrations
+5. WHEN organizing code, THEN the System SHALL group related functionality into logical packages (common utilities, UI components, API clients)
+6. WHEN creating shared utilities, THEN the System SHALL implement functions like date formatting and version filtering as reusable utilities
+7. WHEN implementing authentication, THEN the System SHALL use a single, consistent approach for GitHub API authentication across all components
+8. WHEN testing GitHub functionality, THEN the System SHALL provide comprehensive test coverage including unit tests, component tests, and integration tests
 
 ## Non-Functional Requirements
 

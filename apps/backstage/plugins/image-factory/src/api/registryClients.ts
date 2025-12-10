@@ -3,7 +3,6 @@ import { DiscoveryApi } from '@backstage/core-plugin-api';
 export interface ImageVersion {
   tag: string;
   digest: string;
-  size: number;
   publishedAt: string;
   platform?: string;
 }
@@ -103,7 +102,6 @@ export class GHCRClient implements RegistryClient {
       .map((version: any) => ({
         tag: version.metadata?.container?.tags?.[0] || version.name,
         digest: version.name, // GitHub uses the digest as the version name
-        size: version.metadata?.container?.size || 0,
         publishedAt: version.created_at,
         platform: version.metadata?.container?.platform || 'linux/amd64',
       }))
@@ -154,7 +152,6 @@ export class DockerHubClient implements RegistryClient {
     const allVersions: ImageVersion[] = (data.results?.map((tag: any) => ({
       tag: tag.name,
       digest: tag.digest || tag.images?.[0]?.digest || '',
-      size: tag.full_size || tag.images?.[0]?.size || 0,
       publishedAt: tag.last_updated,
       platform: tag.images?.[0]?.architecture ? 
         `${tag.images[0].os || 'linux'}/${tag.images[0].architecture}` : 

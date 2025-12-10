@@ -225,6 +225,9 @@
   - [x] 30.8 Add refresh button to fetch latest versions ✅
   - [x] 30.9 Add component tests for ImageVersionsCard ✅
   - [x] 30.10 Test with real GHCR and Docker Hub data ✅
+  - [x] 30.11 Move Container Versions to separate tab for better UX ✅
+  - [x] 30.12 Add "View" action links to registry pages ✅
+  - [x] 30.13 Create comprehensive integration test suite ✅
   - _Requirements: 12.1, 12.2, 12.5, 12.7, 12.8_
 
 - [x] 31. GitHub Actions Integration
@@ -238,6 +241,9 @@
   - [x] 31.8 Verify workflow runs display correctly
   - [x] 31.9 Test re-run functionality (if permissions available)
   - [x] 31.10 Update example entities with workflow annotations
+  - [x] 31.11 Fix API response structure handling (result.data.workflow_runs) ✅
+  - [x] 31.12 Style GitHub Actions component with Backstage design system ✅
+  - [x] 31.13 Optimize table layout (remove duplicate status columns) ✅
   - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7_
 
 ## Phase 5: Documentation and Operations 📚
@@ -272,7 +278,63 @@
   - [ ] 21.5 Test complete enrollment workflow
   - _Requirements: 11.9, 11.10, 11.11_
 
-## Phase 6: Optimization and Scaling 🚀
+## Phase 6: GitHub Extensions Modular Organization 🔧
+
+- [ ] 32. Create GitHub Extensions Common Package
+  - [ ] 32.1 Create apps/backstage/plugins/github-extensions-common package structure
+  - [ ] 32.2 Move GithubActionsApiClient from app/src/lib to common package
+  - [ ] 32.3 Move registry client interfaces and implementations to common package
+  - [ ] 32.4 Extract shared types (WorkflowRun, ImageVersion, RegistryClient) to common package
+  - [ ] 32.5 Extract utility functions (formatRelativeTime, isSemanticVersionTag) to common package
+  - [ ] 32.6 Define annotation constants (GITHUB_ACTIONS_ANNOTATION, etc.) in common package
+  - [ ] 32.7 Create proper package.json with dependencies and exports
+  - [ ]* 32.8 Add unit tests for API clients and utilities
+  - _Requirements: 14.1, 14.2, 14.4, 14.7_
+
+- [ ] 33. Create GitHub Extensions Frontend Package
+  - [ ] 33.1 Create apps/backstage/plugins/github-extensions package structure
+  - [ ] 33.2 Create generic GithubActionsCard component that works with any entity type
+  - [ ] 33.3 Move and generalize ImageVersionsCard to work with any entity (not just ManagedImage)
+  - [ ] 33.4 Extract WorkflowRunsTable as reusable component
+  - [ ] 33.5 Create custom hooks (useGithubActions, useImageVersions) for data fetching
+  - [ ] 33.6 Add proper plugin registration with API factory setup
+  - [ ] 33.7 Create plugin.ts with proper Backstage plugin structure
+  - [ ]* 33.8 Add component tests for all UI components
+  - [ ] 33.9 Update components to use annotation constants from common package
+  - _Requirements: 14.3, 14.5, 14.6_
+
+- [ ] 34. Update Image Factory Plugin Integration
+  - [ ] 34.1 Update image-factory plugin package.json to depend on github-extensions packages
+  - [ ] 34.2 Remove GithubActionsApiClient from app/src/lib (now in common package)
+  - [ ] 34.3 Remove ImageVersionsCard from image-factory plugin (now in github-extensions)
+  - [ ] 34.4 Update ManagedImageEntityPage to import components from github-extensions
+  - [ ] 34.5 Update App.tsx to register API clients from github-extensions-common
+  - [ ] 34.6 Keep only image-factory specific components in image-factory plugin
+  - [ ] 34.7 Update entity page layouts to use new component imports
+  - [ ] 34.8 Verify all existing functionality works with new package structure
+  - [ ]* 34.9 Update integration tests to work with modular structure
+  - _Requirements: 14.1, 14.5_
+
+- [ ] 35. Enhance Generic Entity Support
+  - [ ] 35.1 Update GithubActionsCard to work with Component, API, System entities
+  - [ ] 35.2 Update ImageVersionsCard to work with any entity that has registry annotations
+  - [ ] 35.3 Create entity filter functions for conditional rendering
+  - [ ]* 35.4 Add examples of using GitHub extensions with different entity types
+  - [ ]* 35.5 Test GitHub extensions with Component and API entities
+  - [ ]* 35.6 Create documentation for annotation patterns across entity types
+  - _Requirements: 14.3, 14.4_
+
+- [ ]* 36. Testing and Quality Assurance
+  - [ ]* 36.1 Add comprehensive unit tests for github-extensions-common package
+  - [ ]* 36.2 Add component tests for github-extensions UI components
+  - [ ]* 36.3 Add integration tests for complete GitHub functionality
+  - [ ]* 36.4 Test error scenarios and edge cases across all packages
+  - [ ]* 36.5 Add performance tests for API clients and caching
+  - [ ]* 36.6 Verify test coverage meets quality standards
+  - [ ]* 36.7 Add automated testing for package dependencies
+  - _Requirements: 14.8_
+
+## Phase 7: Optimization and Scaling 🚀
 
 - [ ] 22. Performance Optimization
   - [ ] 22.1 Implement parallel image processing in Analysis Tool
@@ -295,6 +357,70 @@
   - [ ] 24.3 Add deployment to test cluster
   - [ ] 24.4 Implement automated promotion to production
   - [ ] 24.5 Add release automation
+
+## Key Learnings and Architectural Decisions
+
+### Frontend Architecture Patterns
+
+**Proxy-Based API Integration**: 
+- Standard Backstage pattern for external API calls uses backend proxy configuration
+- Avoids CORS issues and centralizes authentication
+- Example: GitHub API and Docker Hub API calls through `/api/proxy/github-api` and `/api/proxy/dockerhub-api`
+
+**Component Design System Consistency**:
+- Always use Backstage's core components (`Table`, `InfoCard`, `StatusIcons`, `Link`, etc.)
+- Avoid custom styling - leverage Material-UI theme integration
+- Status indicators: Use `StatusOK`, `StatusError`, `StatusRunning`, `StatusPending` for consistency
+
+**Entity Page Layout Best Practices**:
+- Separate tabs for distinct functionality (Overview, Container Versions, CI/CD, Dependencies)
+- Use `EntitySwitch` for conditional rendering based on entity type
+- Grid layout with proper spacing and responsive design
+
+### API Integration Lessons
+
+**GitHub Actions API Structure**:
+- Octokit responses have nested `data` property: `result.data.workflow_runs`
+- Custom API clients need proper response structure handling
+- Backend proxy authentication preferred over frontend OAuth for service integrations
+
+**Container Registry APIs**:
+- GHCR uses GitHub Packages API (`/users/{owner}/packages/container/{package}/versions`)
+- Docker Hub uses different endpoint structure (`/v2/repositories/{repo}/tags`)
+- Semantic version filtering essential for user experience (filter out SHA tags, "latest", etc.)
+
+**Error Handling Patterns**:
+- Always provide retry mechanisms for transient failures
+- Show meaningful error messages with context
+- Graceful degradation when external services unavailable
+
+### Testing Strategy
+
+**Integration Testing Approach**:
+- Test both registry types (GHCR and Docker Hub) with different mock responses
+- Verify UI interactions (copy-to-clipboard, refresh, pagination)
+- Test error scenarios and edge cases
+- End-to-end workflow validation
+
+**Component Testing Best Practices**:
+- Mock external dependencies (fetch, APIs)
+- Test loading states, error states, and success states
+- Verify accessibility and user interactions
+- Use React Testing Library patterns with `waitFor` and `act`
+
+### UI/UX Improvements Discovered
+
+**Table Design Optimization**:
+- Avoid duplicate information in columns (e.g., status icon + status chip)
+- Inline related information (status icon with workflow name)
+- Consistent action column naming ("View" not "View on Registry")
+- Smart external link generation based on registry type
+
+**User Experience Enhancements**:
+- Copy-to-clipboard for technical references (image tags, digests)
+- Direct links to external resources (registry pages, GitHub Actions)
+- Real-time refresh capabilities with loading indicators
+- Semantic version filtering for cleaner version lists
 
 ## Current Status Summary
 

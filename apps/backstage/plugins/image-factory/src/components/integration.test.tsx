@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { TestApiProvider } from '@backstage/test-utils';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
 import { discoveryApiRef } from '@backstage/core-plugin-api';
@@ -92,7 +92,6 @@ describe('Integration Tests - ManagedImage Components', () => {
           metadata: {
             container: {
               tags: ['v1.2.3'],
-              size: 1024000,
             },
           },
           created_at: '2024-12-10T10:00:00Z',
@@ -102,7 +101,6 @@ describe('Integration Tests - ManagedImage Components', () => {
           metadata: {
             container: {
               tags: ['v1.2.2'],
-              size: 1020000,
             },
           },
           created_at: '2024-12-09T15:30:00Z',
@@ -169,10 +167,6 @@ describe('Integration Tests - ManagedImage Components', () => {
 
       // Verify registry and repository info
       expect(screen.getByText(/ghcr\.io\/test\/test-image • 2 versions/)).toBeInTheDocument();
-
-      // Verify file sizes are formatted correctly
-      expect(screen.getByText('1000 KB')).toBeInTheDocument();
-      expect(screen.getByText('996.1 KB')).toBeInTheDocument();
     });
 
     it('should handle copy-to-clipboard functionality', async () => {
@@ -235,7 +229,6 @@ describe('Integration Tests - ManagedImage Components', () => {
             metadata: {
               container: {
                 tags: ['v1.2.3'], // Should be included
-                size: 1024000,
               },
             },
             created_at: '2024-12-10T10:00:00Z',
@@ -245,7 +238,6 @@ describe('Integration Tests - ManagedImage Components', () => {
             metadata: {
               container: {
                 tags: ['latest'], // Should be filtered out
-                size: 1020000,
               },
             },
             created_at: '2024-12-09T15:30:00Z',
@@ -255,7 +247,6 @@ describe('Integration Tests - ManagedImage Components', () => {
             metadata: {
               container: {
                 tags: ['sha256:61523e618e412180bf630a11730406d571f13dd12b040c6ac9005f3a52'], // Should be filtered out
-                size: 1030000,
               },
             },
             created_at: '2024-12-08T12:00:00Z',
@@ -265,7 +256,6 @@ describe('Integration Tests - ManagedImage Components', () => {
             metadata: {
               container: {
                 tags: ['0.6.2'], // Should be included
-                size: 1040000,
               },
             },
             created_at: '2024-12-07T09:00:00Z',
@@ -409,8 +399,6 @@ describe('Integration Tests - ManagedImage Components', () => {
 
       // 3. Verify all expected data is displayed
       expect(screen.getByText(/ghcr\.io\/test\/test-image • 2 versions/)).toBeInTheDocument();
-      expect(screen.getByText('1000 KB')).toBeInTheDocument();
-      expect(screen.getByText('996.1 KB')).toBeInTheDocument();
 
       // 4. Verify interactive elements work
       const copyButtons = screen.getAllByRole('button', { name: /copy/i });
@@ -425,7 +413,9 @@ describe('Integration Tests - ManagedImage Components', () => {
 
       // 6. Test refresh functionality
       mockFetch.mockClear();
-      fireEvent.click(refreshButton);
+      await act(async () => {
+        fireEvent.click(refreshButton);
+      });
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });

@@ -74,7 +74,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['v1.2.3'],
-              size: 1024000,
             },
           },
           created_at: '2024-12-10T10:00:00Z',
@@ -84,7 +83,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['v1.2.2'],
-              size: 1020000,
             },
           },
           created_at: '2024-12-09T15:30:00Z',
@@ -94,7 +92,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['sha256:61523e618e412180bf630a11730406d571f13dd12b040c6ac9005f3a52'],
-              size: 1000000,
             },
           },
           created_at: '2024-12-08T12:00:00Z',
@@ -104,7 +101,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['latest'],
-              size: 1050000,
             },
           },
           created_at: '2024-12-07T09:00:00Z',
@@ -136,7 +132,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['v1.2.3'],
-              size: 1024000,
             },
           },
           created_at: '2024-12-10T10:00:00Z',
@@ -159,8 +154,6 @@ describe('ImageVersionsCard', () => {
 
     expect(screen.getByText('v1.2.3')).toBeInTheDocument();
     expect(screen.getByText('v1.2.2')).toBeInTheDocument();
-    expect(screen.getByText('1000 KB')).toBeInTheDocument();
-    expect(screen.getByText('996.1 KB')).toBeInTheDocument();
   });
 
   it('displays registry and repository in subheader', async () => {
@@ -268,40 +261,7 @@ describe('ImageVersionsCard', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('formats file sizes correctly', async () => {
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve([
-        {
-          name: 'sha256:abc123',
-          metadata: {
-            container: {
-              tags: ['1.0.0'],
-              size: 1073741824, // 1 GB
-            },
-          },
-          created_at: '2024-12-10T10:00:00Z',
-        },
-        {
-          name: 'sha256:def456',
-          metadata: {
-            container: {
-              tags: ['0.1.0'],
-              size: 512, // 512 B
-            },
-          },
-          created_at: '2024-12-10T10:00:00Z',
-        },
-      ]),
-    });
 
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('1 GB')).toBeInTheDocument();
-      expect(screen.getByText('512 B')).toBeInTheDocument();
-    });
-  });
 
   it('filters out non-semantic version tags', async () => {
     mockFetch.mockResolvedValue({
@@ -312,7 +272,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['v1.2.3'], // Should be included
-              size: 1024000,
             },
           },
           created_at: '2024-12-10T10:00:00Z',
@@ -322,7 +281,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['sha256:61523e618e412180bf630a11730406d571f13dd12b040c6ac9005f3a52'], // Should be filtered out
-              size: 1020000,
             },
           },
           created_at: '2024-12-09T15:30:00Z',
@@ -332,7 +290,6 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['latest'], // Should be filtered out
-              size: 1030000,
             },
           },
           created_at: '2024-12-08T12:00:00Z',
@@ -342,10 +299,9 @@ describe('ImageVersionsCard', () => {
           metadata: {
             container: {
               tags: ['0.6.2'], // Should be included
-              size: 1040000,
             },
           },
-          created_at: '2024-12-07T09:00:00Z',
+          created_at: '2024-07T09:00:00Z',
         },
       ]),
     });

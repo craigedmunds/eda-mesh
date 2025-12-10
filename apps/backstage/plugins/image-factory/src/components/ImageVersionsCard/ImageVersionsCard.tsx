@@ -4,6 +4,7 @@ import {
   Progress,
   Table,
   TableColumn,
+  Link,
 } from '@backstage/core-components';
 import { useApi, discoveryApiRef } from '@backstage/core-plugin-api';
 import { useEntity } from '@backstage/plugin-catalog-react';
@@ -31,16 +32,7 @@ export interface ImageVersionsCardProps {
   variant?: 'gridItem';
 }
 
-/**
- * Formats bytes to human readable format
- */
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
+
 
 /**
  * Formats date to relative time
@@ -93,7 +85,7 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
   const { entity } = useEntity();
   const discoveryApi = useApi(discoveryApiRef);
   const [versions, setVersions] = useState<ImageVersion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
@@ -113,14 +105,11 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
   const fetchVersions = async (pageNum: number = 0, isRefresh: boolean = false) => {
     if (!imageRegistry || !imageRepository) {
       setError('Missing registry or repository information');
-      setLoading(false);
       return;
     }
 
     if (isRefresh) {
       setRefreshing(true);
-    } else {
-      setLoading(true);
     }
     setError(null);
 
@@ -139,7 +128,6 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
       setError(errorMessage);
       console.error('Failed to fetch image versions:', err);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -161,6 +149,18 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
   const getImageReference = (version: ImageVersion, useDigest: boolean = false) => {
     const reference = useDigest ? version.digest : version.tag;
     return `${imageRegistry}/${imageRepository}:${reference}`;
+  };
+
+  const getRegistryUrl = () => {
+    if (imageRegistry === 'ghcr.io') {
+      // GitHub Container Registry URL format
+      const [owner, repo] = imageRepository!.split('/');
+      return `https://github.com/${owner}/pkgs/container/${repo}`;
+    } else if (imageRegistry === 'docker.io' || imageRegistry === 'registry-1.docker.io') {
+      // Docker Hub URL format
+      return `https://hub.docker.com/r/${imageRepository}/tags`;
+    }
+    return null;
   };
 
   // Early return after all hooks are called
@@ -207,15 +207,7 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
         </Box>
       ),
     },
-    {
-      title: 'Size',
-      field: 'size',
-      render: (version: ImageVersion) => (
-        <Typography variant="body2">
-          {formatBytes(version.size)}
-        </Typography>
-      ),
-    },
+
     {
       title: 'Published',
       field: 'publishedAt',
@@ -240,6 +232,18 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
         )
       ),
     },
+    {
+      title: 'Actions',
+      field: 'actions',
+      render: () => {
+        const registryUrl = getRegistryUrl();
+        return registryUrl ? (
+          <Link to={registryUrl} target="_blank">
+            View
+          </Link>
+        ) : null;
+      },
+    },
   ];
 
   const title = (
@@ -255,13 +259,7 @@ export const ImageVersionsCard = ({ variant }: ImageVersionsCardProps) => {
 
   const subheader = `${imageRegistry}/${imageRepository} • ${totalCount} versions`;
 
-  if (loading && !refreshing) {
-    return (
-      <InfoCard title="Container Versions" variant={variant}>
-        <Progress />
-      </InfoCard>
-    );
-  }
+
 
   if (error) {
     return (
