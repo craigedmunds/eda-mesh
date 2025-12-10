@@ -960,3 +960,393 @@ If the official plugin proves incompatible with custom entity kinds, consider:
 - Test enrollment flow: UI → API → PR → state → entity
 - Verify entity updates when state changes
 - Test version fetching end-to-end
+
+## GitHub Extensions Code Organization
+
+### Overview
+
+The GitHub Actions and Container Registry functionality implemented for the Image Factory provides significant value and should be organized for maintainability and potential reuse. While keeping this functionality within the image factory context, we organize it into logical, well-structured components.
+
+### Architecture Principles
+
+**Separation of Concerns:**
+- **API Clients**: Handle external service communication (GitHub API, registry APIs)
+- **UI Components**: Provide reusable interface elements
+- **Utilities**: Shared functions for formatting, validation, and data processing
+- **Entity-Specific Logic**: Image factory specific business logic
+
+**Consistent Patterns:**
+- All external API calls use Backstage proxy pattern
+- Consistent error handling and loading states
+- Standardized annotation patterns for configuration
+- Uniform styling using Backstage design system
+
+### Modular Package Structure
+
+The GitHub functionality is organized into separate, reusable packages:
+
+```
+apps/backstage/plugins/
+├── github-extensions-common/          # Shared API clients and utilities
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── GithubActionsApiClient.ts
+│   │   │   └── registryClients.ts
+│   │   ├── types/
+│   │   │   ├── github.ts
+│   │   │   └── registry.ts
+│   │   ├── utils/
+│   │   │   ├── formatting.ts
+│   │   │   └── validation.ts
+│   │   └── index.ts
+│   └── package.json
+├── github-extensions/                 # Reusable UI components
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── GithubActionsCard/
+│   │   │   ├── ImageVersionsCard/
+│   │   │   └── WorkflowRunsTable/
+│   │   ├── hooks/
+│   │   │   ├── useGithubActions.ts
+│   │   │   └── useImageVersions.ts
+│   │   ├── plugin.ts
+│   │   └── index.ts
+│   └── package.json
+└── image-factory/                     # Image factory specific features
+    ├── src/
+    │   ├── components/
+    │   │   ├── ManagedImageEntityPage/
+    │   │   └── BaseImageEntityPage/
+    │   ├── plugin.ts
+    │   └── index.ts
+    └── package.json
+```
+
+#### API Layer
+
+**GitHub Extensions Common Package** (`apps/backstage/plugins/github-extensions-common/`):
+- **GithubActionsApiClient**: Implements `GithubActionsApi` interface with backend proxy authentication
+- **Registry Clients**: `RegistryClient` interface and implementations (`GHCRClient`, `DockerHubClient`)
+- **Shared Types**: Common interfaces for GitHub and registry data
+- **Utilities**: Shared functions for formatting, validation, and data processing
+- **Constants**: Annotation keys and configuration constants
+
+**Image Factory API Integration** (`apps/backstage/plugins/image-factory/src/api/`):
+- Imports and configures clients from github-extensions-common
+- Image factory specific API logic
+- Entity-specific data transformations
+
+#### UI Components
+
+**GitHub Extensions Frontend Package** (`apps/backstage/plugins/github-extensions/`):
+- **GithubActionsCard**: Generic GitHub Actions component that works with any entity type
+- **ImageVersionsCard**: Generic container registry versions component
+- **WorkflowRunsTable**: Reusable table component for workflow runs
+- **Shared Hooks**: `useGithubActions`, `useImageVersions` for data fetching
+- **Utility Components**: Status icons, copy buttons, refresh controls
+
+**Image Factory UI Integration** (`apps/backstage/plugins/image-factory/src/components/`):
+- **ManagedImageEntityPage**: Uses components from github-extensions package
+- **BaseImageEntityPage**: Entity-specific layout and configuration
+- **Image Factory Specific Cards**: Components unique to image factory domain
+
+#### Utility Functions
+
+**Shared Utilities:**
+```typescript
+// Time formatting
+function formatRelativeTime(dateString: string): string
+
+// Version filtering
+function isSemanticVersionTag(tag: string): boolean
+
+// Image reference parsing
+function parseImageReference(imageRef: string): ImageReference
+
+// Copy to clipboard with feedback
+function useCopyToClipboard(): { copyToClipboard, copied }
+```
+
+### Data Models
+
+#### GitHub Actions
+
+```typescript
+interface WorkflowRun {
+  id: number;
+  name: string;
+  run_number: number;
+  status: 'queued' | 'in_progress' | 'completed';
+  conclusion: 'success' | 'failure' | 'cancelled' | 'timed_out' | null;
+  head_sha: string;
+  event: string;
+  created_at: string;
+  html_url: string;
+  head_commit?: {
+    message: string;
+  };
+  display_title?: string;
+}
+```
+
+#### Container Registry
+
+```typescript
+interface ImageVersion {
+  tag: string;
+  digest: string;
+  publishedAt: string;
+  platform?: string;
+}
+
+interface ImageVersionsResponse {
+  versions: ImageVersion[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+interface RegistryClient {
+  getImageVersions(repository: string, options?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<ImageVersionsResponse>;
+}
+```
+
+### Configuration Patterns
+
+#### Plugin Registration
+
+**App.tsx Configuration:**
+```typescript
+// Register API clients from github-extensions-common
+import { 
+  GithubActionsApiClient,
+  githubExtensionsApiRef 
+} from '@internal/plugin-github-extensions-common';
+
+const app = createApp({
+  apis: [
+    // GitHub Extensions API
+    createApiFactory({
+      api: githubActionsApiRef,
+      deps: { discoveryApi: discoveryApiRef },
+      factory: ({ discoveryApi }) => new GithubActionsApiClient({ discoveryApi }),
+    }),
+    // Other APIs...
+  ],
+  // Other configuration...
+});
+```
+
+**Plugin Integration:**
+```typescript
+// Import components from github-extensions
+import { 
+  GithubActionsCard, 
+  ImageVersionsCard 
+} from '@internal/plugin-github-extensions';
+
+// Use in entity pages
+const ManagedImageEntityPage = () => (
+  <EntityLayout>
+    <EntityLayout.Route path="/ci-cd" title="CI/CD">
+      <GithubActionsCard />
+    </EntityLayout.Route>
+    <EntityLayout.Route path="/versions" title="Container Versions">
+      <ImageVersionsCard />
+    </EntityLayout.Route>
+  </EntityLayout>
+);
+```
+
+#### Entity Annotations
+
+**GitHub Actions Configuration:**
+```yaml
+metadata:
+  annotations:
+    github.com/project-slug: owner/repository
+    github.com/workflows: workflow-name.yml  # Optional filter
+```
+
+**Container Registry Configuration:**
+```yaml
+metadata:
+  annotations:
+    image-factory.io/registry: ghcr.io
+    image-factory.io/repository: owner/image-name
+    image-factory.io/digest: sha256:abc123...
+```
+
+#### Backend Proxy Configuration
+
+```yaml
+# app-config.yaml
+proxy:
+  endpoints:
+    '/github-api':
+      target: 'https://api.github.com'
+      changeOrigin: true
+      credentials: 'dangerously-allow-unauthenticated'
+      headers:
+        Authorization: 'token ${GITHUB_TOKEN}'
+        Accept: 'application/vnd.github.v3+json'
+```
+
+### Error Handling Strategy
+
+#### API Client Errors
+
+**GitHub Actions:**
+- Network failures: Retry with exponential backoff
+- Authentication errors: Clear error message for administrators
+- Rate limiting: Display appropriate user message
+- Invalid repository: Graceful fallback with helpful message
+
+**Container Registry:**
+- Registry unavailable: Show cached data when available
+- Authentication failures: Clear error messages
+- Rate limiting: Implement caching and retry logic
+- Invalid repository format: Validation and user feedback
+
+#### UI Component Errors
+
+**Loading States:**
+- Skeleton loading for table components
+- Progress indicators for API calls
+- Refresh buttons for manual retry
+
+**Error States:**
+- Clear error messages with context
+- Retry mechanisms where appropriate
+- Fallback to cached data when available
+- Links to troubleshooting documentation
+
+### Testing Strategy
+
+#### Unit Tests
+
+**API Clients:**
+- Mock external API responses
+- Test error handling scenarios
+- Verify request parameters and headers
+- Test authentication flow
+
+**UI Components:**
+- Mock API dependencies
+- Test user interactions (clicks, copy-to-clipboard)
+- Verify loading and error states
+- Test responsive design
+
+**Utilities:**
+- Test date formatting edge cases
+- Verify semantic version filtering logic
+- Test image reference parsing
+
+#### Integration Tests
+
+**End-to-End Workflows:**
+- Test complete GitHub Actions integration
+- Verify container registry data fetching
+- Test entity page rendering with real data
+- Validate error handling with network failures
+
+**Component Integration:**
+- Test component interaction with Backstage APIs
+- Verify entity annotation parsing
+- Test navigation between related entities
+
+### Performance Considerations
+
+#### Caching Strategy
+
+**API Response Caching:**
+- GitHub Actions: 2-minute cache for workflow runs
+- Container Registry: 5-minute cache for version lists
+- Entity data: Use Backstage's built-in entity caching
+
+**Optimization Techniques:**
+- Lazy loading for large datasets
+- Pagination for workflow runs and image versions
+- Debounced refresh actions
+- Efficient re-rendering with React.memo
+
+#### Resource Usage
+
+**Memory Management:**
+- Limit cached response size
+- Clean up event listeners and timers
+- Efficient data structures for large lists
+
+**Network Optimization:**
+- Batch API calls where possible
+- Use appropriate page sizes for pagination
+- Implement request deduplication
+
+### Future Extensibility
+
+#### Registry Support
+
+**Adding New Registries:**
+```typescript
+// Implement RegistryClient interface
+class AzureContainerRegistryClient implements RegistryClient {
+  async getImageVersions(repository: string, options?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<ImageVersionsResponse> {
+    // Implementation for Azure Container Registry
+  }
+}
+
+// Update factory function
+export function createRegistryClient(registry: string, discoveryApi: DiscoveryApi): RegistryClient {
+  switch (registry) {
+    case 'ghcr.io':
+      return new GHCRClient(discoveryApi);
+    case 'docker.io':
+      return new DockerHubClient(discoveryApi);
+    case 'azurecr.io':
+      return new AzureContainerRegistryClient(discoveryApi);
+    default:
+      throw new Error(`Unsupported registry: ${registry}`);
+  }
+}
+```
+
+#### Authentication Methods
+
+**GitHub Apps Support:**
+- Extend GithubActionsApiClient to support GitHub Apps
+- Add configuration for app ID and private key
+- Implement JWT token generation and exchange
+
+**Multiple Authentication Sources:**
+- Environment variables (current)
+- Kubernetes secrets
+- External secret management systems
+- Per-repository authentication
+
+### Migration and Maintenance
+
+#### Code Organization Benefits
+
+**Maintainability:**
+- Clear separation of concerns
+- Consistent patterns across components
+- Comprehensive test coverage
+- Well-documented interfaces
+
+**Reusability:**
+- Generic utility functions
+- Configurable components
+- Standard annotation patterns
+- Modular architecture
+
+**Extensibility:**
+- Plugin-based registry support
+- Configurable authentication methods
+- Extensible UI components
+- Standard error handling patterns

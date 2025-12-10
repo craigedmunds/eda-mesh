@@ -89,7 +89,7 @@ export class GithubActionsApiClient implements GithubActionsApi {
         conclusion: r.conclusion,
       })));
       
-      return result;
+      return result.data;
     } catch (error) {
       console.error('[GithubActionsApiClient] ❌ Error fetching workflow runs:', error);
       console.error('[GithubActionsApiClient] Error details:', {
