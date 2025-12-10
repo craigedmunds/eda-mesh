@@ -8,7 +8,12 @@ organization:
 backend:
   auth:
     keys:
-      - secret: ${BACKEND_SECRET}
+      - secret: ${BACKEND_SECRET:-dev-backstage-key}
+    externalAccess:
+      - type: static
+        options:
+          token: ${BACKEND_SECRET:-dev-backstage-key}
+          subject: backstage-server
   # Used for enabling authentication, secret is shared by all backend plugins
   # See https://backstage.io/docs/auth/service-to-service-auth for
   # information on the format
@@ -26,7 +31,7 @@ backend:
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
     credentials: true
   # This is for local development only, it is not recommended to use this in production
-  # The production database configuration is stored in app-config.production.yaml
+  # The production database configuration is managed through Helm values
   database:
     client: better-sqlite3
     connection: ':memory:'
@@ -153,8 +158,8 @@ permission:
 
 # Image Factory configuration
 imageFactory:
-  gitRepo: https://github.com/craigedmunds/argocd-eda.git
-  gitBranch: main
-  imagesYamlPath: image-factory/images.yaml
+  gitRepo: ${IMAGE_FACTORY_GIT_REPO:-https://github.com/craigedmunds/argocd-eda.git}
+  gitBranch: ${IMAGE_FACTORY_GIT_BRANCH:-main}
+  imagesYamlPath: ${IMAGE_FACTORY_IMAGES_YAML_PATH:-image-factory/images.yaml}
   github:
     token: ${GITHUB_TOKEN}
