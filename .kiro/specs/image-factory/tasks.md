@@ -270,12 +270,12 @@
   - [ ] 20.4 Document backup and recovery procedures
   - [ ] 20.5 Write disaster recovery plan
 
-- [ ] 21. Backstage Self-Service Enrollment (Phase 4)
-  - [ ] 21.1 Create common package with types and entity definitions
-  - [ ] 21.2 Implement backend API for image enrollment
-  - [ ] 21.3 Build enrollment form UI in frontend
-  - [ ] 21.4 Add validation and error handling
-  - [ ] 21.5 Test complete enrollment workflow
+- [x] 21. Backstage Self-Service Enrollment (Phase 4)
+  - [x] 21.1 Create common package with types and entity definitions
+  - [x] 21.2 Implement backend API for image enrollment
+  - [x] 21.3 Build enrollment form UI in frontend
+  - [x] 21.4 Add validation and error handling
+  - [x] 21.5 Test complete enrollment workflow
   - _Requirements: 11.9, 11.10, 11.11_
 
 ## Phase 6: GitHub Extensions Modular Organization 🔧

@@ -67,4 +67,8 @@ backend.add(import('@backstage/plugin-signals-backend'));
 backend.add(import('@internal/backstage-plugin-catalog-backend-module-eda'));
 backend.add(import('@internal/backstage-plugin-catalog-backend-module-image-factory'));
 backend.add(import('@internal/backstage-plugin-image-factory-backend'));
+
+// Add the scaffolder module for image-factory actions
+backend.add(import('@internal/backstage-plugin-image-factory-backend/scaffolder'));
+
 backend.start();
