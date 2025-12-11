@@ -11,11 +11,11 @@ helmChartInflationGenerator:
     values: values.yaml
 
 resources:
+  - namespace.yaml
   - tls.yaml
   - k8s-rbac.yaml
   - configmap-catalog.yaml
   - configmap-rootlocation.yaml
-  - kyverno-github-token-sync.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

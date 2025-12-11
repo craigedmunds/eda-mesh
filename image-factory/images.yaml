@@ -30,3 +30,15 @@
     workflow: uv.yml
   rebuildDelay: 7d
   autoRebuild: true
+
+- name: e2e-test-runner
+  registry: ghcr.io
+  repository: craigedmunds/e2e-test-runner
+  source:
+    provider: github
+    repo: craigedmunds/argocd-eda
+    branch: main
+    dockerfile: apps/e2e-test-runner/Dockerfile
+    workflow: e2e-runner.yml
+  rebuildDelay: 7d
+  autoRebuild: true

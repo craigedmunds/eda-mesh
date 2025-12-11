@@ -1,0 +1,2 @@
+- I use homebrew to install packages, use that
+- If scripting is necessary in Kubernetes resources (like AnalysisTemplates), it should be in separate Python/shell files and included via ConfigMaps, not embedded inline in YAML

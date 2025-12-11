@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - argo-rollouts.yaml
   - camel-karavan.yaml
+  - central-secret-store.yaml
   - cert-manager.yaml
   - confluent-operator.yaml
   - confluent.yaml

@@ -29,53 +29,67 @@ The Image Factory provides automated container image lifecycle management with t
 
 In order to instantiate this in a new argocd cluster...
 
+## 1. Install ArgoCD
+
 Install ArgoCD (from https://argo-cd.readthedocs.io/en/latest/getting_started/):
 
-`kubectl create namespace argocd`
-
-`kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml`
-
-Get the admin password via k8s:
-
-`kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D`
-
-Or via argocd:
-
-`argocd login --core`
-
-`argocd admin initial-password -n argocd`
-
-Add github credentials for backstage authentication:
-
-`kubectl create namespace backstage`
-
-```
-kubectl -n backstage create secret generic backstage-github-auth \
-  --from-literal=GITHUB_CLIENT_ID="$GITHUB_BUILD_CLIENTID" \
-  --from-literal=GITHUB_CLIENT_SECRET="$GITHUB_BUILD_CLIENTSECRET
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
-Create the docker registry secret: 
+Get the admin password:
 
-```
-kubectl create secret docker-registry ghcr-creds \
-  --docker-server=ghcr.io \
-  --docker-username="$GITHUB_BUILD_USERNAME" \
-  --docker-password="$GITHUB_PAT_BUILDTOOLING" \
-  --docker-email="$GITHUB_BUILD_USERNAME"
+```bash
+kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
 ```
 
-```
-kubectl create secret docker-registry -n backstage ghcr-creds \
-  --docker-server=ghcr.io \
-  --docker-username="$GITHUB_BUILD_USERNAME" \
-  --docker-password="$GITHUB_PAT_BUILDTOOLING" \
-  --docker-email="$GITHUB_BUILD_USERNAME"
+Or via argocd CLI:
+
+```bash
+argocd login --core
+argocd admin initial-password -n argocd
 ```
 
-Create the seed application:
+## 2. Setup Central Secret Store
 
-`kustomize build seed | kubectl apply -f -`
+**IMPORTANT**: All secrets must be created in the central secret store. Never create secrets manually in individual namespaces.
+
+Create the central secret store and policies:
+
+```bash
+kubectl apply -k kustomize/central-secret-store/
+```
+
+### Required Secrets
+
+Create all secrets in the `central-secret-store` namespace:
+
+#### GitHub Personal Access Token
+```bash
+kubectl create secret generic github-pat \
+  --from-literal=token="$GITHUB_PAT_BUILDTOOLING" \
+  --from-literal=username="$GITHUB_BUILD_USERNAME" \
+  -n central-secret-store
+```
+
+#### GitHub OAuth Credentials
+```bash
+kubectl create secret generic github-oauth \
+  --from-literal=client-id="$GITHUB_BUILD_CLIENTID" \
+  --from-literal=client-secret="$GITHUB_BUILD_CLIENTSECRET" \
+  -n central-secret-store
+```
+
+
+
+**Note**: Secrets will be automatically distributed to target namespaces via Kyverno policies based on namespace labels.
+
+## 3. Create the seed application
+
+```bash
+kustomize build seed | kubectl apply -f -
+```
 
 Get the rabbitmq admin user & password:
 
