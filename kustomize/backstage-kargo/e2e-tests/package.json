@@ -1,0 +1,17 @@
+{
+  "name": "backstage-kargo-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for Backstage Kargo promotion pipeline",
+  "main": "kargo-promotion.test.ts",
+  "scripts": {
+    "test": "tsx kargo-promotion.test.ts",
+    "test:watch": "tsx watch kargo-promotion.test.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.6.0",
+    "@types/node": "^20.10.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

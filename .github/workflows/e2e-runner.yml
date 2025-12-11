@@ -1,0 +1,37 @@
+name: Build and Push E2E Runner Image
+
+on:
+  push:
+    branches:
+      - main
+      - feature/backstage-events
+    paths:
+      - 'apps/e2e-test-runner/**'
+      - '.github/workflows/e2e-runner.yml'
+  
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  build-and-push:
+    uses: ./.github/workflows/reusable-docker-build.yml
+    with:
+      app_name: 'E2E Runner'
+      image_name: 'craigedmunds/e2e-test-runner'
+      dockerfile: 'apps/e2e-test-runner/Dockerfile'
+      context: 'apps/e2e-test-runner'
+      version_file: 'apps/e2e-test-runner/VERSION'
+      version_type: 'file'
+      # No pre-build script needed for E2E Runner
+      # Pass through version_bump input if present
+      version_bump: ${{ inputs.version_bump || 'patch' }}
+    secrets: inherit
