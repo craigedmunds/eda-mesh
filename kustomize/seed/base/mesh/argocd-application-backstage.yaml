@@ -6,16 +6,14 @@ metadata:
   labels:
     repo: argocd-eda
     environment: local
-    branch-strategy: multisource
+  annotations:
+    kargo.akuity.io/authorized-stage: backstage-kargo:local
 spec:
   project: eventing
-  sources:
-    - repoURL: https://github.com/craigedmunds/argocd-eda.git
-      targetRevision: HEAD
-      path: kustomize/backstage/overlays/local
-    - repoURL: https://github.com/craigedmunds/argocd-eda.git
-      targetRevision: HEAD
-      path: kustomize/backstage/kargo
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    targetRevision: feature/backstage-events
+    path: kustomize/backstage/overlays/local
       
   destination:
     server: https://kubernetes.default.svc

@@ -1,0 +1,5 @@
+# Requirements for the post-deployment E2E test script
+# No external dependencies required for main script - uses only Python standard library
+
+# Testing dependencies
+hypothesis>=6.0.0  # For property-based testing

@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - argocd-application-backstage.yaml
+  - argocd-application-backstage-kargo.yaml
   - argocd-application-camel-k-mesh.yaml
