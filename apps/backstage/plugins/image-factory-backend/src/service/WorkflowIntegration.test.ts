@@ -220,7 +220,7 @@ describe('Enrollment Workflow Integration', () => {
         registry: '',
         repository: 'INVALID/REPO',
         source: {
-          provider: 'invalid-provider',
+          provider: 'invalid-provider' as 'github' | 'gitlab',
           repo: '',
           branch: '',
           dockerfile: '',
@@ -228,7 +228,7 @@ describe('Enrollment Workflow Integration', () => {
         },
         rebuildPolicy: {
           delay: 'invalid-delay',
-          autoRebuild: 'not-a-boolean',
+          autoRebuild: 'not-a-boolean' as any,
         },
       };
 
@@ -276,7 +276,7 @@ describe('Enrollment Workflow Integration', () => {
         ...validEnrollmentData,
         source: {
           ...validEnrollmentData.source,
-          provider: 'bitbucket' as any,
+          provider: 'bitbucket' as 'github' | 'gitlab',
         },
       };
 

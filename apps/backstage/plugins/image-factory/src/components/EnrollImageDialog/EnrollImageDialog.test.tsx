@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TestApiProvider } from '@backstage/test-utils';
 import { imageFactoryApiRef } from '../../api';
