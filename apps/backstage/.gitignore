@@ -54,6 +54,7 @@ e2e-test-report/
 
 # E2E test screenshots
 plugins/image-factory/e2e-screenshots/
+plugins/image-factory/.qe2e-screenshots/
 
 # Cache
 .cache/

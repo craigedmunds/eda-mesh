@@ -6,7 +6,6 @@
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { ConfigReader } from '@backstage/config';
 import { EnrollmentService } from './EnrollmentService';
-import { GitHubService } from './GitHubService';
 import { validateEnrollmentData, EnrollmentData } from '@internal/backstage-plugin-image-factory-common';
 
 // Mock fetch for GitHub API calls

@@ -1,5 +1,5 @@
 import { createBackendModule, coreServices } from '@backstage/backend-plugin-api';
-import { scaffolderActionsExtensionPoint } from '@backstage/plugin-scaffolder-node';
+import { scaffolderActionsExtensionPoint } from '@backstage/plugin-scaffolder-node/alpha';
 import { createEnrollImageAction } from './enrollAction';
 
 /**
@@ -24,7 +24,7 @@ export const imageFactoryScaffolderModule = createBackendModule({
           );
           logger.info('Image-factory scaffolder actions registered successfully');
         } catch (error) {
-          logger.error('Failed to register scaffolder actions', error);
+          logger.error('Failed to register scaffolder actions', error as Error);
           throw error;
         }
       },

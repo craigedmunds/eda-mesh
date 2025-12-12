@@ -37,7 +37,7 @@ on:
         required: false
         type: string
         default: 'ghcr.io'
-    inputs:
+
       # We duplicate version_bump input here so it can be passed from the caller workflow_dispatch
       version_bump:
         description: 'Version bump type'
@@ -218,13 +218,22 @@ jobs:
           NEW_VERSION="${{ steps.new_version.outputs.version }}"
           echo "New image available: ${{ inputs.registry }}/${{ inputs.image_name }}:$NEW_VERSION"
 
+      - name: Generate Release Tag
+        id: release_tag
+        run: |
+          # Sanitize app_name for use in git tag (lowercase, replace spaces/special chars with hyphens)
+          SAFE_NAME=$(echo "${{ inputs.app_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
+          TAG="${SAFE_NAME}-v${{ steps.new_version.outputs.version }}"
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "Generated tag: $TAG"
+
       - name: Create GitHub Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true # Don't fail if release already exists (race condition or re-run)
         with:
-          tag_name: ${{ inputs.app_name }}-v${{ steps.new_version.outputs.version }}
+          tag_name: ${{ steps.release_tag.outputs.tag_name }}
           release_name: ${{ inputs.app_name }} v${{ steps.new_version.outputs.version }}
           body: |
              ## ${{ inputs.app_name }} v${{ steps.new_version.outputs.version }}
