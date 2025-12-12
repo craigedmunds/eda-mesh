@@ -6,4 +6,4 @@ resources:
 # Image will be updated by Kargo
 images:
 - name: ghcr.io/craigedmunds/backstage
-  newTag: 0.7.2 # Kargo will update this
+  newTag: 0.7.3 # Kargo will update this
