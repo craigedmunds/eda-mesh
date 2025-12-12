@@ -17,33 +17,123 @@ export function createEnrollImageAction(options: {
     id: 'image-factory:enroll',
     description: 'Enrolls a container image in the Image Factory system for automated dependency tracking and rebuilds',
     schema: {
-      input: (zod) => zod.object({
-        name: zod.string().describe('Unique identifier for the image'),
-        registry: zod.string().describe('Registry where the image is stored'),
-        repository: zod.string().describe('Repository path in registry'),
-        source: zod.object({
-          provider: zod.enum(['github', 'gitlab']).describe('Source provider'),
-          repo: zod.string().describe('Source repository'),
-          branch: zod.string().describe('Git branch'),
-          dockerfile: zod.string().describe('Dockerfile path'),
-          workflow: zod.string().describe('Build workflow'),
-        }),
-        rebuildPolicy: zod.object({
-          delay: zod.string().describe('Rebuild delay'),
-          autoRebuild: zod.boolean().describe('Auto-rebuild enabled'),
-        }),
-        metadata: zod.object({
-          title: zod.string().optional().describe('Display title'),
-          description: zod.string().optional().describe('Description'),
-          owner: zod.string().optional().describe('Owner'),
-          system: zod.string().optional().describe('System'),
-          lifecycle: zod.string().optional().describe('Lifecycle'),
-        }).optional(),
-      }),
-      output: (zod) => zod.object({
-        pullRequestUrl: zod.string().describe('URL of the created pull request'),
-        registryUrl: zod.string().describe('URL to the container registry page'),
-      }),
+      input: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            title: 'Image Name',
+            description: 'Unique identifier for the image'
+          },
+          registry: {
+            type: 'string',
+            title: 'Registry',
+            description: 'Registry where the image is stored'
+          },
+          repository: {
+            type: 'string',
+            title: 'Repository',
+            description: 'Repository path in registry'
+          },
+          source: {
+            type: 'object',
+            title: 'Source',
+            properties: {
+              provider: {
+                type: 'string',
+                enum: ['github', 'gitlab'],
+                title: 'Provider',
+                description: 'Source provider'
+              },
+              repo: {
+                type: 'string',
+                title: 'Repository',
+                description: 'Source repository'
+              },
+              branch: {
+                type: 'string',
+                title: 'Branch',
+                description: 'Git branch'
+              },
+              dockerfile: {
+                type: 'string',
+                title: 'Dockerfile',
+                description: 'Dockerfile path'
+              },
+              workflow: {
+                type: 'string',
+                title: 'Workflow',
+                description: 'Build workflow'
+              }
+            },
+            required: ['provider', 'repo', 'branch', 'dockerfile', 'workflow']
+          },
+          rebuildPolicy: {
+            type: 'object',
+            title: 'Rebuild Policy',
+            properties: {
+              delay: {
+                type: 'string',
+                title: 'Delay',
+                description: 'Rebuild delay'
+              },
+              autoRebuild: {
+                type: 'boolean',
+                title: 'Auto Rebuild',
+                description: 'Auto-rebuild enabled'
+              }
+            },
+            required: ['delay', 'autoRebuild']
+          },
+          metadata: {
+            type: 'object',
+            title: 'Metadata',
+            properties: {
+              title: {
+                type: 'string',
+                title: 'Title',
+                description: 'Display title'
+              },
+              description: {
+                type: 'string',
+                title: 'Description',
+                description: 'Description'
+              },
+              owner: {
+                type: 'string',
+                title: 'Owner',
+                description: 'Owner'
+              },
+              system: {
+                type: 'string',
+                title: 'System',
+                description: 'System'
+              },
+              lifecycle: {
+                type: 'string',
+                title: 'Lifecycle',
+                description: 'Lifecycle'
+              }
+            }
+          }
+        },
+        required: ['name', 'registry', 'repository', 'source', 'rebuildPolicy']
+      },
+      output: {
+        type: 'object',
+        properties: {
+          pullRequestUrl: {
+            type: 'string',
+            title: 'Pull Request URL',
+            description: 'URL of the created pull request'
+          },
+          registryUrl: {
+            type: 'string',
+            title: 'Registry URL',
+            description: 'URL to the container registry page'
+          }
+        }
+      }
     },
     async handler(ctx) {
       const {
@@ -59,12 +149,12 @@ export function createEnrollImageAction(options: {
 
       // Create enrollment data
       const enrollmentData: EnrollmentData = {
-        name,
-        registry,
-        repository,
-        source,
-        rebuildPolicy,
-        metadata,
+        name: name as string,
+        registry: registry as string,
+        repository: repository as string,
+        source: source as EnrollmentData['source'],
+        rebuildPolicy: rebuildPolicy as EnrollmentData['rebuildPolicy'],
+        metadata: metadata as EnrollmentData['metadata'],
       };
 
       try {
@@ -74,13 +164,15 @@ export function createEnrollImageAction(options: {
 
         // Generate registry URL based on registry type
         let registryUrl: string;
-        if (registry === 'ghcr.io') {
-          const repoParts = repository.split('/');
+        const registryStr = registry as string;
+        const repositoryStr = repository as string;
+        if (registryStr === 'ghcr.io') {
+          const repoParts = repositoryStr.split('/');
           registryUrl = `https://github.com/orgs/${repoParts[0]}/packages/container/package/${repoParts[1]}`;
-        } else if (registry === 'docker.io') {
-          registryUrl = `https://hub.docker.com/r/${repository}`;
+        } else if (registryStr === 'docker.io') {
+          registryUrl = `https://hub.docker.com/r/${repositoryStr}`;
         } else {
-          registryUrl = `https://${registry}/${repository}`;
+          registryUrl = `https://${registryStr}/${repositoryStr}`;
         }
 
         ctx.logger.info(`Successfully enrolled image: ${name}`, {

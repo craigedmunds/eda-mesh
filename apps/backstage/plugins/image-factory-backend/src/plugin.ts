@@ -3,7 +3,6 @@ import {
   createBackendPlugin,
 } from '@backstage/backend-plugin-api';
 import { createRouter } from './service/router';
-import { createEnrollImageAction } from './scaffolder/enrollAction';
 
 /**
  * Image Factory backend plugin

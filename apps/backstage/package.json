@@ -18,6 +18,8 @@
     "test": "backstage-cli repo test",
     "test:all": "backstage-cli repo test --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:post-deployment": "python3 scripts/post_deployment_e2e.py",
+    "test:e2e:post-deployment:js": "node scripts/post-deployment-e2e.js",
     "test:eda": "yarn workspace @internal/backstage-plugin-catalog-backend-module-eda test --watch=false",
     "fix": "backstage-cli repo fix",
     "lint": "backstage-cli repo lint --since origin/main",
@@ -35,6 +37,7 @@
     "@backstage/cli": "^0.34.5",
     "@backstage/e2e-test-utils": "^0.1.1",
     "@playwright/test": "^1.32.3",
+    "fast-check": "4.3.0",
     "node-gyp": "^10.0.0",
     "prettier": "^2.3.2",
     "typescript": "~5.8.0"

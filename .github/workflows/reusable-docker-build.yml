@@ -37,7 +37,7 @@ on:
         required: false
         type: string
         default: 'ghcr.io'
-    inputs:
+
       # We duplicate version_bump input here so it can be passed from the caller workflow_dispatch
       version_bump:
         description: 'Version bump type'
