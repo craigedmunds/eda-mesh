@@ -197,14 +197,42 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore(${{ inputs.app_name }}): bump version to $NEW_VERSION [skip ci]"
+          fi
+
+          # Clean up any untracked/unstaged files (like package-lock.json or build artifacts) that might block rebase
+          git reset --hard HEAD
+          
+          # Retry loop to handle race conditions with parallel builds
+          MAX_RETRIES=5
+          count=0
+          success=false
+          
+          while [ $count -lt $MAX_RETRIES ]; do
+            echo "Attempt $((count+1)) to push changes..."
             
-            git pull --rebase origin ${{ github.ref_name }} || {
-              echo "Failed to rebase, will try force push"
-              git push --force-with-lease
-              exit 0
-            }
+            # Pull latest changes with rebase
+            if git pull --rebase origin ${{ github.ref_name }}; then
+              # Push changes
+              if git push; then
+                success=true
+                echo "Successfully pushed changes"
+                break
+              else
+                echo "Push failed, remote probably moved. Retrying..."
+              fi
+            else
+              echo "Rebase failed. Conflicting changes? Retrying cleanup..."
+              git rebase --abort || true
+              git reset --hard HEAD
+            fi
             
-            git push
+            count=$((count + 1))
+            sleep $(($count * 2)) # Exponential backoff
+          done
+          
+          if [ "$success" = "false" ]; then
+            echo "Failed to push after $MAX_RETRIES attempts"
+            exit 1
           fi
 
       - name: Push Docker image

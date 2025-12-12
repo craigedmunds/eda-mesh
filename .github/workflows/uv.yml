@@ -8,6 +8,7 @@ on:
     paths:
       - 'apps/uv/**'
       - '.github/workflows/uv.yml'
+      - '.github/workflows/reusable-docker-build.yml'
   
   workflow_dispatch:
     inputs:

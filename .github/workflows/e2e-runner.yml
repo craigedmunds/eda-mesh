@@ -8,6 +8,7 @@ on:
     paths:
       - 'apps/e2e-test-runner/**'
       - '.github/workflows/e2e-runner.yml'
+      - '.github/workflows/reusable-docker-build.yml'
   
   workflow_dispatch:
     inputs:
