@@ -6,11 +6,11 @@ resources:
   - camel-karavan.yaml
   - central-secret-store.yaml
   - cert-manager.yaml
-  - confluent-operator.yaml
-  - confluent.yaml
+  # - confluent-operator.yaml
+  # - confluent.yaml
   # - grafana.yaml
   - kargo.yaml
   - kyverno.yaml
   - prometheus.yaml
   - rabbitmq.yaml
-  - verdaccio.yaml
+  # - verdaccio.yaml
