@@ -5,6 +5,7 @@ namespace: central-secret-store
 
 resources:
   - namespace.yaml
+  - kyverno-rbac.yaml
   - kyverno-policies.yaml
 
 # Secrets are created manually - never committed to Git
