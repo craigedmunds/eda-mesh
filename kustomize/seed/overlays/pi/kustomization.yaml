@@ -8,7 +8,7 @@ configMapGenerator:
   - name: argocd-branch-targetrevision
     behavior: add
     literals:
-      - targetRevision=feature/backstage-events
+      - targetRevision=feature/pi
 
 generatorOptions:
   disableNameSuffixHash: true
