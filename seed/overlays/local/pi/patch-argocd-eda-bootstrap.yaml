@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eda-bootstrap
+spec:
+
+  source:
+    
+    targetRevision: feature/backstage-events
+    path: kustomize/seed/overlays/pi
