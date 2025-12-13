@@ -6,5 +6,5 @@ spec:
 
   source:
     
-    targetRevision: feature/backstage-events
+    targetRevision: feature/pi
     path: kustomize/seed/overlays/pi

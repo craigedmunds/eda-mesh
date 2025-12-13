@@ -18,6 +18,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cert-manager
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        secrets/cloudflare-api-token: "true"
     syncOptions:
       - CreateNamespace=true
     automated:

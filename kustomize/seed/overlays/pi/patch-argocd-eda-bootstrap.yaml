@@ -7,5 +7,5 @@ spec:
   source:
     
     # Set the eda project to use a feature branch
-    targetRevision: feature/backstage-events
-    path: kustomize/mesh/overlays/craig
+    targetRevision: feature/pi
+    path: kustomize/seed/overlays/pi

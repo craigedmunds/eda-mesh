@@ -1,8 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - ../../../cluster-config
   - ../../../base
   - argocd-projects.yaml
+  - letsencrypt-issuer.yaml
 
 components:
   - ../../../../kustomize/_common/components/argocd-branch-targetrevision
@@ -20,6 +22,12 @@ patches:
       kind: Application
       name: eda-bootstrap
    path: patch-argocd-eda-bootstrap.yaml
+ - target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: argocd-server-ingress
+   path: patch-argocd-ingress.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

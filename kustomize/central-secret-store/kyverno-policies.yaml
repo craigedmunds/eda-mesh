@@ -144,3 +144,50 @@ spec:
           stringData:
             GITHUB_CLIENT_ID: "{{ sourceSecret.\"client-id\" | base64_decode(@) }}"
             GITHUB_CLIENT_SECRET: "{{ sourceSecret.\"client-secret\" | base64_decode(@) }}"
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sync-cloudflare-api-token
+  annotations:
+    policies.kyverno.io/title: Sync Cloudflare API Token
+    policies.kyverno.io/category: Secret Management
+    policies.kyverno.io/description: Clones Cloudflare API token from central-secret-store to namespaces that need it
+spec:
+  admission: true
+  background: true
+  rules:
+    - name: clone-cloudflare-api-token
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              names:
+                - "*"
+      preconditions:
+        all:
+          - key: "{{ request.object.metadata.labels.\"secrets/cloudflare-api-token\" || '' }}"
+            operator: Equals
+            value: "true"
+      context:
+        - name: sourceSecret
+          apiCall:
+            urlPath: "/api/v1/namespaces/central-secret-store/secrets/cloudflare-api-token"
+            jmesPath: "data"
+      generate:
+        apiVersion: v1
+        kind: Secret
+        name: cloudflare-api-token
+        namespace: "{{ request.object.metadata.name }}"
+        synchronize: true
+        data:
+          type: Opaque
+          metadata:
+            labels:
+              managed-by: kyverno
+              source: central-secret-store
+              secret-type: cloudflare-api-token
+          data:
+            api-token: "{{ sourceSecret.\"api-token\" }}"
