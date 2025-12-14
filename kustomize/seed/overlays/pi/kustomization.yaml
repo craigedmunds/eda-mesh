@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
   - ../../base/supporting-apps
   # - ../../base/mesh
+  - argocd-ingress.yaml
+  - traefik-tls-store.yaml
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
@@ -15,7 +17,7 @@ generatorOptions:
 
 components:
   - ../../../_common/components/argocd-branch-targetrevision
-  
+
 patches:
  - target:
       group: argoproj.io

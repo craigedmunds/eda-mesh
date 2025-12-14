@@ -1,3 +1,6 @@
 .temp
 .DS_Store
 .backstage-e2e-artifacts
+
+__pycache__
+node_modules
