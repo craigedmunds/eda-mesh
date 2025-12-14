@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - argo-rollouts.yaml
+  # - argocd-ingress.yaml  # Removed - using IngressRoute in overlays instead
   - camel-karavan.yaml
   - central-secret-store.yaml
   - cert-manager.yaml

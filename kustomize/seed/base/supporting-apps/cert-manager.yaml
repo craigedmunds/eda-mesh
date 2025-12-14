@@ -13,6 +13,19 @@ spec:
       parameters:
         - name: crds.enabled
           value: 'true'
+      values: |
+        # Configure cert-manager to use external DNS servers for SOA record resolution
+        podDnsPolicy: "None"
+        podDnsConfig:
+          nameservers:
+            - "8.8.8.8"
+            - "1.1.1.1"
+          searches:
+            - "ctoaas.co"
+          options:
+            - name: ndots
+              value: "2"
+            - name: edns0
 
   destination:
     server: https://kubernetes.default.svc
