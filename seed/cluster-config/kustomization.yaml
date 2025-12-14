@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - argocd-config-map.yaml
+  - argocd-cmd-params-cm.yaml
   - argocd-ingress.yaml

@@ -13,15 +13,21 @@ configMapGenerator:
   - name: argocd-branch-targetrevision
     behavior: add
     literals:
-      - targetRevision=feature/backstage-events
+      - targetRevision=feature/pi
 
 patches:
  - target:
       group: argoproj.io
       version: v1alpha1
       kind: Application
-      name: eda-bootstrap
-   path: patch-argocd-eda-bootstrap.yaml
+      name: kustomize-seed
+   path: patch-kustomize-seed-application.yaml
+ - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Application
+      name: seed
+   path: patch-seed-application.yaml
  - target:
       group: networking.k8s.io
       version: v1

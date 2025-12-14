@@ -4,7 +4,7 @@ metadata:
   name: verdaccio
   namespace: argocd
 spec:
-  project: eventing
+  project: sdlc
   source:
     repoURL: https://charts.verdaccio.org
     chart: verdaccio

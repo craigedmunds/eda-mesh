@@ -1,20 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: image-factory
+  name: kustomize-seed
   namespace: argocd
+  labels:
+    repo: argocd-eda
 spec:
-  project: sdlc
+
+  project: eventing
   source:
-    repoURL: https://github.com/craigedmunds/argocd-eda.git
-    path: cdk8s/image-factory/dist
+    repoURL: https://github.com/craigedmunds/argocd-eda
+    path: kustomize/seed
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc
-    namespace: image-factory
+    namespace: argocd
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
-    automated:
-      prune: true
-      selfHeal: true
+

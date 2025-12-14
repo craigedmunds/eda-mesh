@@ -1,11 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: eda-bootstrap
+  name: seed
 spec:
 
   source:
     
-    # Set the eda project to use a feature branch
     targetRevision: feature/pi
-    path: kustomize/seed/overlays/pi
+    path: seed/overlays/local/pi
