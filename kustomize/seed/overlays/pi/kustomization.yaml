@@ -3,7 +3,8 @@ kind: Kustomization
 resources:
   - ../../base/supporting-apps
   # - ../../base/mesh
-  - argocd-ingress.yaml
+  # - argocd-ingress-base.yaml
+
   - traefik-tls-store.yaml
 
 configMapGenerator:
@@ -24,4 +25,10 @@ patches:
       version: v1alpha1
       kind: Application
       name: camel-k-mesh
-   path: patch-argocd-eda-bootstrap.yaml
+   path: patch-camel-k-mesh.yaml
+#  - target:
+#       group: networking.k8s.io
+#       version: v1
+#       kind: Ingress
+#       name: argocd-server-ingress
+#    path: patch-argocd-ingress.yaml

@@ -4,7 +4,7 @@ metadata:
   name: kargo
   namespace: argocd
 spec:
-  project: eventing
+  project: sdlc
   source:
     repoURL: oci://ghcr.io/akuity/kargo-charts/kargo
     targetRevision: 1.8.4
@@ -87,5 +87,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kargo
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        secrets/kargo-admin-credentials: "true"
     syncOptions:
       - CreateNamespace=true

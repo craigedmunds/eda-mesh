@@ -4,7 +4,7 @@ metadata:
   name: cert-manager
   namespace: argocd
 spec:
-  project: default
+  project: sdlc
   source:
     repoURL: oci://quay.io/jetstack/charts/cert-manager
     targetRevision: v1.19.1
