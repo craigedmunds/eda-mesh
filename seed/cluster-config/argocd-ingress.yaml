@@ -15,12 +15,11 @@ metadata:
 
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
-    # traefik.ingress.kubernetes.io/service.serversscheme: https
-    # traefik.ingress.kubernetes.io/service.serverstransport: argocd-server-transport@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
-  - host: argocd.127.0.0.1.nip.io
+  # This is replaced by the correct config by the overlay
+  - host: argocd
     http:
       paths:
       - path: /
