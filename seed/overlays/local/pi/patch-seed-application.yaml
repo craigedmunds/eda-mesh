@@ -1,0 +1,10 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seed
+spec:
+
+  source:
+    
+    targetRevision: feature/pi
+    path: seed/overlays/local/pi

@@ -29,14 +29,18 @@ The Image Factory provides automated container image lifecycle management with t
 
 In order to instantiate this in a new argocd cluster...
 
-## 1. Install ArgoCD
+## 1. Install ArgoCD and Seed
 
-Install ArgoCD (from https://argo-cd.readthedocs.io/en/latest/getting_started/):
+Install ArgoCD and create the seed application:
 
 ```bash
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kustomize build seed/overlays/local/pi | kubectl apply -f -
 ```
+
+This will:
+- Create the argocd namespace with proper secret management labels
+- Install ArgoCD from the official manifests
+- Create the eda-bootstrap application
 
 Get the admin password:
 
@@ -81,15 +85,18 @@ kubectl create secret generic github-oauth \
   -n central-secret-store
 ```
 
+#### Cloudflare API Token (for cert-manager DNS challenges)
+```bash
+kubectl create secret generic cloudflare-api-token \
+  --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
+  -n central-secret-store
+```
+
 
 
 **Note**: Secrets will be automatically distributed to target namespaces via Kyverno policies based on namespace labels.
 
-## 3. Create the seed application
-
-```bash
-kustomize build seed | kubectl apply -f -
-```
+## 3. Get ArgoCD Admin Password
 
 Get the rabbitmq admin user & password:
 
