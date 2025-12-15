@@ -1,0 +1,48 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sync-gh-docker-registry
+  annotations:
+    policies.kyverno.io/title: Sync GitHub Docker Registry Credentials
+    policies.kyverno.io/category: Secret Management
+    policies.kyverno.io/description: Creates GitHub Container Registry docker-registry secrets from GitHub PAT
+spec:
+  admission: true
+  background: true
+  rules:
+    - name: create-ghcr-docker-registry-secret
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              names:
+                - "*"
+      preconditions:
+        all:
+          - key: "{{ request.object.metadata.labels.\"secrets/gh-docker-registry\" || '' }}"
+            operator: Equals
+            value: "true"
+      context:
+        - name: sourceSecret
+          apiCall:
+            urlPath: "/api/v1/namespaces/central-secret-store/secrets/github-pat"
+            jmesPath: "data"
+      generate:
+        kind: Secret
+        apiVersion: v1
+        name: ghcr-creds
+        namespace: "{{ request.object.metadata.name }}"
+        synchronize: true
+        data:
+          type: Opaque
+          metadata:
+            labels:
+              managed-by: kyverno
+              source: central-secret-store
+              secret-type: gh-docker-registry
+              kargo.akuity.io/cred-type: image
+          stringData:
+            username: "{{ sourceSecret.username | base64_decode(@) }}"
+            password: "{{ sourceSecret.token | base64_decode(@) }}"
+            repoURL: "ghcr.io/craigedmunds/backstage"
