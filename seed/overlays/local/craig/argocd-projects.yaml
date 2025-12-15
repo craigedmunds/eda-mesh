@@ -1,6 +1,31 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
+  name: sdlc
+  namespace: argocd
+spec:
+  sourceRepos:
+    - https://github.com/craigedmunds/argocd-eda.git
+    - https://charts.bitnami.com/bitnami
+    - https://backstage.github.io/charts
+    - oci://ghcr.io/akuity/kargo-charts/kargo
+    - https://argoproj.github.io/argo-helm 
+    - oci://quay.io/jetstack/charts/cert-manager
+    - https://kyverno.github.io/kyverno/
+  sourceNamespaces: []
+  destinations:
+  - namespace: '*'
+    server: '*'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  # namespaceResourceBlacklist:
+  # - group: '*'
+  #   kind: '*'
+---  
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
   name: eventing
   namespace: argocd
 spec:

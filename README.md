@@ -131,7 +131,7 @@ signing_key=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
 kubectl create secret generic kargo-admin-credentials \
   --from-literal=passwordHash="$hashed_pass" \
   --from-literal=tokenSigningKey="$signing_key" \
-  -n argocd
+  -n central-secret-store
 
 
 # Backstage

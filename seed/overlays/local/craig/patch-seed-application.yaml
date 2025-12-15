@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kustomize-seed
+  name: seed
 spec:
 
   source:
     
     targetRevision: feature/backstage-events
-    path: kustomize/seed/overlays/pi
+    path: seed/overlays/local/craig
