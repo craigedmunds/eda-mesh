@@ -6,7 +6,11 @@ namespace: central-secret-store
 resources:
   - namespace.yaml
   - kyverno-rbac.yaml
-  - kyverno-policies.yaml
+  - policies/sync-github-docker-registry.yaml
+  - policies/sync-github-git-credentials.yaml
+  - policies/sync-github-oauth-credentials.yaml
+  - policies/sync-cloudflare-api-token.yaml
+  - policies/sync-kargo-admin-credentials.yaml
 
 # Secrets are created manually - never committed to Git
 # See README.md for secret creation instructions
