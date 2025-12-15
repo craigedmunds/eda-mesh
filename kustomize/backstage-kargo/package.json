@@ -1,0 +1,14 @@
+{
+  "name": "backstage-kargo-e2e",
+  "version": "1.0.0",
+  "description": "E2E testing utilities for Backstage Kargo verification",
+  "private": true,
+  "scripts": {
+    "test:docker": "python3 scripts/local_e2e.py --docker",
+    "test:docker:verbose": "python3 scripts/local_e2e.py --docker --verbose",
+    "test:docker:shell": "python3 scripts/local_e2e.py --docker --shell",
+    "test:local": "python3 scripts/local_e2e.py",
+    "test:local:verbose": "python3 scripts/local_e2e.py --verbose",
+    "test:docker:basic": "python3 scripts/local_e2e.py --docker --url https://backstage.127.0.0.1.nip.io"
+  }
+}

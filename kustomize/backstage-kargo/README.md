@@ -92,6 +92,40 @@ Lightweight verification using the Node.js automation script
 
 ## Usage
 
+### Local E2E Testing
+
+For local development and testing, convenient npm scripts are available:
+
+```bash
+# Run E2E tests in Docker (recommended - matches Kargo environment)
+npm run test:docker
+
+# Run E2E tests in Docker with verbose output
+npm run test:docker:verbose
+
+# Open interactive shell in Docker container for debugging
+npm run test:docker:shell
+
+# Run E2E tests locally (requires local Python environment)
+npm run test:local
+
+# Run E2E tests locally with verbose output
+npm run test:local:verbose
+```
+
+**Docker vs Local Testing:**
+- **Docker** (`test:docker`): Uses the same container image as Kargo verification, ensuring identical environment
+- **Local** (`test:local`): Runs directly on your machine, faster but may have environment differences
+
+**Custom URL Testing:**
+```bash
+# Test against a different URL
+npm run test:docker -- --url https://my-backstage.example.com
+
+# Get help for all available options
+npm run test:docker -- --help
+```
+
 ### Manual Promotion
 ```bash
 # Trigger promotion via Kargo CLI

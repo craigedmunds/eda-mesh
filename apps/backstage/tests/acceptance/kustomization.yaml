@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+configMapGenerator:
+  - name: backstage-acceptance-tests
+    files:
+      - package.json
+      - playwright.config.ts
+      - events.spec.ts
+      - tsconfig.json
+    options:
+      labels:
+        app: backstage-e2e
+        component: acceptance-tests
+      disableNameSuffixHash: true

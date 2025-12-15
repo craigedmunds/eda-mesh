@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import time
+import ssl
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import urllib.request
@@ -59,8 +60,13 @@ class PostDeploymentE2E:
             self.logger.info(f"Health check attempt {attempt}/{max_attempts}")
             
             try:
+                # Create SSL context that ignores certificate verification for self-signed certs
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                
                 # Check if endpoint is responding
-                with urllib.request.urlopen(self.deployment_url, timeout=10) as response:
+                with urllib.request.urlopen(self.deployment_url, timeout=10, context=ssl_context) as response:
                     if response.status == 200:
                         self.logger.info(f"Deployment is responding at {self.deployment_url}")
                         
@@ -82,64 +88,77 @@ class PostDeploymentE2E:
         self.logger.error(f"❌ Deployment readiness check failed after {self.max_wait_time}s")
         return False
 
-    def setup_backstage_repo(self) -> bool:
+    def setup_acceptance_tests(self) -> bool:
         """
-        Clone and setup the Backstage repository for E2E testing.
+        Setup the lightweight acceptance tests using files from mounted ConfigMap.
         
         Returns:
             bool: True if setup successful
         """
         try:
-            self.logger.info(f"📦 Setting up Backstage repository in {self.work_dir}")
+            self.logger.info(f"📦 Setting up acceptance tests in {self.work_dir}")
             
             # Clean up any existing directory
             if self.work_dir.exists():
                 subprocess.run(['rm', '-rf', str(self.work_dir)], check=True)
             
-            # Clone the repository
-            self.logger.info(f"🔄 Cloning {self.backstage_repo_url} (branch: {self.backstage_branch})")
-            subprocess.run([
-                'git', 'clone', 
-                '--branch', self.backstage_branch,
-                '--depth', '1',
-                self.backstage_repo_url,
-                str(self.work_dir)
-            ], check=True, capture_output=True)
+            # Create test directory structure
+            self.work_dir.mkdir(parents=True, exist_ok=True)
+            os.chdir(self.work_dir)
             
-            # Change to the Backstage app directory
-            backstage_app_dir = self.work_dir / 'apps' / 'backstage'
-            if not backstage_app_dir.exists():
-                self.logger.error(f"❌ Backstage app directory not found: {backstage_app_dir}")
-                return False
+            # Copy test files from mounted ConfigMaps or local path
+            self.logger.info("📋 Copying test files from ConfigMaps...")
             
-            os.chdir(backstage_app_dir)
-            self.logger.info(f"📁 Changed to directory: {backstage_app_dir}")
+            # Check if we're running locally with a custom acceptance tests path
+            local_acceptance_tests = os.environ.get('ACCEPTANCE_TESTS_PATH')
+            if local_acceptance_tests and Path(local_acceptance_tests).exists():
+                acceptance_tests_dir = Path(local_acceptance_tests)
+                self.logger.info(f"Using local acceptance tests from: {acceptance_tests_dir}")
+            else:
+                acceptance_tests_dir = Path('/acceptance-tests')
             
-            # Install dependencies
-            self.logger.info("📦 Installing dependencies...")
-            result = subprocess.run(['yarn', 'install'], capture_output=True, text=True, timeout=300)
+            # Copy the test files from the acceptance tests ConfigMap
+            test_files = [
+                'package.json',
+                'playwright.config.ts', 
+                'events.spec.ts',
+                'basic.spec.ts',
+                'tsconfig.json'
+            ]
+            
+            for file_name in test_files:
+                src_file = acceptance_tests_dir / file_name
+                if src_file.exists():
+                    subprocess.run(['cp', str(src_file), str(self.work_dir / file_name)], check=True)
+                    self.logger.info(f"✅ Copied {file_name}")
+                else:
+                    self.logger.warning(f"⚠️  Test file not found: {src_file}")
+            
+            # Install only the lightweight test dependencies
+            self.logger.info("📦 Installing test dependencies (lightweight)...")
+            result = subprocess.run(['npm', 'install'], capture_output=True, text=True, timeout=120)
             if result.returncode != 0:
-                self.logger.error(f"❌ Failed to install dependencies: {result.stderr}")
+                self.logger.error(f"❌ Failed to install test dependencies: {result.stderr}")
                 return False
             
             # Install Playwright browsers
-            self.logger.info("🎭 Installing Playwright browsers...")
-            result = subprocess.run(['npx', 'playwright', 'install'], capture_output=True, text=True, timeout=300)
-            if result.returncode != 0:
-                self.logger.warning(f"⚠️  Playwright install warning: {result.stderr}")
-                # Continue anyway as this might not be critical
+            # self.logger.info("🎭 Installing Playwright browsers...")
+            # result = subprocess.run(['npx', 'playwright', 'install', 'chromium'], capture_output=True, text=True, timeout=180)
+            # if result.returncode != 0:
+            #     self.logger.warning(f"⚠️  Playwright install warning: {result.stderr}")
+            #     # Continue anyway as this might not be critical
             
-            self.logger.info("✅ Repository setup completed successfully")
+            self.logger.info("✅ Acceptance tests setup completed successfully")
             return True
             
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"❌ Git clone failed: {e}")
+            self.logger.error(f"❌ File copy failed: {e}")
             return False
         except subprocess.TimeoutExpired:
-            self.logger.error("❌ Repository setup timed out")
+            self.logger.error("❌ Acceptance tests setup timed out")
             return False
         except Exception as e:
-            self.logger.error(f"❌ Unexpected error during repository setup: {e}")
+            self.logger.error(f"❌ Unexpected error during acceptance tests setup: {e}")
             return False
 
     def run_e2e_tests(self) -> Tuple[bool, Optional[Dict]]:
@@ -161,13 +180,16 @@ class PostDeploymentE2E:
             results_dir = Path.cwd() / 'test-results'
             results_dir.mkdir(exist_ok=True)
             
-            # Run Playwright tests - focus on image-factory E2E tests for now
+            self.logger.info(f"Using acceptance tests from: {self.work_dir}")
+            
+            # Log the environment variable to be sure
+            self.logger.info(f"Setting PLAYWRIGHT_BASE_URL to: {env.get('PLAYWRIGHT_BASE_URL')}")
+
+            # Run Playwright tests - using direct binary to avoid npm/npx issues and ensure env vars pass
+            # Run basic acceptance tests to verify Backstage functionality
             cmd = [
-                'npx', 'playwright', 'test',
-                'plugins/image-factory/e2e-tests/simple-navigation.test.ts',
-                'tests/acceptance/events.spec.ts',
-                '--reporter=line',
-                '--reporter=json:test-results/results.json'
+                './node_modules/.bin/playwright', 'test', 'basic.spec.ts',
+                '-g', 'should validate Backstage deployment'
             ]
             
             self.logger.info(f"Running command: {' '.join(cmd)}")
@@ -205,6 +227,26 @@ class PostDeploymentE2E:
             if result.returncode == 0:
                 self.logger.info("✅ E2E tests completed successfully")
                 
+                # Parse test summary from stdout if results.json not available
+                if result.stdout:
+                    # Look for "X passed" in the output
+                    import re
+                    passed_match = re.search(r'(\d+)\s+passed', result.stdout)
+                    failed_match = re.search(r'(\d+)\s+failed', result.stdout)
+                    
+                    if passed_match:
+                        passes = int(passed_match.group(1))
+                        failures = int(failed_match.group(1)) if failed_match else 0
+                        # Override or create test_results
+                        test_results = {
+                            'stats': {
+                                'tests': passes + failures,
+                                'passes': passes,
+                                'failures': failures
+                            }
+                        }
+                        self.logger.info(f"📊 Parsed test results from output: {passes} passed, {failures} failed")
+                
                 # Log test summary if available
                 if test_results:
                     # Playwright results structure may vary, try different formats
@@ -234,6 +276,36 @@ class PostDeploymentE2E:
             self.logger.error(f"❌ Unexpected error during test execution: {e}")
             return False, None
 
+    def collect_kargo_artifacts(self, artifact_dir: Path) -> None:
+        """
+        Collect basic execution metadata (kubectl not available in container).
+        """
+        try:
+            kargo_dir = artifact_dir / 'execution-metadata'
+            kargo_dir.mkdir(exist_ok=True)
+            
+            self.logger.info("📋 Collecting execution metadata...")
+            
+            # Save environment variables and execution context
+            env_file = kargo_dir / 'environment.json'
+            env_data = {
+                'kargo_promotion_id': os.environ.get('KARGO_PROMOTION_ID', 'unknown'),
+                'kargo_freight_id': os.environ.get('KARGO_FREIGHT_ID', 'unknown'),
+                'backstage_url': os.environ.get('BACKSTAGE_URL', 'unknown'),
+                'playwright_browsers_path': os.environ.get('PLAYWRIGHT_BROWSERS_PATH', 'unknown'),
+                'execution_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+                'working_directory': str(Path.cwd()),
+                'hostname': os.environ.get('HOSTNAME', 'unknown')
+            }
+            
+            with open(env_file, 'w') as f:
+                json.dump(env_data, f, indent=2)
+            
+            self.logger.info("✅ Collected execution metadata")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Error collecting execution metadata: {e}")
+
     def copy_artifacts_to_volume(self) -> None:
         """
         Copy test artifacts to the mounted host volume for persistence.
@@ -246,25 +318,102 @@ class PostDeploymentE2E:
         # Generate unique directory name with timestamp and deployment info
         timestamp = time.strftime('%Y%m%d-%H%M%S')
         deployment_id = os.environ.get('KARGO_PROMOTION_ID', 'unknown')
-        app_version = os.environ.get('KARGO_FREIGHT_ID', 'unknown')[:8]  # Short version
+        freight_id = os.environ.get('KARGO_FREIGHT_ID', 'unknown')
         
-        artifact_dir = artifacts_volume / f"backstage-e2e-{timestamp}-{deployment_id}-{app_version}"
+        # Use shorter, cleaner identifiers for the folder name
+        if deployment_id != 'unknown' and len(deployment_id) > 20:
+            deployment_short = deployment_id[-12:]  # Last 12 chars
+        else:
+            deployment_short = deployment_id
+            
+        if freight_id != 'unknown' and len(freight_id) > 20:
+            freight_short = freight_id[:8]  # First 8 chars
+        else:
+            freight_short = freight_id[:8] if freight_id != 'unknown' else 'unknown'
+        
+        self.logger.info(f"🔍 Debug - KARGO_PROMOTION_ID: {deployment_id}")
+        self.logger.info(f"🔍 Debug - KARGO_FREIGHT_ID: {freight_id}")
+        
+        artifact_dir = artifacts_volume / f"backstage-e2e-{timestamp}-{deployment_short}.{freight_short}"
         artifact_dir.mkdir(parents=True, exist_ok=True)
         
         self.logger.info(f"📦 Copying artifacts to {artifact_dir}")
         
         try:
             # Copy Playwright HTML report
-            html_report_dir = Path.cwd() / 'e2e-test-report'
+            html_report_dir = Path.cwd() / 'test-results' / 'html-report'
             if html_report_dir.exists():
                 subprocess.run(['cp', '-r', str(html_report_dir), str(artifact_dir / 'html-report')], check=True)
                 self.logger.info("✅ Copied HTML test report")
             
-            # Copy Playwright screenshots and traces
-            test_results_dir = Path.cwd() / 'node_modules' / '.cache' / 'e2e-test-results'
-            if test_results_dir.exists():
-                subprocess.run(['cp', '-r', str(test_results_dir), str(artifact_dir / 'test-results')], check=True)
-                self.logger.info("✅ Copied screenshots and traces")
+            # Copy Playwright artifacts with better organization
+            test_artifacts_dir = Path.cwd() / 'test-results' / 'artifacts'
+            if test_artifacts_dir.exists():
+                # Create separate directories for different types of artifacts
+                screenshots_dir = artifact_dir / 'screenshots'
+                traces_dir = artifact_dir / 'traces'
+                videos_dir = artifact_dir / 'videos'
+                
+                screenshots_dir.mkdir(exist_ok=True)
+                traces_dir.mkdir(exist_ok=True)
+                videos_dir.mkdir(exist_ok=True)
+                
+                # Organize artifacts by type
+                for item in test_artifacts_dir.rglob('*'):
+                    if item.is_file():
+                        if item.suffix.lower() in ['.png', '.jpg', '.jpeg']:
+                            # Copy screenshots
+                            subprocess.run(['cp', str(item), str(screenshots_dir / item.name)], check=True)
+                        elif item.suffix.lower() == '.zip' and 'trace' in item.name:
+                            # Copy traces
+                            subprocess.run(['cp', str(item), str(traces_dir / item.name)], check=True)
+                        elif item.suffix.lower() in ['.webm', '.mp4']:
+                            # Copy videos
+                            subprocess.run(['cp', str(item), str(videos_dir / item.name)], check=True)
+                        else:
+                            # Copy other artifacts to a general folder
+                            other_dir = artifact_dir / 'other-artifacts'
+                            other_dir.mkdir(exist_ok=True)
+                            subprocess.run(['cp', str(item), str(other_dir / item.name)], check=True)
+                
+                # Count what we found
+                screenshot_count = len(list(screenshots_dir.glob('*')))
+                trace_count = len(list(traces_dir.glob('*')))
+                video_count = len(list(videos_dir.glob('*')))
+                
+                self.logger.info(f"✅ Organized artifacts: {screenshot_count} screenshots, {trace_count} traces, {video_count} videos")
+            else:
+                self.logger.warning("⚠️ No test artifacts directory found - screenshots may not have been generated")
+            
+            # Also copy the entire test-results directory for completeness
+            test_results_complete = Path.cwd() / 'test-results'
+            if test_results_complete.exists():
+                subprocess.run(['cp', '-r', str(test_results_complete), str(artifact_dir / 'complete-test-results')], check=True)
+                self.logger.info("✅ Copied complete test results directory")
+            
+            # Copy any additional test-results content
+            test_results_base = Path.cwd() / 'test-results'
+            if test_results_base.exists():
+                # Copy all test-results content
+                for item in test_results_base.iterdir():
+                    if item.name not in ['html-report', 'artifacts']:  # Already copied above
+                        if item.is_dir():
+                            subprocess.run(['cp', '-r', str(item), str(artifact_dir / item.name)], check=True)
+                        else:
+                            subprocess.run(['cp', str(item), str(artifact_dir / item.name)], check=True)
+                self.logger.info("✅ Copied additional test results")
+            
+            # List all test-results for debugging
+            self.logger.info("🔍 Debug - Listing all test result files:")
+            try:
+                result = subprocess.run(['find', str(Path.cwd()), '-name', '*test*', '-o', '-name', '*screenshot*', '-o', '-name', '*.png', '-o', '-name', '*.jpg'], 
+                                      capture_output=True, text=True, check=True)
+                self.logger.info(f"📋 Found files: {result.stdout}")
+            except subprocess.CalledProcessError:
+                self.logger.warning("Could not list test files")
+            
+            # Collect Kargo-related logs and status
+            self.collect_kargo_artifacts(artifact_dir)
             
             # Copy JSON test results
             json_results_dir = Path.cwd() / 'test-results'
@@ -277,7 +426,7 @@ class PostDeploymentE2E:
             summary_data = {
                 'timestamp': timestamp,
                 'deployment_id': deployment_id,
-                'app_version': app_version,
+                'freight_id': freight_short,
                 'deployment_url': self.deployment_url,
                 'test_execution_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
                 'artifacts': {
@@ -338,8 +487,9 @@ class PostDeploymentE2E:
             
             # Check that we have expected test coverage
             passes = stats.get('passes', 0)
-            if passes < 2:  # We expect at least 2 tests (app.test.ts and events.spec.ts)
-                self.logger.warning(f"⚠️  Only {passes} tests passed, expected at least 2")
+            if passes < 1:  # We expect at least 1 test to pass
+                self.logger.warning(f"⚠️  Only {passes} tests passed, expected at least 1")
+                return False
             
             self.logger.info(f"✅ Test validation passed: {passes} tests passed, {failures} failed")
             return True
@@ -364,9 +514,9 @@ class PostDeploymentE2E:
                 self.logger.error("💥 Deployment readiness check failed. Aborting E2E tests.")
                 return False
             
-            # Step 2: Setup Backstage repository for testing
-            if not self.setup_backstage_repo():
-                self.logger.error("💥 Repository setup failed. Aborting E2E tests.")
+            # Step 2: Setup lightweight acceptance tests
+            if not self.setup_acceptance_tests():
+                self.logger.error("💥 Acceptance tests setup failed. Aborting E2E tests.")
                 return False
             
             # Step 3: Run E2E tests

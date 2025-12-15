@@ -24,7 +24,11 @@ backstage:
     pullSecrets:
       - ghcr-creds
   extraEnvVars:
+    - name: NODE_ENV
+      value: "development"
     - name: BACKSTAGE_AUTH_LEGACY_GUEST
+      value: "true"
+    - name: AUTH_GUEST_PROVIDER_ENABLED
       value: "true"
     - name: BACKEND_SECRET
       value: dev-backstage-key
@@ -101,8 +105,9 @@ backstage:
             Accept: 'application/json'
           credentials: 'dangerously-allow-unauthenticated'
     auth:
-      environment: production
+      environment: development
       providers:
+        guest: {}
         github:
           production:
             clientId: ${GITHUB_CLIENT_ID}
@@ -150,7 +155,7 @@ backstage:
                 seconds: 5
     signIn:
       resolvers:
-        - resolver: github
+        - resolver: guest
     techdocs:
       builder: local
       generator:
