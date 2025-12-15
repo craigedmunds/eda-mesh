@@ -7,10 +7,6 @@ spec:
   args:
     - name: backstage-url
       value: http://backstage.backstage.svc.cluster.local:7007
-    - name: promotion-id
-      value: "{{ .PromotionID }}"
-    - name: freight-id
-      value: "{{ .FreightID }}"
   
   metrics:
     # Run comprehensive E2E tests using the Python script
@@ -23,20 +19,13 @@ spec:
                 restartPolicy: Never
                 containers:
                   - name: e2e-runner
-                    image: python:3.11-slim
+                    image: ghcr.io/craigedmunds/e2e-test-runner:0.1.4
                     command: ["/bin/bash"]
                     args:
                       - "-c"
                       - |
                         set -euo pipefail
                         echo "🚀 Starting Backstage E2E verification..."
-                        
-                        # Install system dependencies for Playwright E2E testing
-                        apt-get update -qq && apt-get install -y -qq \
-                          curl git nodejs npm chromium chromium-driver
-                        
-                        # Install Node.js tools
-                        npm install -g yarn
                         
                         # Execute the E2E test runner
                         python3 /scripts/post_deployment_e2e.py \
@@ -49,12 +38,19 @@ spec:
                       - name: PLAYWRIGHT_BROWSERS_PATH
                         value: "/ms-playwright"
                       - name: KARGO_PROMOTION_ID
-                        value: "{{args.promotion-id}}"
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
                       - name: KARGO_FREIGHT_ID
-                        value: "{{args.freight-id}}"
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.labels['kargo.akuity.io/freight-collection']
                     volumeMounts:
                       - name: e2e-scripts
                         mountPath: /scripts
+                        readOnly: true
+                      - name: acceptance-tests
+                        mountPath: /acceptance-tests
                         readOnly: true
                       - name: e2e-artifacts
                         mountPath: /artifacts
@@ -62,6 +58,10 @@ spec:
                   - name: e2e-scripts
                     configMap:
                       name: backstage-e2e-scripts
+                      defaultMode: 0755
+                  - name: acceptance-tests
+                    configMap:
+                      name: backstage-acceptance-tests
                       defaultMode: 0755
                   - name: e2e-artifacts
                     hostPath:

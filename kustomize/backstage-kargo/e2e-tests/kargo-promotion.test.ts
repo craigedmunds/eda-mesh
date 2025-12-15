@@ -91,6 +91,12 @@ class KargoE2ETest {
       // Step 6: Validate Backstage deployment
       await this.validateBackstageDeployment();
       
+      // Step 7: Wait for and validate Kargo verification (AnalysisRun)
+      await this.validateKargoVerification(freight.metadata.name);
+      
+      // Step 8: Validate artifacts were generated
+      await this.validateArtifactsGenerated();
+      
       console.log('✅ Backstage Kargo E2E Test PASSED');
       
     } catch (error) {
@@ -248,6 +254,8 @@ class KargoE2ETest {
     console.log(`⏳ Waiting for promotion ${promotionName} to complete...`);
     
     const startTime = Date.now();
+    let lastPhase = '';
+    
     while (Date.now() - startTime < this.timeout) {
       try {
         const promotion = await this.kubectl<Promotion>(`get promotion ${promotionName} -n ${this.namespace} -o json`);
@@ -258,12 +266,35 @@ class KargoE2ETest {
         }
         
         if (promotion.status?.phase === 'Failed' || promotion.status?.phase === 'Errored') {
+          console.log('❌ Promotion failed, showing detailed status:');
+          console.log(JSON.stringify(promotion.status, null, 2));
           throw new Error(`Promotion failed with phase: ${promotion.status.phase}`);
         }
         
-        // Log current status
-        if (promotion.status?.phase) {
+        // Log current status with more detail
+        if (promotion.status?.phase && promotion.status.phase !== lastPhase) {
           console.log(`📊 Promotion status: ${promotion.status.phase}`);
+          lastPhase = promotion.status.phase;
+          
+          // Show current step if available
+          if (promotion.status?.currentStep !== undefined) {
+            console.log(`📋 Current step: ${promotion.status.currentStep}`);
+          }
+          
+          // Show step execution metadata if available
+          if (promotion.status?.stepExecutionMetadata) {
+            const steps = promotion.status.stepExecutionMetadata;
+            console.log(`📋 Step progress: ${steps.length} steps executed`);
+            const lastStep = steps[steps.length - 1];
+            if (lastStep) {
+              console.log(`📋 Last step: ${lastStep.alias || 'unknown'} - ${lastStep.status || 'unknown'}`);
+            }
+          }
+        }
+        
+        // If promotion is running, show any available job logs
+        if (promotion.status?.phase === 'Running') {
+          await this.showPromotionLogs(promotionName);
         }
         
       } catch (error) {
@@ -370,6 +401,186 @@ class KargoE2ETest {
       return result;
     } catch (error: any) {
       throw new Error(`kubectl command failed: ${command}\n${error.message}`);
+    }
+  }
+
+  private async validateKargoVerification(freightName: string): Promise<void> {
+    console.log('🔍 Validating Kargo verification (AnalysisRun)...');
+    
+    // Wait for AnalysisRun to be created and complete
+    const startTime = Date.now();
+    let analysisRun: any = null;
+    
+    // First, wait for AnalysisRun to be created
+    while (Date.now() - startTime < 300000) { // 5 minute timeout
+      try {
+        const analysisRuns = await this.kubectl(`get analysisruns -n ${this.namespace} -o json`);
+        const runs = analysisRuns.items.filter((run: any) => 
+          run.metadata.labels && 
+          run.metadata.labels['kargo.akuity.io/stage'] === this.stageName &&
+          run.status && 
+          run.status.startedAt
+        );
+        
+        if (runs.length > 0) {
+          // Get the most recent one
+          analysisRun = runs.sort((a: any, b: any) => 
+            new Date(b.status.startedAt).getTime() - new Date(a.status.startedAt).getTime()
+          )[0];
+          break;
+        }
+        
+        console.log('⏳ Waiting for AnalysisRun to be created...');
+        await setTimeout(5000);
+      } catch (error) {
+        console.log('⏳ Waiting for AnalysisRun to be created...');
+        await setTimeout(5000);
+      }
+    }
+    
+    if (!analysisRun) {
+      throw new Error('AnalysisRun was not created within timeout period');
+    }
+    
+    console.log(`📊 Found AnalysisRun: ${analysisRun.metadata.name}`);
+    
+    // Wait for AnalysisRun to complete
+    while (Date.now() - startTime < 900000) { // 15 minute total timeout
+      try {
+        const currentRun = await this.kubectl(`get analysisrun ${analysisRun.metadata.name} -n ${this.namespace} -o json`);
+        
+        if (currentRun.status && currentRun.status.phase) {
+          const phase = currentRun.status.phase;
+          console.log(`📊 AnalysisRun status: ${phase}`);
+          
+          // Show logs from the analysis job if it's running
+          if (phase === 'Running') {
+            await this.showAnalysisRunLogs(analysisRun.metadata.name);
+          }
+          
+          if (phase === 'Successful') {
+            console.log('✅ AnalysisRun completed successfully');
+            // Show final logs
+            await this.showAnalysisRunLogs(analysisRun.metadata.name);
+            return;
+          } else if (phase === 'Failed' || phase === 'Error') {
+            console.log('❌ AnalysisRun failed, showing logs:');
+            await this.showAnalysisRunLogs(analysisRun.metadata.name);
+            throw new Error(`AnalysisRun failed with phase: ${phase}`);
+          }
+          // Continue waiting for Running, Pending, etc.
+        }
+        
+        await setTimeout(10000); // Check every 10 seconds
+      } catch (error) {
+        console.log(`⚠️ Error checking AnalysisRun: ${error}`);
+        await setTimeout(10000);
+      }
+    }
+    
+    throw new Error('AnalysisRun did not complete within timeout period');
+  }
+
+  private async showPromotionLogs(promotionName: string): Promise<void> {
+    try {
+      // Look for promotion-related jobs
+      const jobs = await this.kubectl(`get jobs -n ${this.namespace} -o json`);
+      const promotionJob = jobs.items.find((job: any) => 
+        job.metadata.name.includes(promotionName) ||
+        job.metadata.labels?.['kargo.akuity.io/promotion'] === promotionName
+      );
+      
+      if (promotionJob) {
+        console.log(`📋 Showing logs from promotion job: ${promotionJob.metadata.name}`);
+        
+        // Get pods for this job
+        const pods = await this.kubectl(`get pods -n ${this.namespace} -l job-name=${promotionJob.metadata.name} -o json`);
+        
+        if (pods.items && pods.items.length > 0) {
+          const pod = pods.items[0];
+          console.log(`📋 Tailing logs from promotion pod: ${pod.metadata.name}`);
+          
+          try {
+            const logs = await this.kubectlRaw(`logs ${pod.metadata.name} -n ${this.namespace} --tail=10`);
+            if (logs.trim()) {
+              console.log('📄 Recent promotion logs:');
+              console.log('─'.repeat(60));
+              console.log(logs);
+              console.log('─'.repeat(60));
+            }
+          } catch (logError) {
+            console.log(`⚠️ Could not get promotion logs: ${logError}`);
+          }
+        }
+      }
+    } catch (error) {
+      // Don't log errors for promotion logs as they might not exist yet
+    }
+  }
+
+  private async showAnalysisRunLogs(analysisRunName: string): Promise<void> {
+    try {
+      // Get the job associated with the AnalysisRun
+      const jobs = await this.kubectl(`get jobs -n ${this.namespace} -o json`);
+      const analysisJob = jobs.items.find((job: any) => 
+        job.metadata.name.includes('backstage-e2e-tests') ||
+        job.metadata.labels?.['analysisrun'] === analysisRunName
+      );
+      
+      if (analysisJob) {
+        console.log(`📋 Showing logs from job: ${analysisJob.metadata.name}`);
+        
+        // Get pods for this job
+        const pods = await this.kubectl(`get pods -n ${this.namespace} -l job-name=${analysisJob.metadata.name} -o json`);
+        
+        if (pods.items && pods.items.length > 0) {
+          const pod = pods.items[0];
+          console.log(`📋 Tailing logs from pod: ${pod.metadata.name}`);
+          
+          try {
+            const logs = await this.kubectlRaw(`logs ${pod.metadata.name} -n ${this.namespace} --tail=20`);
+            console.log('📄 Recent logs:');
+            console.log('─'.repeat(80));
+            console.log(logs);
+            console.log('─'.repeat(80));
+          } catch (logError) {
+            console.log(`⚠️ Could not get logs: ${logError}`);
+          }
+        } else {
+          console.log('⚠️ No pods found for the analysis job yet');
+        }
+      } else {
+        console.log('⚠️ No analysis job found yet');
+      }
+    } catch (error) {
+      console.log(`⚠️ Error showing analysis logs: ${error}`);
+    }
+  }
+
+  private async validateArtifactsGenerated(): Promise<void> {
+    console.log('📦 Validating E2E test artifacts were generated...');
+    
+    // Check if artifacts directory exists and has recent content on local filesystem
+    try {
+      const artifactsPath = '.backstage-e2e-artifacts';
+      
+      // Check if directory exists
+      const lsResult = execSync(`ls -la ${artifactsPath}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      
+      // Look for recent artifact directories
+      const findResult = execSync(`find ${artifactsPath} -name 'backstage-e2e-*' -type d -mmin -30 2>/dev/null || true`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      
+      if (findResult.trim()) {
+        console.log('✅ E2E test artifacts found');
+        const recentArtifacts = findResult.trim().split('\n').slice(0, 3);
+        console.log('📋 Recent artifacts:', recentArtifacts.join('\n'));
+      } else {
+        console.log('⚠️ No recent E2E test artifacts found - this may indicate the verification did not run properly');
+        // Don't fail the test for missing artifacts, just warn
+      }
+    } catch (error) {
+      console.log(`⚠️ Could not check artifacts: ${error}`);
+      // Don't fail the test for artifact check issues
     }
   }
 

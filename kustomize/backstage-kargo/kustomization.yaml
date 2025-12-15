@@ -10,13 +10,16 @@ resources:
   - backstage-e2e-verification.yaml
   - namespace-patch.yaml
 
+components:
+  - ../../apps/backstage/tests/acceptance
+
 configMapGenerator:
   - name: backstage-e2e-scripts
     files:
       - scripts/post_deployment_e2e.py
-      - scripts/setup-e2e-environment.sh
       - scripts/requirements.txt
     options:
       labels:
         app: backstage-e2e
         component: test-scripts
+      disableNameSuffixHash: true

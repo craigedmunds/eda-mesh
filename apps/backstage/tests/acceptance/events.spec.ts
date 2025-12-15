@@ -1,15 +1,29 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 test.describe('Events UI Acceptance Tests', () => {
   test.beforeEach(async ({ page }) => {
+    // Ensure screenshots directory exists
+    const screenshotsDir = path.join('test-results', 'screenshots');
+    if (!fs.existsSync(screenshotsDir)) {
+      fs.mkdirSync(screenshotsDir, { recursive: true });
+    }
+    
     await page.goto('/');
   });
 
   test('should have Events link in the left navigation panel', async ({ page }) => {
+    // Take screenshot of initial page
+    await page.screenshot({ path: 'test-results/screenshots/01-initial-page.png', fullPage: true });
+    
     // Look for the Events link in the sidebar
     const eventsLink = page.locator('nav a:has-text("Events")');
     
     await expect(eventsLink).toBeVisible();
+    
+    // Take screenshot showing the Events link
+    await page.screenshot({ path: 'test-results/screenshots/02-events-link-visible.png', fullPage: true });
   });
 
   test('should display events list when navigating to Events page', async ({ page }) => {
@@ -18,6 +32,9 @@ test.describe('Events UI Acceptance Tests', () => {
     
     // Wait for navigation
     await page.waitForURL(/.*\/catalog\?filters\[kind\]=event/i);
+    
+    // Take screenshot of events page
+    await page.screenshot({ path: 'test-results/screenshots/03-events-page-loaded.png', fullPage: true });
     
     // Check that we have some events in the list
     // Look for the catalog table or list container
@@ -31,6 +48,9 @@ test.describe('Events UI Acceptance Tests', () => {
     // Verify we have at least one event
     const rowCount = await eventRows.count();
     expect(rowCount).toBeGreaterThan(0);
+    
+    // Take screenshot showing the events list
+    await page.screenshot({ path: 'test-results/screenshots/04-events-list-visible.png', fullPage: true });
   });
 
   test('should display correct fields on first event details page', async ({ page }) => {
@@ -44,6 +64,9 @@ test.describe('Events UI Acceptance Tests', () => {
     
     // Wait for the event details page to load
     await page.waitForLoadState('networkidle');
+    
+    // Take screenshot of event details page
+    await page.screenshot({ path: 'test-results/screenshots/05-event-details-page.png', fullPage: true });
     
     // Verify the About card is present
     const aboutCard = page.locator('text=About').first();
@@ -86,5 +109,8 @@ test.describe('Events UI Acceptance Tests', () => {
       const systemLink = systemSection.locator('a');
       await expect(systemLink).toBeVisible();
     }
+    
+    // Take final screenshot showing all the fields
+    await page.screenshot({ path: 'test-results/screenshots/06-event-fields-verified.png', fullPage: true });
   });
 });
