@@ -6,8 +6,9 @@ configMapGenerator:
     files:
       - package.json
       - playwright.config.ts
-      - events.spec.ts
       - tsconfig.json
+      - basic.spec.ts
+      - basic.spec.js
     options:
       labels:
         app: backstage-e2e

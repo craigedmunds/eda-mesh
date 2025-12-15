@@ -227,7 +227,7 @@ The System SHALL support adding images through configuration changes without req
 
 ### NFR5: Testability
 
-The System SHALL be designed for testability with unit tests for components and integration tests for end-to-end workflows.
+The System SHALL be designed for testability with unit tests for components and integration tests for end-to-end workflows. The acceptance test infrastructure SHALL provide unified test execution, custom screenshot management, and comprehensive artifact organization for reliable E2E validation.
 
 ## Open Questions
 

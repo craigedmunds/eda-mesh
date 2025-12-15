@@ -1,16 +1,35 @@
 import { test, expect } from '@playwright/test';
+import { authenticateWithBackstage, suppressConsoleNoise, navigateAfterAuth } from '../../../../tests/acceptance/lib/auth-helper';
+import { takeStepScreenshot } from '../../../../tests/acceptance/lib/screenshot-helper';
 
-test.describe('Simple Backstage Navigation Test', () => {
-  test('should access Backstage catalog directly', async ({ page }) => {
-    // Try accessing the catalog directly
-    await page.goto('/catalog');
+/**
+ * Backstage Navigation Tests for Image Factory
+ * 
+ * Validates Image Factory Requirements:
+ * - Requirement 11.7: Backstage catalog navigation and filtering
+ * - Basic Backstage integration functionality
+ */
+test.describe('Image Factory Backstage Navigation Tests', () => {
+  test.beforeEach(async ({ page }) => {
+    // Setup console noise suppression
+    suppressConsoleNoise(page);
+    
+    // Navigate to home page and authenticate
+    await page.goto('/');
+    await authenticateWithBackstage(page);
+  });
+  test('should access Backstage catalog directly', async ({ page }, testInfo) => {
+    // Validates Requirement 11.7: Catalog navigation and filtering capabilities
+    
+    // Navigate to catalog using helper
+    await navigateAfterAuth(page, '/catalog');
     
     // Wait for page to load
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000);
     
-    // Take screenshot
-    await page.screenshot({ path: 'debug-catalog-direct.png', fullPage: true });
+    // Take screenshot for documentation - saved in same folder as Playwright artifacts
+    await takeStepScreenshot(page, testInfo, '01', 'catalog-direct-access');
     
     console.log('Page title:', await page.title());
     console.log('Page URL:', page.url());
@@ -48,16 +67,18 @@ test.describe('Simple Backstage Navigation Test', () => {
     }
   });
 
-  test('should try create page directly', async ({ page }) => {
-    // Try accessing the create page directly
-    await page.goto('/create');
+  test('should access create page and find templates', async ({ page }, testInfo) => {
+    // Validates template discovery and navigation functionality
+    
+    // Navigate to create page using helper
+    await navigateAfterAuth(page, '/create');
     
     // Wait for page to load
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000);
     
-    // Take screenshot
-    await page.screenshot({ path: 'debug-create-direct.png', fullPage: true });
+    // Take screenshot for documentation - saved in same folder as Playwright artifacts
+    await takeStepScreenshot(page, testInfo, '01', 'create-direct-access');
     
     console.log('Create page title:', await page.title());
     console.log('Create page URL:', page.url());

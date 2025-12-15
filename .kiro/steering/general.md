@@ -1,3 +1,5 @@
 - I use homebrew to install packages, use that
 - If scripting is necessary in Kubernetes resources (like AnalysisTemplates), it should be in separate Python/shell files and included via ConfigMaps, not embedded inline in YAML
 - All our infrastructure is code. If a manual change is made to a k8s resource to test a fix, do not forget to update the code.
+- Do not create uneccessary .md files. Useful information should either be in the appropriate spec, or in the appropriate README.md
+- Don't create new spec folders without confirming; new requirements often part of an existing spec.

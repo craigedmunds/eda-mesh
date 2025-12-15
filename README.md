@@ -1,4 +1,12 @@
-# Argocd Event Driven Architecture
+# Argocd App Of Apps
+
+## Repomix
+
+Repomix is used to generate an AI readable summary of the repo
+
+`npx repomix`
+
+## Event Driven Architecture
 
 This repository contains an event-driven architecture implementation with ArgoCD, featuring automated container image lifecycle management through the Image Factory system and comprehensive Backstage integration.
 

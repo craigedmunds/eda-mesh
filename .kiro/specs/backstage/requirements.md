@@ -11,7 +11,7 @@ This specification defines the requirements for a Backstage developer portal pla
 - **Container_Registry**: Registry storing Backstage container images (ghcr.io)
 - **Git_Repository**: Version control system storing deployment configurations and source code
 - **ArgoCD**: GitOps continuous delivery tool for Kubernetes deployments
-- **E2E_Tests**: End-to-end Playwright tests validating application functionality
+- **Acceptance_Tests**: End-to-end Playwright tests validating application functionality (also referred to as E2E tests)
 - **Local_K8s_Cluster**: Local Kubernetes cluster where Backstage is deployed
 - **Catalog_Entities**: Backstage entities including Components, Systems, APIs, and Resources
 - **GitHub_Integration**: Integration with GitHub for authentication, API access, and repository management
@@ -21,6 +21,18 @@ This specification defines the requirements for a Backstage developer portal pla
 - **ConfigMap_Scripts**: Scripts embedded directly in Kubernetes ConfigMaps (anti-pattern to be eliminated)
 - **Script_Repository**: Proper file-based storage for scripts and automation code
 - **GitOps_Best_Practices**: Industry standards for managing Kubernetes configurations in Git repositories
+- **Test_Discovery_System**: Automated system for locating and executing tests across multiple directories
+- **Plugin_Tests**: Acceptance tests specific to individual Backstage plugins located in plugin directories
+- **Unified_Test_Runner**: Single test execution entry point that orchestrates distributed test suites
+- **E2E_Artifacts**: End-to-end test outputs including screenshots, videos, traces, and HTML reports stored in `.backstage-e2e-artifacts` directory
+- **Artifact_Directory**: The `.backstage-e2e-artifacts` folder containing timestamped test run subdirectories
+- **Test_Run_Directory**: Individual timestamped subdirectories within the artifact directory (e.g., `backstage-acceptance-20251215-161003`)
+- **Central_Environment_Variables**: Shared environment configuration for test execution including storage paths for screenshots, videos, traces, and other test artifacts
+- **Image_Factory_Tests**: Acceptance tests specific to the image factory plugin functionality
+- **Functional_Acceptance_Tests**: High-level tests that validate user-facing functionality without implementation details
+- **Test_Duplication**: Multiple tests covering the same functionality or user workflow
+- **Artifact_Retention_Policy**: Rules governing how many test run artifacts to retain and when to clean up old ones
+- **Artifact_Storage_Path**: Environment variable defining where test artifacts (screenshots, videos, traces) should be stored during execution
 
 ## Requirements
 
@@ -50,15 +62,15 @@ This specification defines the requirements for a Backstage developer portal pla
 
 ### Requirement 3
 
-**User Story:** As a quality assurance engineer, I want comprehensive end-to-end tests to validate Backstage functionality after deployment, so that I can ensure the platform works correctly.
+**User Story:** As a quality assurance engineer, I want comprehensive acceptance tests to validate Backstage functionality after deployment, so that I can ensure the platform works correctly.
 
 #### Acceptance Criteria
 
-1. WHEN a Backstage deployment completes, THEN the E2E_Tests SHALL verify the platform is accessible and responsive
-2. WHEN testing navigation, THEN the E2E_Tests SHALL confirm core navigation elements are visible and functional
-3. WHEN testing the catalog, THEN the E2E_Tests SHALL verify entities are displayed with proper metadata
-4. WHEN testing entity details, THEN the E2E_Tests SHALL validate that entity relationships and links work correctly
-5. WHEN E2E_Tests complete, THEN the system SHALL report detailed test results with pass/fail status
+1. WHEN a Backstage deployment completes, THEN the Acceptance_Tests SHALL verify the platform is accessible and responsive
+2. WHEN testing navigation, THEN the Acceptance_Tests SHALL confirm core navigation elements are visible and functional
+3. WHEN testing the catalog, THEN the Acceptance_Tests SHALL verify entities are displayed with proper metadata
+4. WHEN testing entity details, THEN the Acceptance_Tests SHALL validate that entity relationships and links work correctly
+5. WHEN Acceptance_Tests complete, THEN the system SHALL report detailed test results with pass/fail status
 
 ### Requirement 4
 
@@ -92,7 +104,7 @@ This specification defines the requirements for a Backstage developer portal pla
 
 1. WHEN Promotion_Pipeline steps execute, THEN the Kargo_System SHALL log detailed operation information
 2. WHEN integration failures occur, THEN the Backstage_Platform SHALL implement retry mechanisms with exponential backoff
-3. WHEN E2E_Tests fail, THEN the system SHALL capture detailed error information and screenshots
+3. WHEN Acceptance_Tests fail, THEN the system SHALL capture detailed error information and screenshots
 4. WHEN Git_Repository operations fail, THEN the Kargo_System SHALL provide diagnostic information and retry logic
 5. WHEN system health is checked, THEN the Backstage_Platform SHALL report status of all integrated components
 
@@ -110,12 +122,60 @@ This specification defines the requirements for a Backstage developer portal pla
 
 ### Requirement 8
 
-**User Story:** As a quality assurance engineer, I want reliable E2E test execution integrated with Kargo verification, so that deployment validation provides accurate feedback about application health.
+**User Story:** As a quality assurance engineer, I want a unified acceptance test execution system integrated with Kargo verification that can discover and run all relevant tests regardless of their location in the repository, so that deployment validation provides comprehensive feedback about application health.
 
 #### Acceptance Criteria
 
-1. WHEN Kargo verification runs, THEN E2E_Tests SHALL execute successfully against the deployed Backstage instance
-2. WHEN E2E_Tests complete, THEN they SHALL produce accessible test reports and artifacts
-3. WHEN tests fail, THEN failure information SHALL be clearly visible in Kargo promotion status
-4. WHEN debugging test failures, THEN logs and artifacts SHALL be easily accessible for investigation
-5. WHEN configuration changes are made, THEN they SHALL be easily reviewable through standard Git workflows
+1. WHEN executing tests via kustomize/backstage-kargo/package.json test:docker, THEN the Test_Discovery_System SHALL locate and execute acceptance tests from apps/backstage/tests/acceptance and plugin-specific directories
+2. WHEN Kargo verification runs, THEN Acceptance_Tests SHALL execute successfully against the deployed Backstage instance
+3. WHEN tests are distributed across multiple directories, THEN the Test_Discovery_System SHALL maintain proper test isolation while producing consolidated reports
+4. WHEN Acceptance_Tests complete, THEN they SHALL produce accessible test reports and artifacts with clear traceability of which tests ran from which locations
+5. WHEN tests fail, THEN failure information SHALL be clearly visible in Kargo promotion status and debugging artifacts SHALL be easily accessible for investigation
+
+### Requirement 9
+
+**User Story:** As a developer, I want automatic cleanup of old e2e test artifacts, so that my disk space doesn't fill up with outdated test results and I can focus on recent test outcomes.
+
+#### Acceptance Criteria
+
+1. WHEN Acceptance_Tests complete, THEN the system SHALL retain only the 3 most recent Test_Run_Directory entries in the Artifact_Directory
+2. WHEN more than 3 Test_Run_Directory entries exist, THEN the system SHALL automatically delete the oldest directories based on timestamp
+3. WHEN cleaning up artifacts, THEN the system SHALL preserve the directory structure and only remove complete test run directories
+4. WHEN artifact cleanup occurs, THEN the system SHALL log which directories were removed for audit purposes
+5. WHEN the cleanup process fails, THEN the system SHALL continue test execution and log the cleanup failure without blocking tests
+
+### Requirement 10
+
+**User Story:** As a test engineer, I want all plugin tests to use centralized environment variables for screenshot storage, so that test artifacts are consistently stored and accessible across all plugins.
+
+#### Acceptance Criteria
+
+1. WHEN Plugin_Tests execute, THEN they SHALL use Central_Environment_Variables for Artifact_Storage_Path configuration
+2. WHEN environment variables are not available, THEN Plugin_Tests SHALL fail with clear error messages indicating missing configuration
+3. WHEN test artifacts are captured, THEN they SHALL be stored in the path specified by Central_Environment_Variables
+4. WHEN multiple plugins run tests, THEN they SHALL all use the same environment variable configuration for consistency
+5. WHEN test configuration changes, THEN all Plugin_Tests SHALL automatically use the updated Central_Environment_Variables without code changes
+
+### Requirement 11
+
+**User Story:** As a quality assurance engineer, I want clean, focused acceptance tests for the image factory plugin, so that tests are maintainable and provide clear feedback about functionality without duplication.
+
+#### Acceptance Criteria
+
+1. WHEN reviewing Image_Factory_Tests, THEN there SHALL be no Test_Duplication covering the same user workflows
+2. WHEN Image_Factory_Tests execute, THEN they SHALL focus on high-level Functional_Acceptance_Tests rather than implementation details
+3. WHEN test failures occur, THEN Image_Factory_Tests SHALL provide clear feedback about which user functionality is broken
+4. WHEN new functionality is added, THEN Image_Factory_Tests SHALL cover the user-facing behavior without testing internal implementation
+5. WHEN tests are organized, THEN Image_Factory_Tests SHALL follow consistent naming and structure patterns with other Plugin_Tests
+
+### Requirement 12
+
+**User Story:** As a system administrator, I want automated artifact management that integrates seamlessly with the existing test infrastructure, so that cleanup happens without manual intervention or interference with test execution.
+
+#### Acceptance Criteria
+
+1. WHEN the Unified_Test_Runner executes, THEN it SHALL automatically trigger artifact cleanup after test completion
+2. WHEN Kargo verification runs, THEN artifact cleanup SHALL occur without interfering with test result reporting
+3. WHEN artifact cleanup runs, THEN it SHALL work correctly regardless of the test execution environment (local, CI, Kargo)
+4. WHEN cleanup completes, THEN the system SHALL ensure the most recent test artifacts remain accessible for debugging
+5. WHEN multiple test runs occur simultaneously, THEN artifact cleanup SHALL handle concurrent access safely without corruption
