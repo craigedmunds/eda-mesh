@@ -50,7 +50,10 @@ spec:
                         mountPath: /scripts
                         readOnly: true
                       - name: acceptance-tests
-                        mountPath: /acceptance-tests
+                        mountPath: /workspace/apps/backstage/tests/acceptance
+                        readOnly: true
+                      - name: eda-plugin-tests
+                        mountPath: /workspace/apps/backstage/plugins/eda/tests/acceptance
                         readOnly: true
                       - name: e2e-artifacts
                         mountPath: /artifacts
@@ -62,6 +65,10 @@ spec:
                   - name: acceptance-tests
                     configMap:
                       name: backstage-acceptance-tests
+                      defaultMode: 0755
+                  - name: eda-plugin-tests
+                    configMap:
+                      name: backstage-eda-plugin-tests
                       defaultMode: 0755
                   - name: e2e-artifacts
                     hostPath:

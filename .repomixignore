@@ -1,0 +1,7 @@
+node_modules
+.yarn
+.eslinttcache
+
+.backstage-acceptance-artifacts/*/
+CLEANUP_SUMMARY.md
+cdk8s/image-factory/imports/

@@ -7,11 +7,12 @@ resources:
   - project.yaml
   - warehouse.yaml
   - stage-local.yaml
-  - backstage-e2e-verification.yaml
+  - backstage-verification.yaml
   - namespace-patch.yaml
 
 components:
   - ../../apps/backstage/tests/acceptance
+  - ../../apps/backstage/plugins/eda/tests/acceptance
 
 configMapGenerator:
   - name: backstage-e2e-scripts

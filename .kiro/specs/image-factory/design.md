@@ -933,6 +933,14 @@ If the official plugin proves incompatible with custom entity kinds, consider:
 2. Using the GitHub REST API directly through the proxy
 3. Displaying workflow data in a simpler format (table/list) without the full plugin UI
 
+**Screenshot Management Solution:**
+The acceptance test infrastructure includes a custom screenshot helper (`apps/backstage/tests/acceptance/lib/screenshot-helper.ts`) that solves the artifact organization problem:
+- **Direct Integration**: Screenshots save directly to Playwright's output directory structure
+- **HTML Report Compatibility**: No conflicts with Playwright's HTML reporter
+- **Automatic Attachment**: Screenshots are both saved to disk AND attached to test results
+- **Clean Organization**: Custom screenshots appear alongside auto-generated artifacts
+- **No Custom Reporter Needed**: Eliminates complexity of custom artifact organization
+
 ### Testing Strategy
 
 **Entity Generation Tests:**
@@ -960,6 +968,12 @@ If the official plugin proves incompatible with custom entity kinds, consider:
 - Test enrollment flow: UI → API → PR → state → entity
 - Verify entity updates when state changes
 - Test version fetching end-to-end
+
+**Acceptance Test Infrastructure:**
+- **Screenshot Helper**: Custom screenshot functionality that saves directly to Playwright's output directory
+- **Unified Test System**: Single Playwright installation eliminates conflicts between plugin tests
+- **Shared Libraries**: Authentication helpers and screenshot utilities for consistent test patterns
+- **Clean Artifact Organization**: Screenshots appear alongside Playwright's auto-generated artifacts in HTML reports
 
 ## GitHub Extensions Code Organization
 

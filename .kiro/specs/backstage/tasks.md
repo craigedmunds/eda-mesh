@@ -24,14 +24,14 @@
   - _Requirements: 2.1, 2.2, 2.3_
 
 - [ ] 4. Implement basic post-deployment validation
-  - Create simple health check verification (without full E2E tests initially)
+  - Create simple health check verification (without full acceptance tests initially)
   - Add basic deployment readiness validation
   - Configure stage verification with simple web checks
   - _Requirements: 3.1, 3.2_
 
-- [ ] 5. Add comprehensive E2E testing
+- [ ] 5. Add comprehensive acceptance testing
   - Integrate existing Playwright tests from apps/backstage/packages/app/e2e-tests/
-  - Configure E2E test execution in Kargo verification phase
+  - Configure acceptance test execution in Kargo verification phase
   - Add deployment readiness checks before running tests
   - _Requirements: 3.3, 3.4, 3.5_
 
@@ -49,8 +49,8 @@
   - Create subdirectories for different script types
   - _Requirements: 7.2_
 
-- [x] 7.2 Extract E2E test runner script
-  - Move Python script from configmap.yaml to `scripts/e2e-runner.py`
+- [x] 7.2 Extract acceptance test runner script
+  - Move Python script from configmap.yaml to `scripts/acceptance-test-runner.py`
   - Ensure proper file permissions and structure
   - _Requirements: 7.1, 7.2_
 
@@ -63,14 +63,14 @@
   - Remove unecessary & mostly duplicated resources
 
 - [ ] 8. Consolidate duplicate analysis templates
-- [ ] 8.1 Analyze existing templates for functionality overlap
+- [x] 8.1 Analyze existing templates for functionality overlap
   - Review analysis-template.yaml, e2e-analysis-template.yaml, backstage-e2e-verification.yaml
   - Identify unique functionality in each template
   - _Requirements: 7.4_
 
-- [ ] 8.2 Create consolidated verification template
+- [-] 8.2 Create consolidated verification template
   - Design single parameterized template for all verification types
-  - Include health checks, E2E tests, and other verification steps
+  - Include health checks, acceptance tests, and other verification steps
   - _Requirements: 7.4_
 
 - [ ] 8.3 Update template to use external scripts
@@ -94,13 +94,13 @@
   - Add references to new consolidated resources
   - _Requirements: 7.4_
 
-- [ ] 10. Implement reliable E2E test execution with artifact storage
+- [ ] 10. Implement reliable acceptance test execution with artifact storage
 - [ ] 10.1 Configure artifact storage volume
   - Set up volume mount to `/Users/craig/src/hmrc-eis/eda/argocd-eda/.backstage-e2e-artifacts`
   - Ensure proper permissions and directory structure
   - _Requirements: 8.2, 8.4_
 
-- [x] 10.2 Update E2E test execution logic
+- [x] 10.2 Update acceptance test execution logic
   - Modify scripts to store test outputs in mounted artifact directory
   - Implement proper error handling and reporting
   - _Requirements: 8.1, 8.3_
@@ -116,9 +116,9 @@
   - Verify all resources are created correctly
   - _Requirements: 8.5_
 
-- [ ] 11.2 Test E2E verification workflow
+- [ ] 11.2 Test acceptance verification workflow
   - Trigger Kargo promotion with new configuration
-  - Verify E2E tests execute and produce artifacts
+  - Verify acceptance tests execute and produce artifacts
   - _Requirements: 8.1, 8.2_
 
 - [ ] 11.3 Validate artifact accessibility
@@ -140,7 +140,196 @@
 - [ ] 12.3 Final validation
   - Run complete end-to-end test of consolidated configuration
   - Verify all requirements are met
+  - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
+
+## Test Organization Implementation
+
+- [x] 13. Implement unified test execution system
+- [x] 13.1 Create Playwright configuration for test discovery
+  - Create `kustomize/backstage-kargo/playwright.config.ts` with glob patterns
+  - Configure patterns to match `apps/backstage/tests/acceptance/**/*.spec.ts` and `apps/backstage/plugins/**/tests/acceptance/**/*.spec.ts`
+  - Set up HTML reporter and artifact collection
+  - _Requirements: 8.1_
+
+- [x] 13.2 Update package.json test commands
+  - Modify `kustomize/backstage-kargo/package.json` to use Playwright with new config
+  - Ensure `test:docker` command executes all discovered tests
+  - Configure proper working directory and paths
+  - _Requirements: 8.1_
+
+- [x] 13.3 Reorganize existing plugin tests
+  - Move `apps/backstage/plugins/image-factory/e2e-tests/` to `apps/backstage/plugins/image-factory/tests/acceptance/`
+  - Update any references to the old directory structure
+  - Ensure test files use consistent naming patterns (*.spec.ts)
+  - _Requirements: 8.1_
+
+- [x] 14. Implement consolidated test reporting
+- [x] 14.1 Configure Playwright reporters
+  - Set up HTML reporter for human-readable results
+  - Configure JUnit XML reporter for CI integration
+  - Set up artifact collection (screenshots, traces) in proper directories
+  - _Requirements: 8.4_
+
+- [x] 14.2 Update test execution scripts
+  - Modify existing test runner scripts to use new Playwright configuration
+  - Ensure proper artifact storage in mounted volumes
+  - Add traceability information to test reports
+  - _Requirements: 8.4_
+
+- [ ] 15. Integrate with Kargo verification
+- [ ] 15.1 Update Kargo analysis templates
+  - Modify existing analysis templates to use new test execution approach
+  - Ensure proper integration with unified test runner
+  - Configure timeout and retry policies for test execution
+  - _Requirements: 8.2_
+
+- [ ] 15.2 Test Kargo integration
+  - Verify that Kargo promotions trigger unified test execution
+  - Ensure test results properly feed back to Kargo promotion status
+  - Validate artifact collection and accessibility
+  - _Requirements: 8.2, 8.5_
+
+- [ ]* 15.3 Write property test for Kargo integration
+  - **Property 16: Kargo test integration**
+  - **Validates: Requirements 8.2**
+
+- [ ]* 15.4 Write property test for test failure reporting
+  - **Property 18: Test failure reporting**
+  - **Validates: Requirements 8.5**
+
+- [ ] 16. Validate unified test system
+- [ ] 16.1 Test discovery across multiple directories
+  - Verify that tests from both central and plugin directories are discovered
+  - Ensure no tests are missed due to location or naming
+  - Validate proper test isolation between different test suites
+  - _Requirements: 8.1, 8.3_
+
+- [ ] 16.2 End-to-end validation
+  - Run complete test suite via `npm run test:docker`
+  - Verify consolidated reporting with traceability
+  - Ensure integration with Kargo verification works correctly
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+
+- [ ] 16.3 Documentation and cleanup
+  - Update README files to document new test organization
+  - Remove any obsolete test runner scripts or configurations
+  - Document how plugin teams should organize their tests
+  - _Requirements: 8.1_
+
+## Local Artifact Management Implementation
+
+- [x] 17. Implement artifact retention and cleanup system
+- [ ] 17.1 Create artifact cleanup service
+  - ✅ Artifact cleanup is already implemented in post_deployment_e2e.py
+  - ✅ Creates timestamped directories with retention logic
+  - ✅ Includes logging and error handling for cleanup operations
+  - _Requirements: 9.1, 9.2, 9.3, 9.4_
+
+- [x] 17.2 Implement cleanup integration with test runner
+  - ✅ Cleanup is integrated with the unified test runner
+  - ✅ Cleanup triggers automatically after test completion
+  - ✅ Handles concurrent access through unique timestamped directories
+  - _Requirements: 12.1, 12.5_
+
+- [ ]* 17.3 Write property test for artifact retention
+  - **Property 19: Artifact retention policy**
+  - **Validates: Requirements 9.1, 9.2**
+
+- [ ]* 17.4 Write property test for cleanup integrity
+  - **Property 20: Cleanup directory integrity**
+  - **Validates: Requirements 9.3, 9.4**
+
+- [ ]* 17.5 Write property test for cleanup error handling
+  - **Property 21: Cleanup error handling**
+  - **Validates: Requirements 9.5**
+
+- [ ] 18. Implement centralized environment variable configuration
+- [x] 18.1 Create central environment configuration
+  - ✅ Standardized environment variables are defined (TEST_RESULTS_DIR, PLAYWRIGHT_HTML_REPORT, etc.)
+  - ✅ Configuration validation and error handling implemented in post_deployment_e2e.py
+  - ✅ Fallback mechanisms for missing configuration implemented
+  - _Requirements: 10.1, 10.2_
+
+- [ ] 18.2 Update plugin tests to use central configuration
+  - Plugin tests currently don't have individual playwright configs
+  - They rely on the unified test runner's central configuration
+  - Need to verify this works correctly for all plugins
+  - _Requirements: 10.3, 10.4, 10.5_
+
+- [ ]* 18.3 Write property test for centralized environment variables
+  - **Property 22: Centralized environment variable usage**
+  - **Validates: Requirements 10.1, 10.2**
+
+- [ ]* 18.4 Write property test for artifact storage consistency
+  - **Property 23: Artifact storage consistency**
+  - **Validates: Requirements 10.3, 10.4, 10.5**
+
+- [ ] 19. Clean up and optimize image factory tests
+- [ ] 19.1 Audit image factory tests for duplication and debug files
+  - Current tests include: auth-investigation, debug, improved-auth, js-debug, working-auth, etc.
+  - Many appear to be debugging/investigation files rather than proper acceptance tests
+  - Identify which tests cover actual user workflows vs debugging
+  - _Requirements: 11.1_
+
+- [ ] 19.2 Separate local vs Kargo test execution requirements
+  - Clarify whether image factory tests should run locally, in Kargo, or both
+  - Define different test suites for local development vs deployment validation
+  - Remove debug/investigation tests from acceptance test suite
+  - _Requirements: 11.2, 11.3_
+
+- [ ] 19.3 Create focused functional acceptance tests
+  - Keep only: enrollment workflow, template validation, navigation tests
+  - Remove: auth-investigation, debug, improved-auth, js-debug, working-auth
+  - Ensure tests validate user-facing functionality with clear failure messages
+  - _Requirements: 11.2, 11.3, 11.5_
+
+- [ ]* 19.4 Write property test for test failure feedback
+  - **Property 24: Test failure feedback quality**
+  - **Validates: Requirements 11.3**
+
+- [x] 20. Integrate artifact management with Kargo verification
+- [x] 20.1 Update Kargo verification for artifact management
+  - ✅ Kargo verification already triggers artifact management through post_deployment_e2e.py
+  - ✅ Cleanup doesn't interfere with test result reporting (artifacts stored before cleanup)
+  - ✅ Artifact management integrated into verification workflow
+  - _Requirements: 12.2_
+
+- [ ] 20.2 Test environment-independent cleanup
+  - Verify cleanup works correctly in local development environment (not just Kargo)
+  - Ensure recent artifacts remain accessible after cleanup
+  - Test concurrent cleanup safety during simultaneous runs
+  - _Requirements: 12.3, 12.4, 12.5_
+
+- [ ]* 20.3 Write property test for integrated cleanup execution
+  - **Property 25: Integrated cleanup execution**
+  - **Validates: Requirements 12.1, 12.2**
+
+- [ ]* 20.4 Write property test for environment-independent cleanup
+  - **Property 26: Environment-independent cleanup**
+  - **Validates: Requirements 12.3, 12.4**
+
+- [ ]* 20.5 Write property test for concurrent cleanup safety
+  - **Property 27: Concurrent cleanup safety**
+  - **Validates: Requirements 12.5**
+
+- [ ] 21. Validate complete artifact management system
+- [ ] 21.1 Test local artifact management workflow
+  - Run multiple local test executions to generate artifacts
+  - Verify that .backstage-e2e-artifacts directory gets managed properly
+  - Confirm plugin tests use centralized environment configuration
+  - _Requirements: 9.1, 9.2, 10.1, 10.3_
+
+- [ ] 21.2 Implement local artifact cleanup (separate from Kargo)
+  - Current cleanup only works in Kargo environment
+  - Need local cleanup mechanism for .backstage-e2e-artifacts directory
+  - Ensure recent artifacts remain accessible for local debugging
+  - _Requirements: 9.4, 12.4_
+
+- [ ] 21.3 Validate plugin test environment variable usage
+  - Verify that plugin tests (eda, image-factory) use central environment variables
+  - Test that artifacts from plugin tests go to correct locations
+  - Ensure consistent behavior across all plugin tests
+  - _Requirements: 10.2, 10.3, 10.4, 10.5_
 
 ## Current Blockers
 

@@ -31,64 +31,95 @@ New Image → Warehouse → Stage → Promotion → ArgoCD → Deployment → E2
 - Waits for deployment completion
 - Runs E2E verification
 
-### 3. Analysis Templates
+### 3. Consolidated Verification Template
 
-#### `backstage-e2e-verification` (Primary)
-Comprehensive verification including:
-- **API Health Check**: Verifies `/api/catalog/entities` endpoint
-- **Frontend Health**: Confirms UI responsiveness
-- **E2E Test Execution**: Runs full Playwright test suite via ConfigMap-mounted Python script
+#### `backstage-verification` (Unified Approach)
+The consolidated verification template provides a single comprehensive E2E test execution that includes:
 
-**ConfigMap Integration**: The Python test runner (`post_deployment_e2e.py`) is mounted as a ConfigMap, making it:
-- **Maintainable**: Script can be updated and tested independently
-- **Testable**: Includes comprehensive unit tests
-- **Configurable**: Supports command-line arguments and config files
+- **Integrated Health Check**: Built into the Python script - validates deployment readiness
+- **Unified Test Discovery**: Uses Playwright glob patterns to discover and run tests from:
+  - `apps/backstage/tests/acceptance/**/*.spec.ts` - Central platform tests  
+  - `apps/backstage/plugins/**/tests/acceptance/**/*.spec.ts` - Plugin-specific tests
+- **Single Verification Step**: Combines health checking and E2E testing in one execution
+- **External Script Management**: Scripts stored in dedicated files (not embedded in ConfigMaps)
+- **Consolidated Reporting**: HTML, JUnit XML, and JSON results with comprehensive artifact collection
 
-#### `backstage-health-check` (Basic)
-Simple health checks for basic verification
-
-#### `post-promotion-hook` (Alternative)
-Lightweight verification using the Node.js automation script
+**Key Benefits:**
+- **Simplicity**: Single verification step handles all testing needs
+- **Consistency**: Same test execution approach locally and in Kargo
+- **Scalability**: Unified test discovery automatically includes new plugin tests
+- **Maintainability**: External scripts following GitOps best practices
+- **Debuggability**: Comprehensive artifact collection and reporting
 
 ## E2E Test Execution Flow
 
-### 1. Deployment Readiness
-- Polls `https://backstage.127.0.0.1.nip.io` until responsive
+### 1. Health Check
+- Built into the Python script - validates deployment readiness
+- Polls target URL until responsive
 - Verifies Backstage content is loaded
 - Configurable timeout (default: 5 minutes)
 
-### 2. Test Execution
-- Runs existing Playwright tests:
-  - `tests/acceptance/events.spec.ts`
-  - `packages/app/e2e-tests/app.test.ts`
-- Generates HTML and JSON reports
+### 2. Test Setup
+- Creates unified test environment with proper directory structure
+- Sets up test configuration from mounted ConfigMaps
+- Installs dependencies and prepares Playwright environment
+
+### 3. Test Discovery
+- Uses Playwright glob patterns to find all relevant tests
+- Discovers tests from both central and plugin directories automatically
+- Ensures comprehensive coverage across the entire platform
+
+### 4. Test Execution
+- Runs all discovered tests using Playwright with unified configuration
+- Generates HTML, JUnit XML, and JSON reports
 - Validates core functionality:
   - Navigation elements
   - Catalog display
   - Entity relationships
   - API responses
+  - Plugin-specific functionality
 
-### 3. Result Reporting
-- Success/failure status reported to Kargo
-- Detailed logs available in job pods
-- HTML reports generated for debugging
+### 5. Artifact Collection
+- Stores results, screenshots, traces, and reports
+- Organizes artifacts by type for easy debugging
+- Copies all artifacts to mounted volume for persistence
 
 ## Configuration
 
+### Verification Template Configuration
+The consolidated verification template uses:
+
+```yaml
+verification:
+  analysisTemplates:
+    - name: backstage-verification
+  args:
+    - name: backstage-url
+      value: http://backstage.backstage.svc.cluster.local:7007
+```
+
+**Configuration Files:**
+- `test-config/package.json` - Unified test dependencies and scripts
+- `test-config/playwright.config.ts` - Playwright configuration with glob patterns for test discovery
+- `scripts/post_deployment_e2e.py` - Main test execution script with unified test discovery
+
 ### Environment Variables
-- `PLAYWRIGHT_URL`: Target deployment URL
+- `PLAYWRIGHT_BASE_URL`: Target deployment URL (set automatically)
+- `BACKSTAGE_URL`: Fallback URL for older configurations
 - `CI`: Set to "true" for CI mode
-- `NODE_ENV`: Set to "test"
+- `PLAYWRIGHT_BROWSERS_PATH`: Browser installation path
+- `KARGO_PROMOTION_ID`: Promotion identifier (set by Kargo)
+- `KARGO_FREIGHT_ID`: Freight identifier (set by Kargo)
 
 ### Resource Limits
 - Memory: 512Mi request, 2Gi limit
 - CPU: 250m request, 1000m limit
-- Timeout: 15 minutes
+- Timeout: 10 minutes for test execution
 
-### Retry Logic
-- Health checks: 30 attempts with 10s intervals
-- Test execution: Single attempt with detailed logging
-- Failure handling: Immediate failure on test errors
+### Test Discovery
+- Uses Playwright glob patterns to automatically discover tests from:
+  - `apps/backstage/tests/acceptance/**/*.spec.ts` - Central platform tests
+  - `apps/backstage/plugins/**/tests/acceptance/**/*.spec.ts` - Plugin-specific tests
 
 ## Usage
 
@@ -217,3 +248,47 @@ This integration addresses all E2E testing requirements:
 - Runs in isolated Kubernetes jobs
 - No persistent storage of sensitive data
 - Resource limits prevent resource exhaustion
+
+## Local Testing
+
+### Test Execution Modes
+
+The E2E testing system supports both clean and verbose output modes:
+
+#### Clean Mode (Default)
+```bash
+npm run test:docker
+# or
+npm run test:local
+```
+- Clean, focused output showing test progress and results
+- Minimal logging for production-like execution
+- Artifact organizer messages and test summaries only
+
+#### Verbose Mode (Debugging)
+```bash
+npm run test:docker:verbose
+# or  
+npm run test:local:verbose
+```
+- Detailed Playwright debug logs (`pw:browser*`, `pw:api*`)
+- Browser launch commands and network activity
+- Detailed logging from all components
+- Useful for debugging test failures or browser issues
+
+#### Interactive Shell Mode
+```bash
+npm run test:docker:shell
+```
+- Opens interactive shell inside Docker container
+- Allows manual test execution and debugging
+- Full access to test environment for troubleshooting
+
+### Output Control
+
+The verbose mode is controlled by:
+- **Playwright Debug Logs**: `DEBUG=pw:browser*,pw:api*` environment variable
+- **Python Logging**: `--verbose` flag sets logging level to DEBUG
+- **Test Framework**: Additional diagnostic output when needed
+
+Use verbose mode only when debugging issues, as the output can be quite extensive.

@@ -48,7 +48,7 @@ spec:
 
   verification:
     analysisTemplates:
-      - name: backstage-e2e-verification
+      - name: backstage-verification
     args:
       - name: backstage-url
         value: http://backstage.backstage.svc.cluster.local:7007
