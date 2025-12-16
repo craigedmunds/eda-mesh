@@ -149,8 +149,8 @@ This implementation plan restructures the mono repository to consolidate capabil
 - [x] 10. Checkpoint - Validate new structure
   - Ensure all tests pass, ask the user if questions arise.
 
-- [-] 11. Implement self-managing seed mechanism
-  - [ ] 11.1 Create self-managing seed applications
+- [x] 11. Implement self-managing seed mechanism
+  - [x] 11.1 Create self-managing seed applications
     - Create ArgoCD applications in the seed that manage the seed directory itself
     - Configure applications to point to `platform/kustomize/seed` path
     - Set up automatic sync policies for self-management
@@ -160,18 +160,18 @@ This implementation plan restructures the mono repository to consolidate capabil
     - **Property 3: Self-Managing Seed Behavior**
     - **Validates: Requirements 2.6, 2.7, 2.8**
 
-- [ ] 12. Implement branch targeting mechanism
-  - [ ] 12.1 Ensure branch targeting component is available
+- [x] 12. Implement branch targeting mechanism
+  - [x] 12.1 Ensure branch targeting component is available
     - Verify `platform/kustomize/_common/components/argocd-branch-targetrevision/` exists
     - Update component to support all ArgoCD resource types (Application, ApplicationSet)
     - _Requirements: 5.4, 5.5_
 
-  - [ ] 12.2 Add branch targeting to environment overlays
+  - [x] 12.2 Add branch targeting to environment overlays
     - Add branch targeting component to local environment overlays
     - Configure target revision ConfigMaps for feature branch development
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 12.3 Label applications for branch targeting
+  - [x] 12.3 Label applications for branch targeting
     - Ensure all ArgoCD applications have `repo=argocd-eda` label
     - Verify applications support branch targeting mechanism
     - _Requirements: 5.3_

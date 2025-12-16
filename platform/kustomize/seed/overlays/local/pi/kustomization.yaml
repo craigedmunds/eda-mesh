@@ -11,6 +11,15 @@ resources:
   - ../../../seed-app
   - letsencrypt-issuer.yaml
 
+components:
+  - ../../../../_common/components/argocd-branch-targetrevision
+
+configMapGenerator:
+  - name: argocd-branch-targetrevision
+    behavior: add
+    literals:
+      - targetRevision=feature/backstage-events
+
 generatorOptions:
   disableNameSuffixHash: true
 

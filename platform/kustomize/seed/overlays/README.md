@@ -2,78 +2,69 @@
 
 This directory contains environment-specific overlays for the consolidated seed structure.
 
-## Available Overlays
+## Available Environments
 
 ### Local Environments
 
-#### Pi Environment (`local/pi/`)
-- **Full capability set**: Includes all capabilities and supporting applications
-- **Components**: ArgoCD, EDA, Backstage, Image Factory, Supporting Applications
-- **Usage**: `kubectl apply -k platform/kustomize/seed/overlays/local/pi/`
+- **`local/pi/`** - Full capability deployment for Pi environment (targets `feature/pi` branch)
+- **`local/craig/`** - Deployment excluding Image Factory capability (targets `feature/backstage-events` branch)
+- **`local/niv/`** - Minimal configuration for Niv environment (targets `main` branch)
 
-#### Craig Environment (`local/craig/`)
-- **Reduced capability set**: Excludes Image Factory capability
-- **Components**: ArgoCD, EDA, Backstage, Supporting Applications
-- **Usage**: `kubectl apply -k platform/kustomize/seed/overlays/local/craig/`
+### Production Environment
 
-### Production Environment (`production/`)
-- **Core capabilities only**: Excludes supporting applications
-- **Components**: ArgoCD, EDA, Backstage, Image Factory
-- **Usage**: `kubectl apply -k platform/kustomize/seed/overlays/production/`
+- **`production/`** - Production deployment with core components only
 
-## Bootstrap Commands
+## Branch Targeting
 
-### Local Development (Pi)
-```bash
-kubectl apply -k platform/kustomize/seed/overlays/local/pi/
-```
+The branch targeting mechanism allows all ArgoCD applications to track a specific Git branch for isolated feature development.
 
-### Local Development (Craig)
-```bash
-kubectl apply -k platform/kustomize/seed/overlays/local/craig/
-```
+### Default Behavior
 
-### Production Deployment
-```bash
-kubectl apply -k platform/kustomize/seed/overlays/production/
-```
+By default, all applications track the `main` branch as specified in their individual application definitions. No additional configuration is needed.
 
-## Overlay Structure
+### Feature Branch Development
 
-Each overlay follows the same pattern:
-- References base components from `../../` (or `../../../` for local overlays)
-- Includes only the components needed for that environment
-- Can add environment-specific patches if needed
+To target all applications to a feature branch, add the branch targeting component to an existing overlay:
 
-## Adding New Overlays
-
-To create a new overlay:
-1. Create a new directory under the appropriate environment
-2. Create a `kustomization.yaml` file
-3. Reference the base components you need
-4. Add any environment-specific patches
-
-Example:
 ```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
+# Example: Add to local/craig/kustomization.yaml
+components:
+  - ../../../../_common/components/argocd-branch-targetrevision
 
-resources:
-  - ../../argocd
-  - ../../eda
-  - ../../backstage
-  # Add other components as needed
-
-generatorOptions:
-  disableNameSuffixHash: true
-
-# Add patches if needed
-patches:
-  - target:
-      kind: Application
-      name: backstage
-    patch: |-
-      - op: replace
-        path: /spec/source/targetRevision
-        value: my-branch
+configMapGenerator:
+  - name: argocd-branch-targetrevision
+    behavior: add
+    literals:
+      - targetRevision=feature/my-feature-branch
 ```
+
+### How It Works
+
+1. **Component**: The `argocd-branch-targetrevision` component uses Kustomize replacements to override the `targetRevision` field
+2. **Label Selector**: Only applications with the `repo=argocd-eda` label are affected
+3. **Multi-Source Support**: Works with both single-source and multi-source ArgoCD applications
+4. **ApplicationSet Support**: Also works with ApplicationSet resources
+
+### Usage
+
+1. **Deploy with feature branch targeting**:
+   ```bash
+   kubectl apply -k platform/kustomize/seed/overlays/local/craig-feature-branch
+   ```
+
+2. **All labeled applications will now track the specified branch**
+
+3. **To return to main branch**, remove the component and configMapGenerator from the overlay and redeploy
+
+### Requirements
+
+Applications must have the following label to be affected by branch targeting:
+```yaml
+metadata:
+  labels:
+    repo: argocd-eda
+```
+
+Applications may also have a `branch-strategy` label to control how targeting is applied:
+- No label or `branch-strategy notin (multisource)`: Single-source application
+- `branch-strategy in (multisource)`: Multi-source application
