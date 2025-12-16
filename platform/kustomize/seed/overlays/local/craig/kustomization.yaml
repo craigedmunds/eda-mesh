@@ -9,6 +9,15 @@ resources:
   - ../../../supporting-applications
   - ../../../seed-app
 
+components:
+  - ../../../../_common/components/argocd-branch-targetrevision
+
+configMapGenerator:
+  - name: argocd-branch-targetrevision
+    behavior: add
+    literals:
+      - targetRevision=feature/backstage-events
+
 generatorOptions:
   disableNameSuffixHash: true
 
