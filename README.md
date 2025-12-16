@@ -1,14 +1,95 @@
-# Argocd App Of Apps
+# Platform Mono Repository
 
-## Repomix
+This mono repository contains a comprehensive platform implementation featuring event-driven architecture, developer tooling, and container lifecycle management, all orchestrated through GitOps practices.
 
-Repomix is used to generate an AI readable summary of the repo
+## Architecture Overview
 
-`npx repomix`
+```mermaid
+C4Context
+    title System Context - Platform Overview
+    
+    Person(dev, "Developer", "Platform user")
+    System(platform, "Platform", "Event-driven architecture platform with developer tooling")
+    System_Ext(github, "GitHub", "Source code and container registry")
+    System_Ext(k8s, "Kubernetes", "Container orchestration")
+    
+    Rel(dev, platform, "Uses")
+    Rel(platform, github, "Pulls code, pushes images")
+    Rel(platform, k8s, "Deploys to")
+```
 
-## Event Driven Architecture
+```mermaid
+C4Container
+    title Container Diagram - Platform Components
+    
+    Container(backstage, "Backstage", "React/Node.js", "Developer portal and service catalog")
+    Container(imagefactory, "Image Factory", "Python/Flask", "Container lifecycle management")
+    Container(eda, "EDA Mesh", "Camel/Java", "Event-driven architecture platform")
+    Container(argocd, "ArgoCD", "Go", "GitOps deployment engine")
+    
+    ContainerDb(kafka, "Kafka", "Event streaming platform")
+    ContainerDb(rabbitmq, "RabbitMQ", "Message broker")
+    ContainerDb(registry, "Container Registry", "GHCR", "Container image storage")
+    
+    Rel(backstage, imagefactory, "Manages images")
+    Rel(backstage, eda, "Catalogs services")
+    Rel(imagefactory, registry, "Pushes/pulls images")
+    Rel(eda, kafka, "Streams events")
+    Rel(eda, rabbitmq, "Queues messages")
+    Rel(argocd, backstage, "Deploys")
+    Rel(argocd, imagefactory, "Deploys")
+    Rel(argocd, eda, "Deploys")
+```
 
-This repository contains an event-driven architecture implementation with ArgoCD, featuring automated container image lifecycle management through the Image Factory system and comprehensive Backstage integration.
+## Platform Capabilities
+
+### 🏗️ [Backstage](./backstage/README.md) - Developer Portal
+Internal developer catalog and portal providing unified interface for discovering, understanding, and managing software components.
+
+**Key Features:**
+- Service catalog with custom plugins
+- Software templates for scaffolding
+- Documentation hub with TechDocs
+- Integration with Image Factory and EDA components
+
+### 🏭 [Image Factory](./image-factory/README.md) - Container Lifecycle Management
+Automated container image building, testing, and deployment system with GitOps integration.
+
+**Key Features:**
+- Automated building with multi-architecture support
+- Kargo-based GitOps pipelines
+- State management for base and application images
+- Integration with GitHub Container Registry
+
+### 🔄 [EDA Mesh](./eda/README.md) - Event-Driven Architecture
+Comprehensive event-driven architecture platform enabling loose coupling through asynchronous messaging.
+
+**Key Features:**
+- Apache Kafka for event streaming
+- RabbitMQ for reliable messaging
+- Camel Karavan visual integration designer
+- Microservices with JBang-based integrations
+
+## Repository Structure
+
+```
+├── backstage/              # Backstage capability
+│   ├── app/                # Backstage application
+│   └── kustomize/          # Kubernetes configurations
+├── image-factory/          # Image Factory capability
+│   ├── app/                # Python Flask service
+│   ├── cdk8s/              # Infrastructure as code
+│   └── state/              # Image state management
+├── eda/                    # Event-Driven Architecture capability
+│   ├── mesh/               # Business logic (producers, consumers, services)
+│   ├── kustomize/          # Kubernetes configurations
+│   └── helm/               # Helm charts
+├── platform/               # Shared platform infrastructure
+│   └── kustomize/          # Shared Kubernetes configs and seed
+└── apps/                   # Supporting applications
+    ├── e2e-test-runner/    # Testing utilities
+    └── uv/                 # Utility services
+```
 
 ## Image Factory - Container Lifecycle Management
 
@@ -33,22 +114,51 @@ The Image Factory provides automated container image lifecycle management with t
 - **Property-Based Testing**: Comprehensive test coverage with correctness properties
 - **Event-Driven Rebuilds**: Automatic image rebuilds on base image updates
 
-# Using the seed
+## Bootstrap Instructions
 
-In order to instantiate this in a new argocd cluster...
+The platform uses a consolidated seed structure for single-command cluster bootstrap.
 
-## 1. Install ArgoCD and Seed
+### Quick Start
 
-Install ArgoCD and create the seed application:
+Choose your environment and run the appropriate bootstrap command:
 
+#### Local Development (Pi Environment - Full Capabilities)
 ```bash
-kustomize build seed/overlays/local/pi | kubectl apply -f -
+kubectl apply -k platform/kustomize/seed/overlays/local/pi/
 ```
 
-This will:
-- Create the argocd namespace with proper secret management labels
-- Install ArgoCD from the official manifests
-- Create the eda-bootstrap application
+#### Local Development (Craig Environment - No Image Factory)
+```bash
+kubectl apply -k platform/kustomize/seed/overlays/local/craig/
+```
+
+#### Local Development (Niv Environment - Full Capabilities)
+```bash
+kubectl apply -k platform/kustomize/seed/overlays/local/niv/
+```
+
+#### Production Deployment (Core Capabilities Only)
+```bash
+kubectl apply -k platform/kustomize/seed/overlays/production/
+```
+
+### What Gets Deployed
+
+The bootstrap process creates:
+- **ArgoCD**: GitOps deployment engine with configuration
+- **Core Capabilities**: Backstage, Image Factory, EDA Mesh (depending on overlay)
+- **Supporting Applications**: Kargo, Kyverno, cert-manager, etc. (local environments only)
+
+### Environment Differences
+
+| Component | Pi | Craig | Niv | Production |
+|-----------|----|----|-----|------------|
+| ArgoCD | ✅ | ✅ | ✅ | ✅ |
+| Backstage | ✅ | ✅ | ✅ | ✅ |
+| Image Factory | ✅ | ❌ | ✅ | ✅ |
+| EDA Mesh | ✅ | ✅ | ✅ | ✅ |
+| Supporting Apps | ✅ | ✅ | ✅ | ❌ |
+| TLS/Domains | Real domains | nip.io | nip.io | TBD |
 
 Get the admin password:
 
@@ -118,7 +228,7 @@ In order to work on a feature branch of this repo, to avoid impacting others whi
 
 Create an overlay for the kustomize seed application (e.g. kustomize/seed/overlays/feature-branch-name)
 
-Create an overlay for the kustomize mesh application (e.g. kustomize/mesh/overlays/feature-branch-name)
+Create an overlay for the EDA mesh application (e.g. eda/kustomize/mesh/overlays/feature-branch-name)
 
 Create an overlay for the root seed application (e.g. seed/overlays/local/craig)
 
@@ -146,7 +256,7 @@ kubectl create secret generic kargo-admin-credentials \
 
 Backstage is used for the service catalogue; the helm charts in the eda create config maps with backstage resources that represent the services, APIs, events and relationships between them.
 
-The source for the backstage app is in apps/backstage and this is manually built into a docker image and published to github:
+The source for the backstage app is in backstage/app and this is manually built into a docker image and published to github:
 
 `yarn tsc`
 

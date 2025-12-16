@@ -1,0 +1,54 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Pi environment overlay - includes all capabilities and supporting applications
+resources:
+  - ../../../argocd
+  - ../../../eda
+  - ../../../backstage
+  - ../../../image-factory
+  - ../../../supporting-applications
+  - letsencrypt-issuer.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Pi-specific patches
+patches:
+  - target:
+      kind: Ingress
+      name: argocd-server-ingress
+    patch: |-
+      - op: add
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+      - op: add
+        path: /spec/tls
+        value:
+          - hosts:
+            - argocd.web.ctoaas.co
+            - argocd.web.local.ctoaas.co
+            secretName: argocd-ctoaas-tls
+      - op: replace
+        path: /spec/rules
+        value:
+          - host: argocd.web.ctoaas.co
+            http:
+              paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: argocd-server
+                    port:
+                      name: http
+          - host: argocd.web.local.ctoaas.co
+            http:
+              paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: argocd-server
+                    port:
+                      name: http

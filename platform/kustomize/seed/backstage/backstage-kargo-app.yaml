@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backstage-kargo
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    capability: backstage
+    component: kargo
+spec:
+  project: eventing
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    targetRevision: main
+    path: backstage/kustomize/kargo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: backstage-kargo
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
