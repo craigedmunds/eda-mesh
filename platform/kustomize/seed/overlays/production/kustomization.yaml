@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Production environment overlay - includes core capabilities (self-manager included in argocd)
+resources:
+  - ../../argocd
+  - ../../eda
+  - ../../backstage
+  - ../../image-factory
+  - ../../seed-app
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Production-specific patches
+patches:
+  # Example: Set production-specific resource limits
+  # - target:
+  #     kind: Application
+  #     name: backstage
+  #   patch: |-
+  #     - op: replace
+  #       path: /spec/source/targetRevision
+  #       value: main
+  
+  # Example: Add production-specific labels
+  # - target:
+  #     kind: Application
+  #   patch: |-
+  #     - op: add
+  #       path: /metadata/labels/environment
+  #       value: production

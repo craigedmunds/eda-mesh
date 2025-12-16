@@ -3,5 +3,4 @@ node_modules
 .eslinttcache
 
 .backstage-acceptance-artifacts/*/
-CLEANUP_SUMMARY.md
-cdk8s/image-factory/imports/
+image-factory/cdk8s/imports/

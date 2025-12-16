@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: camel-k-mesh-services
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - git:
+      repoURL: https://github.com/craigedmunds/argocd-eda.git
+      revision: HEAD
+      directories:
+      - path: eda/mesh/services/*
+      values:
+        service: "{{.path.basename}}"
+
+  template:
+    metadata:     
+      name: 'camel-k-mesh-service-{{.values.service}}'
+
+    spec:
+      project: "eventing"
+      source:
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        targetRevision: HEAD
+        path: 'eda/mesh/services/{{.values.service}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "camel-k-mesh-service-{{.values.service}}"
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true

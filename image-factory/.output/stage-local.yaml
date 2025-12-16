@@ -25,7 +25,7 @@ spec:
         - uses: kustomize-set-image
           as: update-image
           config:
-            path: ./repo/kustomize/backstage/overlays/local
+            path: ./repo/backstage/kustomize/overlays/local
             images:
               - image: ghcr.io/craigedmunds/backstage
                 tag: ${{ imageFrom("ghcr.io/craigedmunds/backstage").Tag }}

@@ -1,109 +1,152 @@
-# Image Factory
+# Image Factory Capability
 
-Automated system for monitoring upstream base images and triggering rebuilds of dependent internal images using Kargo and ArgoCD.
+## Overview
 
-## What It Does
-
-When a base image like `node:22-bookworm-slim` is updated on Docker Hub, the Image Factory:
-1. Detects the update via Kargo Warehouse
-2. Waits a configurable delay (default: 7 days) for vulnerability discovery
-3. Automatically triggers GitHub Actions to rebuild dependent images
-4. Updates state files to track the rebuild
-
-## Quick Start
-
-### Enroll a New Image
-
-Add to `images.yaml`:
-
-```yaml
-- name: myapp
-  registry: ghcr.io
-  repository: owner/myapp
-  source:
-    provider: github
-    repo: owner/repo
-    branch: main
-    dockerfile: apps/myapp/Dockerfile
-    workflow: build.yml
-  rebuildDelay: 7d
-  autoRebuild: true
-```
-
-### Generate Manifests
-
-```bash
-cd cdk8s/image-factory
-cdk8s synth
-kubectl apply -f dist/image-factory.k8s.yaml
-```
-
-### Check Status
-
-```bash
-# View warehouses
-kubectl get warehouses -n image-factory-kargo
-
-# View stages
-kubectl get stages -n image-factory-kargo
-
-# View state files
-cat image-factory/state/images/myapp.yaml
-```
-
-## Documentation
-
-Full documentation is in `.kiro/specs/image-factory/`:
-
-- **[requirements.md](../.kiro/specs/image-factory/requirements.md)** - User stories and acceptance criteria
-- **[design.md](../.kiro/specs/image-factory/design.md)** - Architecture and data models
-- **[tasks.md](../.kiro/specs/image-factory/tasks.md)** - Implementation status and roadmap
-
-## File Structure
-
-```
-image-factory/
-├── images.yaml              # Enrollment config (edit this)
-├── state/
-│   ├── images/             # Generated image state
-│   └── base-images/        # Generated base image state
-└── README.md               # This file
-```
-
-## How It Works
-
-```
-Developer enrolls image → CDK8s generates manifests → ArgoCD applies
-    ↓
-Kargo monitors registries → Detects updates → Creates Freight
-    ↓
-Analysis stage runs → Parses Dockerfile → Updates state files
-    ↓
-Base image updates → Rebuild-trigger stage → GitHub Actions
-    ↓
-New image built → Cycle repeats
-```
+Image Factory is a container lifecycle management system that automates the building, testing, and deployment of Docker images. It provides a centralized approach to managing container images used across the platform.
 
 ## Components
 
-- **Analysis Tool** (`apps/image-factory/app.py`) - Parses Dockerfiles, generates state
-- **CDK8s App** (`cdk8s/image-factory/main.py`) - Generates Kargo manifests
-- **Kargo Resources** - Warehouses, Stages, AnalysisTemplates for orchestration
+### Application (`app/`)
+- **Flask Service**: Python-based web service for image management
+- **Dependencies**: Managed via `pyproject.toml` and `uv.lock`
+- **Testing**: Unit tests with pytest
 
-## Current Status
+### Infrastructure (`cdk8s/`)
+- **CDK8s Definitions**: Infrastructure as code using Python CDK8s
+- **Kargo Integration**: GitOps pipeline definitions
+- **Kubernetes Resources**: Deployments, services, and configurations
 
-✅ **Working:**
-- Dockerfile analysis and base image discovery
-- Automated rebuild triggers via GitHub Actions
-- State file management in git
-- Kargo integration for monitoring and orchestration
+### State Management (`state/`)
+- **Base Images**: Configuration for base container images
+- **Managed Images**: Definitions for application-specific images
+- **Version Tracking**: Image version and tag management
 
-📋 **Planned:**
-- Multi-stage Dockerfile support
-- External image enrollment (postgres, redis, etc.)
-- Rebuild delay enforcement (7-day wait period)
-- GitLab support
-- Dependency graph visualization
-- Security scanning integration
+## Key Features
 
-See [tasks.md](../.kiro/specs/image-factory/tasks.md) for detailed roadmap.
+- **Automated Building**: Triggered builds based on source changes
+- **Multi-Architecture Support**: ARM64 and AMD64 image builds
+- **Registry Integration**: GitHub Container Registry (GHCR) integration
+- **Kargo Pipelines**: GitOps-based deployment workflows
+- **State Management**: Centralized image configuration and versioning
+
+## Image Types
+
+### Base Images (`state/base-images/`)
+- **Node.js**: `node-22-bookworm-slim`
+- **Python**: `python-3.12-slim`
+- Foundation images for application containers
+
+### Application Images (`state/images/`)
+- **Backstage**: Main developer portal application
+- **UV Service**: Python utility service
+- Custom application containers
+
+## Deployment
+
+### Local Development
+```bash
+cd image-factory/app
+uv sync
+uv run python app.py
+```
+
+### Kubernetes Deployment
+```bash
+# Deploy infrastructure
+kubectl apply -k image-factory/cdk8s/dist
+
+# Check deployment status
+kubectl get pods -n image-factory
+```
+
+## Configuration
+
+### Image Definitions
+Images are defined in YAML files under `state/`:
+```yaml
+# state/images/example.yaml
+apiVersion: v1
+kind: ImageDefinition
+metadata:
+  name: example-app
+spec:
+  baseImage: node-22-bookworm-slim
+  buildContext: apps/example
+  registry: ghcr.io/organization
+  tags:
+    - latest
+    - v1.0.0
+```
+
+### Build Configuration
+- **Dockerfile**: Located in application directories
+- **Build Context**: Specified in image definitions
+- **Registry**: GitHub Container Registry integration
+
+## Operations
+
+### Building Images
+```bash
+# Trigger build via API
+curl -X POST http://image-factory/api/build/image-name
+
+# Check build status
+curl http://image-factory/api/status/build-id
+```
+
+### Managing State
+```bash
+# Update image configuration
+kubectl apply -f state/images/new-image.yaml
+
+# View current images
+kubectl get images -n image-factory
+```
+
+## Integration Points
+
+- **GitHub Actions**: Automated builds on code changes
+- **Kargo**: GitOps deployment pipelines
+- **Container Registry**: GHCR for image storage
+- **Backstage**: Image catalog and management UI
+
+## Monitoring
+
+- **Build Logs**: Available via API and Kubernetes logs
+- **Metrics**: Build success/failure rates
+- **Health Checks**: Service health endpoints
+
+## Development
+
+### Adding New Images
+1. Create image definition in `state/images/`
+2. Ensure Dockerfile exists in build context
+3. Configure registry and tagging strategy
+4. Test build process locally
+
+### Modifying Infrastructure
+1. Update CDK8s definitions in `cdk8s/`
+2. Run `cdk8s synth` to generate manifests
+3. Apply changes via GitOps pipeline
+
+## Troubleshooting
+
+### Common Issues
+- **Build Failures**: Check Dockerfile and build context
+- **Registry Access**: Verify GHCR credentials
+- **Resource Limits**: Monitor CPU/memory usage during builds
+
+### Debugging
+```bash
+# View service logs
+kubectl logs -n image-factory deployment/image-factory
+
+# Check build status
+kubectl get analysisruns -n image-factory-kargo
+```
+
+## Related Documentation
+
+- [Kargo Documentation](https://docs.akuity.io/kargo/)
+- [CDK8s Documentation](https://cdk8s.io/)
+- [Container Registry Setup](../platform/README.md#container-registry)

@@ -1,0 +1,10 @@
+
+helmChartInflationGenerator:
+  - chartHome: ../../../helm
+    chartName: jbang-camel-integration
+    releaseName: camel-k-mesh-producer-demo-user-updated
+    values: values.yaml
+
+resources:
+- confluent-topic.yaml
+- jbang-configmap.yaml

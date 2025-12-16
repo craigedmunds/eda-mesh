@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rabbitmq-operator
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    component: rabbitmq
+spec:
+  project: eventing
+  source:
+    repoURL: https://charts.bitnami.com/bitnami
+    chart: rabbitmq-cluster-operator
+    targetRevision: 4.4.34
+    helm:
+      parameters:
+        - name: global.security.allowInsecureImages
+          value: 'true'
+        - name: clusterOperator.image.repository
+          value: bitnamilegacy/rabbitmq-cluster-operator
+        - name: rabbitmqImage.repository
+          value: bitnamilegacy/rabbitmq
+        - name: credentialUpdaterImage.repository
+          value: bitnamilegacy/rmq-default-credential-updater
+        - name: msgTopologyOperator.image.repository
+          value: bitnamilegacy/rmq-messaging-topology-operator
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: rabbitmq
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
