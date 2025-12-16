@@ -13,7 +13,7 @@ enrollment:
     provider: github
     repo: craigedmunds/argocd-eda
     branch: main
-    dockerfile: apps/backstage/packages/backend/Dockerfile
+    dockerfile: backstage/app/packages/backend/Dockerfile
     workflow: backstage.yml
   rebuildDelay: 7d
   autoRebuild: true

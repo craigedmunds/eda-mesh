@@ -1,0 +1,80 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backstage-e2e-verification
+  namespace: backstage-kargo
+spec:
+  args:
+    - name: backstage-url
+      value: http://backstage.backstage.svc.cluster.local:7007
+  
+  metrics:
+    # Run comprehensive E2E tests using the Python script
+    - name: backstage-e2e-tests
+      provider:
+        job:
+          spec:
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: e2e-runner
+                    image: ghcr.io/craigedmunds/e2e-test-runner:0.1.4
+                    command: ["/bin/bash"]
+                    args:
+                      - "-c"
+                      - |
+                        set -euo pipefail
+                        echo "🚀 Starting Backstage E2E verification..."
+                        
+                        # Execute the E2E test runner
+                        python3 /scripts/post_deployment_e2e.py \
+                          --url "{{args.backstage-url}}" \
+                          --max-wait-time 300 \
+                          --verbose
+                    env:
+                      - name: BACKSTAGE_URL
+                        value: "{{args.backstage-url}}"
+                      - name: PLAYWRIGHT_BROWSERS_PATH
+                        value: "/ms-playwright"
+                      - name: KARGO_PROMOTION_ID
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.name
+                      - name: KARGO_FREIGHT_ID
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.labels['kargo.akuity.io/freight-collection']
+                    volumeMounts:
+                      - name: e2e-scripts
+                        mountPath: /scripts
+                        readOnly: true
+                      - name: acceptance-tests
+                        mountPath: /workspace/backstage/app/tests/acceptance
+                        readOnly: true
+                      - name: eda-plugin-tests
+                        mountPath: /workspace/backstage/app/plugins/eda/tests/acceptance
+                        readOnly: true
+                      - name: e2e-artifacts
+                        mountPath: /artifacts
+                volumes:
+                  - name: e2e-scripts
+                    configMap:
+                      name: backstage-e2e-scripts
+                      defaultMode: 0755
+                  - name: acceptance-tests
+                    configMap:
+                      name: backstage-acceptance-tests
+                      defaultMode: 0755
+                  - name: eda-plugin-tests
+                    configMap:
+                      name: backstage-eda-plugin-tests
+                      defaultMode: 0755
+                  - name: e2e-artifacts
+                    hostPath:
+                      path: /Users/craig/src/hmrc-eis/eda/argocd-eda/.backstage-e2e-artifacts
+                      type: DirectoryOrCreate
+      successCondition: "result.phase == Succeeded"
+      failureLimit: 1
+      interval: 60s
+      count: 1

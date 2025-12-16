@@ -63,11 +63,11 @@ kubectl patch application <app-name> -n argocd --type='merge' -p='{"metadata":{"
 kubectl patch application backstage-kargo -n argocd --type='merge' -p='{"spec":{"syncPolicy":{"automated":null}}}'
 
 # 2. Apply and test changes
-kubectl apply -k kustomize/backstage-kargo/
+kubectl apply -k backstage/kustomize/kargo/
 
 # 3. Iterate on AnalysisTemplate
 # Edit backstage-e2e-verification.yaml
-kubectl apply -k kustomize/backstage-kargo/
+kubectl apply -k backstage/kustomize/kargo/
 
 # 4. Test verification
 # Create promotion and observe AnalysisRuns

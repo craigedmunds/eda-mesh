@@ -6,7 +6,7 @@ on:
       - main
       - feature/backstage-events
     paths:
-      - 'apps/backstage/**'
+      - 'backstage/app/**'
       - '.github/workflows/backstage.yml'
       - '.github/workflows/reusable-docker-build.yml'
   
@@ -28,12 +28,12 @@ jobs:
     with:
       app_name: 'Backstage'
       image_name: 'craigedmunds/backstage'
-      dockerfile: 'apps/backstage/packages/backend/Dockerfile'
-      context: 'apps/backstage'
-      version_file: 'apps/backstage/package.json'
+      dockerfile: 'backstage/app/packages/backend/Dockerfile'
+      context: 'backstage/app'
+      version_file: 'backstage/app/package.json'
       version_type: 'package-json'
       pre_build_script: |
-        cd apps/backstage
+        cd backstage/app
         cp .yarnrc.ci.yml .yarnrc.yml
       # Pass through version_bump input if present
       version_bump: ${{ inputs.version_bump || 'patch' }}

@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: backstage-kargo
+
+resources:
+  - project.yaml
+  - warehouse.yaml
+  - stage-local.yaml
+  - backstage-verification.yaml
+  - namespace-patch.yaml
+
+components:
+  - ../../app/tests/acceptance
+  - ../../app/plugins/eda/tests/acceptance
+
+configMapGenerator:
+  - name: backstage-e2e-scripts
+    files:
+      - scripts/post_deployment_e2e.py
+      - scripts/requirements.txt
+    options:
+      labels:
+        app: backstage-e2e
+        component: test-scripts
+      disableNameSuffixHash: true

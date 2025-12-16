@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seed
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    component: seed
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: eventing
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    path: platform/kustomize/seed
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true
+  ignoreDifferences:
+    # Ignore differences in the seed-self-manager application itself to prevent infinite loops
+    - group: argoproj.io
+      kind: Application
+      name: seed-self-manager
+      jsonPointers:
+        - /status
+        - /operation

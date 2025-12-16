@@ -10,7 +10,7 @@
     provider: github  # github or gitlab
     repo: craigedmunds/argocd-eda  # Source repo (happens to be this repo)
     branch: main
-    dockerfile: apps/backstage/packages/backend/Dockerfile
+    dockerfile: backstage/app/packages/backend/Dockerfile
     # For GitHub:
     workflow: backstage.yml
     # For GitLab:

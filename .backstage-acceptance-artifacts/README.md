@@ -27,4 +27,4 @@ This directory can grow over time. To clean up old artifacts:
 find .backstage-acceptance-artifacts -name "backstage-acceptance-*" -mtime +7 -exec rm -rf {} \;
 ```
 
-For more detailed information, see `kustomize/backstage-kargo/ARTIFACTS_README.md`.
+For more detailed information, see `backstage/kustomize/kargo/ARTIFACTS_README.md`.

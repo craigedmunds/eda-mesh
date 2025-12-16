@@ -1,0 +1,97 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kargo
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    component: kargo
+spec:
+  project: sdlc
+  source:
+    repoURL: oci://ghcr.io/akuity/kargo-charts/kargo
+    targetRevision: 1.8.4
+    chart: kargo
+    helm:
+      values: |
+        api:
+          host: kargo.127.0.0.1.nip.io
+          secret:
+            name: kargo-admin-credentials
+          adminAccount:
+            enabled: true
+          tls:
+            enabled: false
+          ingress:
+            enabled: true
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              traefik.ingress.kubernetes.io/router.tls: "true"
+            pathType: Prefix
+        
+        extraObjects:
+          - apiVersion: kyverno.io/v1
+            kind: ClusterPolicy
+            metadata:
+              name: kargo-label-secrets
+              annotations:
+                policies.kyverno.io/title: Add Kargo Labels to Secrets
+                policies.kyverno.io/category: Kargo Integration
+                policies.kyverno.io/description: Adds Kargo-specific labels to secrets in Kargo project namespaces
+            spec:
+              admission: true
+              background: true
+              rules:
+                - name: label-ghcr-secrets-for-kargo
+                  match:
+                    any:
+                      - resources:
+                          kinds:
+                            - Secret
+                          names:
+                            - "ghcr-creds"
+                  preconditions:
+                    all:
+                      - key: "{{`{{ request.object.metadata.namespace | ends_with(@, '-kargo') }}`}}"
+                        operator: Equals
+                        value: true
+                      - key: "{{`{{ request.object.type }}`}}"
+                        operator: Equals
+                        value: "kubernetes.io/dockerconfigjson"
+                  mutate:
+                    patchStrategicMerge:
+                      metadata:
+                        labels:
+                          kargo.akuity.io/cred-type: image
+
+                - name: label-git-secrets-for-kargo
+                  match:
+                    any:
+                      - resources:
+                          kinds:
+                            - Secret
+                          names:
+                            - "github-credentials"
+                  preconditions:
+                    all:
+                      - key: "{{`{{ request.object.metadata.namespace | ends_with(@, '-kargo') }}`}}"
+                        operator: Equals
+                        value: true
+                      - key: "{{`{{ request.object.type }}`}}"
+                        operator: Equals
+                        value: "Opaque"
+                  mutate:
+                    patchStrategicMerge:
+                      metadata:
+                        labels:
+                          kargo.akuity.io/cred-type: git
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kargo
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        secrets/kargo-admin-credentials: "true"
+    syncOptions:
+      - CreateNamespace=true
