@@ -19,9 +19,9 @@ def run_in_docker(url: str, verbose: bool = False, shell: bool = False, test_fil
         print("🐳 Running acceptance test inside Docker container...")
     
     # Get the project root directory
-    project_root = Path(__file__).parent.parent.parent.parent
+    project_root = Path(__file__).parent.parent.parent.parent.parent
     scripts_dir = Path(__file__).parent
-    backstage_apps_dir = project_root / 'apps' / 'backstage'
+    backstage_app_dir = project_root / 'backstage' / 'app'
     artifacts_dir = project_root / '.backstage-acceptance-artifacts'
     
     # Ensure artifacts directory exists
@@ -34,8 +34,8 @@ def run_in_docker(url: str, verbose: bool = False, shell: bool = False, test_fil
         '--network', 'host',
         # Mount the scripts
         '-v', f'{scripts_dir}:/scripts:ro',
-        # Mount the entire backstage apps directory for unified test discovery
-        '-v', f'{backstage_apps_dir}:/workspace/apps/backstage:ro',
+        # Mount the entire backstage app directory for unified test discovery
+        '-v', f'{backstage_app_dir}:/workspace/backstage/app:ro',
         # Mount artifacts directory
         '-v', f'{artifacts_dir}:/artifacts',
         # Set environment variables
@@ -104,7 +104,7 @@ def run_locally(url: str, verbose: bool = False, test_filter: str = None, grep_p
     temp_dir.mkdir(exist_ok=True)
     
     # Copy acceptance test files to the expected location
-    acceptance_tests_source = Path(__file__).parent.parent.parent.parent / 'apps' / 'backstage' / 'tests' / 'acceptance'
+    acceptance_tests_source = Path(__file__).parent.parent.parent.parent.parent / 'backstage' / 'app' / 'tests' / 'acceptance'
     acceptance_tests_target = temp_dir / 'acceptance-tests'
     
     if acceptance_tests_source.exists():
