@@ -60,7 +60,7 @@ class TestIntegration:
                     'provider': 'github',
                     'repo': 'owner/repo',
                     'branch': 'main',
-                    'dockerfile': 'apps/backstage/Dockerfile',
+                    'dockerfile': 'backstage/app/Dockerfile',
                     'workflow': 'build.yml'
                 },
                 'rebuildDelay': '7d',
@@ -185,7 +185,7 @@ RUN npm install
                 'source': {
                     'provider': 'github',
                     'repo': 'owner/repo',
-                    'dockerfile': 'apps/backstage/Dockerfile'
+                    'dockerfile': 'backstage/app/Dockerfile'
                 }
             }
         ]))

@@ -38,8 +38,8 @@ The consolidated verification template provides a single comprehensive E2E test 
 
 - **Integrated Health Check**: Built into the Python script - validates deployment readiness
 - **Unified Test Discovery**: Uses Playwright glob patterns to discover and run tests from:
-  - `apps/backstage/tests/acceptance/**/*.spec.ts` - Central platform tests  
-  - `apps/backstage/plugins/**/tests/acceptance/**/*.spec.ts` - Plugin-specific tests
+  - `backstage/app/tests/acceptance/**/*.spec.ts` - Central platform tests  
+  - `backstage/app/plugins/**/tests/acceptance/**/*.spec.ts` - Plugin-specific tests
 - **Single Verification Step**: Combines health checking and E2E testing in one execution
 - **External Script Management**: Scripts stored in dedicated files (not embedded in ConfigMaps)
 - **Consolidated Reporting**: HTML, JUnit XML, and JSON results with comprehensive artifact collection
@@ -118,8 +118,8 @@ verification:
 
 ### Test Discovery
 - Uses Playwright glob patterns to automatically discover tests from:
-  - `apps/backstage/tests/acceptance/**/*.spec.ts` - Central platform tests
-  - `apps/backstage/plugins/**/tests/acceptance/**/*.spec.ts` - Plugin-specific tests
+  - `backstage/app/tests/acceptance/**/*.spec.ts` - Central platform tests
+  - `backstage/app/plugins/**/tests/acceptance/**/*.spec.ts` - Plugin-specific tests
 
 ## Usage
 
@@ -191,7 +191,7 @@ kubectl logs -n backstage-kargo -l job-name=backstage-e2e-tests
 ### With Existing Tests
 - Uses current Playwright configuration
 - Integrates with existing test suites
-- Leverages automation scripts in `apps/backstage/scripts/`
+- Leverages automation scripts in `backstage/kustomize/kargo/scripts/`
 
 ### With CI/CD
 - Compatible with GitHub Actions
