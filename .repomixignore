@@ -4,3 +4,5 @@ node_modules
 
 .backstage-acceptance-artifacts/*/
 image-factory/cdk8s/imports/
+
+seed

@@ -10,6 +10,15 @@ configMapGenerator:
       - basic.spec.ts
     options:
       labels:
-        app: backstage-e2e
+        app: backstage-acceptance
         component: acceptance-tests
+      disableNameSuffixHash: true
+  - name: backstage-acceptance-lib
+    files:
+      - lib/auth-helper.ts
+      - lib/screenshot-helper.ts
+    options:
+      labels:
+        app: backstage-acceptance
+        component: acceptance-lib
       disableNameSuffixHash: true

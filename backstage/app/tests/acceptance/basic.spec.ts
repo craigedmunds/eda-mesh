@@ -1,29 +1,14 @@
 import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { takeStepScreenshot } from './lib/screenshot-helper';
 
 test.describe('Backstage E2E Acceptance Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Use environment variable for test results directory, fallback to writable location
-    const testResultsDir = process.env.TEST_RESULTS_DIR || '/tmp/test-results';
-    const screenshotsDir = path.join(testResultsDir, 'screenshots');
-    if (!fs.existsSync(screenshotsDir)) {
-      fs.mkdirSync(screenshotsDir, { recursive: true });
-    }
-    
     await page.goto('/');
   });
 
-  test('should validate Backstage deployment and basic functionality', async ({ page }) => {
-    // Create test-specific screenshot directory
-    const testResultsDir = process.env.TEST_RESULTS_DIR || '/tmp/test-results';
-    const testScreenshotsDir = path.join(testResultsDir, 'screenshots', 'basic-spec', 'test-1-deployment-validation');
-    if (!fs.existsSync(testScreenshotsDir)) {
-      fs.mkdirSync(testScreenshotsDir, { recursive: true });
-    }
-    
+  test('should validate Backstage deployment and basic functionality', async ({ page }, testInfo) => {
     // Take screenshot of login page
-    await page.screenshot({ path: path.join(testScreenshotsDir, '01-login-page.png'), fullPage: true });
+    await takeStepScreenshot(page, testInfo, '01', 'login-page');
     
     // Verify we're on the login page
     await expect(page).toHaveTitle(/.*Backstage.*/);
@@ -123,7 +108,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
     // Wait for any loading to complete
     await page.waitForLoadState('networkidle', { timeout: 10000 });
     
-    await page.screenshot({ path: path.join(testScreenshotsDir, '02-after-login.png'), fullPage: true });
+    await takeStepScreenshot(page, testInfo, '02', 'after-login');
     
     console.log('After login attempt - URL:', page.url());
     console.log('After login attempt - Title:', await page.title());
@@ -146,7 +131,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
           await page.waitForLoadState('networkidle', { timeout: 10000 });
           
           // Take a screenshot to see what we got
-          await page.screenshot({ path: path.join(testResultsDir, 'screenshots', `direct-access-${url.replace('/', '')}.png`), fullPage: true });
+          await takeStepScreenshot(page, testInfo, '02a', `direct-access-${url.replace('/', '')}`);
           
           // Check if we're no longer on login page
           const stillOnLogin = await page.locator('button:has-text("Enter")').isVisible({ timeout: 2000 }).catch(() => false);
@@ -269,7 +254,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
     console.log(`✅ Successfully accessed Backstage main application and found: ${foundElement}`);
   });
 
-  test('should navigate to catalog and see entities', async ({ page }) => {
+  test('should navigate to catalog and see entities', async ({ page }, testInfo) => {
     // First access Backstage (login or direct access)
     try {
       await loginAsGuest(page);
@@ -279,14 +264,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
       await page.waitForLoadState('networkidle');
     }
     
-    // Create test-specific screenshot directory
-    const testResultsDir = process.env.TEST_RESULTS_DIR || '/tmp/test-results';
-    const testScreenshotsDir = path.join(testResultsDir, 'screenshots', 'basic-spec', 'test-2-catalog-navigation');
-    if (!fs.existsSync(testScreenshotsDir)) {
-      fs.mkdirSync(testScreenshotsDir, { recursive: true });
-    }
-    
-    await page.screenshot({ path: path.join(testScreenshotsDir, '03-before-catalog.png'), fullPage: true });
+    await takeStepScreenshot(page, testInfo, '03', 'before-catalog');
     
     // Try to find catalog link with more flexible selectors
     const catalogSelectors = [
@@ -338,7 +316,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
     // Additional wait for any remaining network requests
     await page.waitForTimeout(2000);
     
-    await page.screenshot({ path: path.join(testScreenshotsDir, '04-catalog-page.png'), fullPage: true });
+    await takeStepScreenshot(page, testInfo, '04', 'catalog-page');
     
     // Look for catalog-specific elements with more flexible selectors
     const catalogElements = [
@@ -369,14 +347,14 @@ test.describe('Backstage E2E Acceptance Tests', () => {
     
     if (!foundCatalogElement) {
       // Take a debug screenshot and log page content
-      await page.screenshot({ path: path.join(testScreenshotsDir, '04-catalog-page-debug.png'), fullPage: true });
+      await takeStepScreenshot(page, testInfo, '04-debug', 'catalog-page-debug');
       const pageContent = await page.textContent('body');
       console.log('Page content preview:', pageContent?.substring(0, 500));
       throw new Error('Catalog page did not load properly - no catalog elements found');
     }
   });
 
-  test('should access create page', async ({ page }) => {
+  test('should access create page', async ({ page }, testInfo) => {
     // First access Backstage (login or direct access)
     try {
       await loginAsGuest(page);
@@ -386,14 +364,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
       await page.waitForLoadState('networkidle');
     }
     
-    // Create test-specific screenshot directory
-    const testResultsDir = process.env.TEST_RESULTS_DIR || '/tmp/test-results';
-    const testScreenshotsDir = path.join(testResultsDir, 'screenshots', 'basic-spec', 'test-3-create-page');
-    if (!fs.existsSync(testScreenshotsDir)) {
-      fs.mkdirSync(testScreenshotsDir, { recursive: true });
-    }
-    
-    await page.screenshot({ path: path.join(testScreenshotsDir, '05-before-create.png'), fullPage: true });
+    await takeStepScreenshot(page, testInfo, '05', 'before-create');
     
     // Navigate to create page
     const createLink = page.locator('nav a:has-text("Create")').first();
@@ -421,7 +392,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
     // Additional wait for any remaining network requests
     await page.waitForTimeout(2000);
     
-    await page.screenshot({ path: path.join(testScreenshotsDir, '06-create-page.png'), fullPage: true });
+    await takeStepScreenshot(page, testInfo, '06', 'create-page');
     
     // Look for create page elements with more flexible selectors
     const createElements = [
@@ -451,7 +422,7 @@ test.describe('Backstage E2E Acceptance Tests', () => {
     
     if (!foundCreateElement) {
       // Take a debug screenshot and log page content
-      await page.screenshot({ path: path.join(testScreenshotsDir, '06-create-page-debug.png'), fullPage: true });
+      await takeStepScreenshot(page, testInfo, '06-debug', 'create-page-debug');
       const pageContent = await page.textContent('body');
       console.log('Page content preview:', pageContent?.substring(0, 500));
       throw new Error('Create page did not load properly - no create elements found');

@@ -35,6 +35,7 @@ class PostDeploymentE2E:
         self.test_filter = config.get('test_filter')  # Test filtering
         self.grep_pattern = config.get('grep_pattern')  # Playwright grep pattern
         self.extra_playwright_args = config.get('extra_playwright_args', [])  # Additional Playwright arguments
+        self.host_header = config.get('host_header')  # Host header for Traefik routing
         # Since we're running in a container, we need to clone/access the Backstage repo
         self.work_dir = Path('/tmp/backstage-acceptance')
         self.backstage_repo_url = config.get('backstage_repo_url', 'https://github.com/craigedmunds/argocd-eda.git')
@@ -47,6 +48,116 @@ class PostDeploymentE2E:
             datefmt='%Y-%m-%d %H:%M:%S'
         )
         self.logger = logging.getLogger(__name__)
+
+    def generate_artifact_directory_name(self, promotion_id: str, freight_id: str, timestamp: str) -> str:
+        """
+        Generate consistent artifact directory name from Kargo metadata.
+        
+        Args:
+            promotion_id: Full Kargo promotion ID from KARGO_PROMOTION_ID env var
+            freight_id: Full Kargo freight ID from KARGO_FREIGHT_ID env var
+            timestamp: Execution timestamp in format YYYYMMDD-HHMMSS
+        
+        Returns:
+            Directory name in format: backstage-acceptance-{timestamp}-{short_id}
+            where short_id is derived consistently from promotion_id
+        """
+        # Extract consistent identifier from promotion ID
+        # Promotion IDs look like: 174985a1-d5e4-473f-8dd3-8c1be51f4e73.acceptance-tests.1-z4h5w
+        # We want to use the first 12 characters of the UUID portion
+        
+        if promotion_id == 'unknown' or promotion_id == 'local-test':
+            # Local or unknown execution
+            return f"backstage-e2e-{timestamp}"
+        
+        if '.' in promotion_id:
+            # Kargo job format: extract UUID portion
+            job_uuid = promotion_id.split('.')[0][:12]
+            self.logger.info(f"🎯 Kargo run detected - using job UUID: {job_uuid}")
+            return f"backstage-acceptance-{timestamp}-{job_uuid}"
+        else:
+            # Non-standard format: use first 12 chars
+            short_id = promotion_id[:12] if len(promotion_id) > 12 else promotion_id
+            self.logger.info(f"🏠 Non-standard promotion ID - using short ID: {short_id}")
+            return f"backstage-e2e-{timestamp}-{short_id}"
+
+    def detect_retry_attempt(self) -> int:
+        """
+        Detect if this execution is a retry by checking for existing artifacts.
+        
+        Returns:
+            Retry attempt number (0 for first execution, 1+ for retries)
+        """
+        promotion_id = os.environ.get('KARGO_PROMOTION_ID', 'unknown')
+        artifacts_dir = Path('/artifacts')
+        
+        if not artifacts_dir.exists():
+            return 0
+        
+        # Count existing directories for this promotion
+        # Extract the consistent identifier we use in directory names
+        if promotion_id == 'unknown' or promotion_id == 'local-test':
+            pattern = f"backstage-e2e-*"
+        elif '.' in promotion_id:
+            job_uuid = promotion_id.split('.')[0][:12]
+            pattern = f"*{job_uuid}*"
+        else:
+            short_id = promotion_id[:12] if len(promotion_id) > 12 else promotion_id
+            pattern = f"*{short_id}*"
+        
+        existing_dirs = list(artifacts_dir.glob(pattern))
+        
+        if len(existing_dirs) > 0:
+            self.logger.warning(
+                f"⚠️  RETRY DETECTED: Found {len(existing_dirs)} existing artifact "
+                f"directories for promotion {promotion_id}. This should not happen!"
+            )
+            self.logger.warning(f"   Existing directories: {[d.name for d in existing_dirs]}")
+            return len(existing_dirs)
+        
+        return 0
+
+    def extract_job_name_from_pod(self) -> str:
+        """
+        Extract Kubernetes job name from pod name.
+        
+        Returns:
+            Job name or 'unknown' if not determinable
+        """
+        pod_name = os.environ.get('HOSTNAME', 'unknown')
+        if pod_name == 'unknown':
+            return 'unknown'
+        
+        # Kubernetes job pods typically have format: job-name-random-suffix
+        # Try to extract the job name by removing the random suffix
+        parts = pod_name.split('-')
+        if len(parts) > 2:
+            # Remove the last part (random suffix) to get job name
+            job_name = '-'.join(parts[:-1])
+            return job_name
+        
+        return pod_name
+
+    def is_running_in_kargo(self) -> bool:
+        """
+        Determine if execution is running in Kargo environment.
+        
+        Returns:
+            True if running in Kargo, False otherwise
+        """
+        promotion_id = os.environ.get('KARGO_PROMOTION_ID', 'unknown')
+        freight_id = os.environ.get('KARGO_FREIGHT_ID', 'unknown')
+        
+        # Check for Kargo-specific environment variables and patterns
+        is_kargo = (
+            promotion_id != 'unknown' and 
+            promotion_id != 'local-test' and
+            freight_id != 'unknown' and
+            '.' in promotion_id and
+            'acceptance-tests' in promotion_id
+        )
+        
+        return is_kargo
 
     def check_deployment_readiness(self) -> bool:
         """
@@ -68,8 +179,14 @@ class PostDeploymentE2E:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
                 
+                # Create request with host header if specified
+                request = urllib.request.Request(self.deployment_url)
+                if self.host_header:
+                    request.add_header('Host', self.host_header)
+                    self.logger.debug(f"Using Host header: {self.host_header}")
+                
                 # Check if endpoint is responding
-                with urllib.request.urlopen(self.deployment_url, timeout=10, context=ssl_context) as response:
+                with urllib.request.urlopen(request, timeout=10, context=ssl_context) as response:
                     if response.status == 200:
                         self.logger.info(f"Deployment is responding at {self.deployment_url}")
                         
@@ -211,9 +328,21 @@ class PostDeploymentE2E:
                 
                 for pattern in plugin_test_patterns:
                     found_files = list(plugins_base.glob(pattern))
+                    copied_files = set()  # Track copied files to avoid duplicates
                     for plugin_file in found_files:
                         # Extract plugin name from path (e.g., 'eda' from 'eda/tests/acceptance/events.spec.ts')
                         plugin_name = plugin_file.parts[-4]
+                        
+                        # Skip invalid plugin names (like 'tests' which creates duplicates)
+                        if plugin_name in ['tests', 'acceptance']:
+                            continue
+                            
+                        # Create unique identifier for this test file
+                        file_id = f"{plugin_name}/{plugin_file.name}"
+                        if file_id in copied_files:
+                            self.logger.info(f"  ⚠️  Skipping duplicate: {file_id}")
+                            continue
+                        copied_files.add(file_id)
                         
                         # Recreate the full plugin directory structure
                         plugin_test_dir = plugins_dir / plugin_name / 'tests' / 'acceptance'
@@ -371,8 +500,16 @@ export default defineConfig({
         
         # Set environment variables for Playwright
         env = os.environ.copy()
-        env['PLAYWRIGHT_BASE_URL'] = self.deployment_url
-        env['BACKSTAGE_URL'] = self.deployment_url  # Fallback for older configs
+        
+        # If using host header (Traefik service), set Playwright base URL to the original domain
+        if self.host_header:
+            playwright_url = f"https://{self.host_header}"
+            env['PLAYWRIGHT_BASE_URL'] = playwright_url
+            env['BACKSTAGE_URL'] = playwright_url
+            self.logger.info(f"Using host header mode - Playwright will use: {playwright_url}")
+        else:
+            env['PLAYWRIGHT_BASE_URL'] = self.deployment_url
+            env['BACKSTAGE_URL'] = self.deployment_url  # Fallback for older configs
         env['CI'] = 'true'
         
         # Add traceability information for test reports
@@ -380,6 +517,13 @@ export default defineConfig({
         env['KARGO_FREIGHT_ID'] = os.environ.get('KARGO_FREIGHT_ID', 'unknown')
         env['TEST_EXECUTION_TIMESTAMP'] = time.strftime('%Y-%m-%d_%H-%M-%S')
         env['DEPLOYMENT_URL'] = self.deployment_url
+        
+        # Detect and log retry attempts
+        retry_attempt = self.detect_retry_attempt()
+        env['RETRY_ATTEMPT'] = str(retry_attempt)
+        if retry_attempt > 0:
+            self.logger.error(f"🚨 UNEXPECTED RETRY DETECTED: This is retry attempt #{retry_attempt}")
+            self.logger.error("🚨 This indicates a configuration issue that should be investigated!")
         
         # Generate unique test run ID
         test_run_id = f"{env['KARGO_PROMOTION_ID']}-{env['TEST_EXECUTION_TIMESTAMP']}"
@@ -393,18 +537,9 @@ export default defineConfig({
             deployment_id = os.environ.get('KARGO_PROMOTION_ID', 'unknown')
             freight_id = os.environ.get('KARGO_FREIGHT_ID', 'unknown')
             
-            # Use shorter, cleaner identifiers for the folder name
-            if deployment_id != 'unknown' and len(deployment_id) > 20:
-                deployment_short = deployment_id[-12:]  # Last 12 chars
-            else:
-                deployment_short = deployment_id
-                
-            if freight_id != 'unknown' and len(freight_id) > 20:
-                freight_short = freight_id[:8]  # First 8 chars
-            else:
-                freight_short = freight_id[:8] if freight_id != 'unknown' else 'unknown'
-            
-            artifact_dir = artifacts_volume / f"backstage-e2e-{timestamp}"
+            # Generate consistent artifact directory name
+            artifact_dir_name = self.generate_artifact_directory_name(deployment_id, freight_id, timestamp)
+            artifact_dir = artifacts_volume / artifact_dir_name
             artifact_dir.mkdir(parents=True, exist_ok=True)
             
             # Configure centralized environment variables for artifact storage
@@ -612,11 +747,18 @@ export default defineConfig({
                 'execution_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
                 'working_directory': str(Path.cwd()),
                 'hostname': os.environ.get('HOSTNAME', 'unknown'),
+                'kubernetes_pod_name': os.environ.get('HOSTNAME', 'unknown'),  # In K8s, HOSTNAME is pod name
+                'kubernetes_job_name': self.extract_job_name_from_pod(),
+                'is_kargo_execution': self.is_running_in_kargo(),
                 
                 # Test configuration
                 'ci_environment': os.environ.get('CI', 'false'),
                 'max_wait_time': self.max_wait_time,
-                'health_check_interval': self.health_check_interval
+                'health_check_interval': self.health_check_interval,
+                
+                # Retry detection
+                'retry_attempt': os.environ.get('RETRY_ATTEMPT', '0'),
+                'is_retry': os.environ.get('RETRY_ATTEMPT', '0') != '0'
             }
             
             with open(env_file, 'w') as f:
@@ -802,7 +944,57 @@ export default defineConfig({
             bool: True if all steps succeed
         """
         self.logger.info("🚀 Starting Kargo post-deployment E2E test automation")
-        self.logger.info(f"Target deployment: {self.deployment_url}")
+        self.logger.info("")
+        self.logger.info("=" * 80)
+        self.logger.info("📋 EXECUTION PARAMETERS")
+        self.logger.info("=" * 80)
+        self.logger.info(f"  Deployment URL:          {self.deployment_url}")
+        self.logger.info(f"  Host Header:             {self.host_header or 'None (direct access)'}")
+        self.logger.info(f"  Max Wait Time:           {self.max_wait_time}s")
+        self.logger.info(f"  Health Check Interval:   {self.health_check_interval}s")
+        self.logger.info(f"  Test Filter:             {self.test_filter or 'None (all tests)'}")
+        self.logger.info(f"  Grep Pattern:            {self.grep_pattern or 'None'}")
+        self.logger.info(f"  Extra Playwright Args:   {' '.join(self.extra_playwright_args) if self.extra_playwright_args else 'None'}")
+        self.logger.info(f"  Backstage Repo URL:      {self.backstage_repo_url}")
+        self.logger.info(f"  Backstage Branch:        {self.backstage_branch}")
+        self.logger.info(f"  Working Directory:       {self.work_dir}")
+        
+        # Kargo-specific metadata
+        kargo_promotion_id = os.environ.get('KARGO_PROMOTION_ID', 'Not set')
+        kargo_freight_id = os.environ.get('KARGO_FREIGHT_ID', 'Not set')
+        self.logger.info(f"  Kargo Promotion ID:      {kargo_promotion_id}")
+        self.logger.info(f"  Kargo Freight ID:        {kargo_freight_id}")
+        
+        # Execution environment metadata
+        pod_name = os.environ.get('HOSTNAME', 'Not set')
+        job_name = self.extract_job_name_from_pod()
+        is_kargo = self.is_running_in_kargo()
+        retry_attempt = self.detect_retry_attempt()
+        
+        self.logger.info(f"  Kubernetes Pod Name:     {pod_name}")
+        self.logger.info(f"  Kubernetes Job Name:     {job_name}")
+        self.logger.info(f"  Is Kargo Execution:      {is_kargo}")
+        self.logger.info(f"  Retry Attempt:           {retry_attempt}")
+        
+        if retry_attempt > 0:
+            self.logger.error(f"  🚨 WARNING: Retry detected! This should not happen!")
+        
+        # Artifact configuration
+        artifacts_volume = Path('/artifacts')
+        if artifacts_volume.exists():
+            self.logger.info(f"  Artifacts Volume:        {artifacts_volume} (mounted)")
+            
+            # Log artifact directory that will be created
+            timestamp = time.strftime('%Y%m%d-%H%M%S')
+            artifact_dir_name = self.generate_artifact_directory_name(
+                kargo_promotion_id, kargo_freight_id, timestamp
+            )
+            self.logger.info(f"  Artifact Directory:      {artifact_dir_name}")
+        else:
+            self.logger.info(f"  Artifacts Volume:        /tmp/test-results (fallback)")
+        
+        self.logger.info("=" * 80)
+        self.logger.info("")
         
         try:
             # Step 1: Check deployment readiness
@@ -895,6 +1087,10 @@ def main():
         '--grep',
         help='Run tests matching this pattern (passed to Playwright --grep)'
     )
+    parser.add_argument(
+        '--host-header',
+        help='Host header to use when accessing the URL (for Traefik routing)'
+    )
     
     # Parse known args and capture any additional arguments for Playwright
     args, extra_args = parser.parse_known_args()
@@ -913,7 +1109,8 @@ def main():
         'health_check_interval': args.health_interval,
         'test_filter': args.filter,
         'grep_pattern': args.grep,
-        'extra_playwright_args': extra_args
+        'extra_playwright_args': extra_args,
+        'host_header': args.host_header
     })
     
     # Run the E2E automation

@@ -1,20 +1,20 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: camel-karavan
-  namespace: argocd
-  labels:
-    repo: argocd-eda
-    component: camel-karavan
-spec:
-  project: eventing
-  source:
-    repoURL: https://github.com/craigedmunds/argocd-eda.git
-    path: eda/kustomize/camel-karavan
-    targetRevision: main
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: camel-karavan
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: camel-karavan
+#   namespace: argocd
+#   labels:
+#     repo: argocd-eda
+#     component: camel-karavan
+# spec:
+#   project: eventing
+#   source:
+#     repoURL: https://github.com/craigedmunds/argocd-eda.git
+#     path: eda/kustomize/camel-karavan
+#     targetRevision: main
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: camel-karavan
+#   syncPolicy:
+#     syncOptions:
+#       - CreateNamespace=true

@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { authenticateWithBackstage, suppressConsoleNoise, navigateAfterAuth } from '../../../../tests/acceptance/lib/auth-helper';
+import { takeStepScreenshot } from '../../../../tests/acceptance/lib/screenshot-helper';
+
+
+//TODO : at the moment
+
 
 test.describe('Events UI Acceptance Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,26 +19,14 @@ test.describe('Events UI Acceptance Tests', () => {
   });
 
   test('should have Events link in the left navigation panel', async ({ page }, testInfo) => {
-    console.log('Arrived in test');
-    // 1. Take screenshot of authenticated main page
-    const authenticatedPage = await page.screenshot({ fullPage: true });
-    await testInfo.attach('1-authenticated-main-page.png', { 
-      body: authenticatedPage, 
-      contentType: 'image/png' 
-    });
+    
+    await takeStepScreenshot(page, testInfo, '01', 'authenticated-main-page');
     
     // Look for the Events link in the sidebar
     const eventsLink = page.locator('nav a:has-text("Events")');
     
     await expect(eventsLink).toBeVisible();
     
-    // 2. Take screenshot showing the Events link found
-    const eventsLinkVisible = await page.screenshot({ fullPage: true });
-    await testInfo.attach('2-events-link-visible.png', { 
-      body: eventsLinkVisible, 
-      contentType: 'image/png' 
-    });
-
     console.log('End of test');
   });
 
@@ -44,12 +37,7 @@ test.describe('Events UI Acceptance Tests', () => {
     // Wait for navigation - be more flexible with URL pattern
     await page.waitForURL(/.*\/catalog.*event/i, { timeout: 10000 });
     
-    // 1. Take screenshot of events page after navigation
-    const eventsPageLoaded = await page.screenshot({ fullPage: true });
-    await testInfo.attach('1-events-page-loaded.png', { 
-      body: eventsPageLoaded, 
-      contentType: 'image/png' 
-    });
+    await takeStepScreenshot(page, testInfo, '01', 'events-page-loaded');
     
     // Check that we have some events in the list
     // Look for the catalog table or list container
@@ -64,12 +52,13 @@ test.describe('Events UI Acceptance Tests', () => {
     const rowCount = await eventRows.count();
     expect(rowCount).toBeGreaterThan(0);
     
-    // 2. Take screenshot showing the populated events list
-    const eventsListPopulated = await page.screenshot({ fullPage: true });
-    await testInfo.attach('2-events-list-populated.png', { 
-      body: eventsListPopulated, 
-      contentType: 'image/png' 
-    });
+    // // 2. Take screenshot showing the populated events list
+    // const eventsListPopulated = await page.screenshot({ fullPage: true });
+    // await testInfo.attach('2-events-list-populated.png', { 
+    //   body: eventsListPopulated, 
+    //   contentType: 'image/png' 
+    // });
+    await takeStepScreenshot(page, testInfo, '02', 'events-list-populated');
   });
 
   test('should display correct fields on first event details page', async ({ page }, testInfo) => {
@@ -84,12 +73,15 @@ test.describe('Events UI Acceptance Tests', () => {
     // Wait for the event details page to load
     await page.waitForLoadState('networkidle');
     
-    // 1. Take screenshot of event details page after loading
-    const eventDetailsLoaded = await page.screenshot({ fullPage: true });
-    await testInfo.attach('1-event-details-loaded.png', { 
-      body: eventDetailsLoaded, 
-      contentType: 'image/png' 
-    });
+    // // 1. Take screenshot of event details page after loading
+    // const eventDetailsLoaded = await page.screenshot({ fullPage: true });
+    // await testInfo.attach('1-event-details-loaded.png', { 
+    //   body: eventDetailsLoaded, 
+    //   contentType: 'image/png' 
+    // });
+
+    await takeStepScreenshot(page, testInfo, '01', 'events-details-loaded');
+    
     
     // Verify the About card is present
     const aboutCard = page.locator('text=About').first();
@@ -133,12 +125,14 @@ test.describe('Events UI Acceptance Tests', () => {
       await expect(systemLink).toBeVisible();
     }
     
-    // 2. Take final screenshot showing all verified fields
-    const fieldsVerified = await page.screenshot({ fullPage: true });
-    await testInfo.attach('2-fields-verified.png', { 
-      body: fieldsVerified, 
-      contentType: 'image/png' 
-    });
+    // // 2. Take final screenshot showing all verified fields
+    // const fieldsVerified = await page.screenshot({ fullPage: true });
+    // await testInfo.attach('2-fields-verified.png', { 
+    //   body: fieldsVerified, 
+    //   contentType: 'image/png' 
+    // });
+
+    await takeStepScreenshot(page, testInfo, '02', 'fields-verified');
   });
 });
 

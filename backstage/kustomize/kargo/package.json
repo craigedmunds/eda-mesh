@@ -5,18 +5,23 @@
   "private": true,
   "scripts": {
     "test:docker": "python3 scripts/local_e2e.py --docker --url https://backstage.127.0.0.1.nip.io",
+    "test:kubernetes": "python3 scripts/local_e2e.py --kubernetes --url https://backstage.127.0.0.1.nip.io",
+    "test:kubernetes:single": "python3 scripts/local_e2e.py --kubernetes --url https://backstage.127.0.0.1.nip.io --grep \"should validate Backstage deployment and basic functionality\"",
     "test:docker:verbose": "python3 scripts/local_e2e.py --docker --verbose --url https://backstage.127.0.0.1.nip.io",
     "test:docker:shell": "python3 scripts/local_e2e.py --docker --shell --url https://backstage.127.0.0.1.nip.io",
     "test:local": "python3 scripts/local_e2e.py --url https://backstage.127.0.0.1.nip.io",
-    "test:local:verbose": "python3 scripts/local_e2e.py --verbose --url https://backstage.127.0.0.1.nip.io"
+    "test:local:verbose": "python3 scripts/local_e2e.py --verbose --url https://backstage.127.0.0.1.nip.io",
+    "test:kargo-promotion": "cd acceptance-tests && npm install && npm test"
   },
   "_comments": {
     "scripts": {
-      "test:docker": "Run E2E tests in Docker with clean output",
-      "test:docker:verbose": "Run E2E tests in Docker with Playwright debug logs (pw:browser*, pw:api*)",
+      "test:docker": "Run acceptance tests in Docker with clean output",
+      "test:kubernetes": "Run acceptance tests in Docker with clean output",
+      "test:docker:verbose": "Run acceptance tests in Docker with Playwright debug logs (pw:browser*, pw:api*)",
       "test:docker:shell": "Open interactive shell in Docker container for debugging",
-      "test:local": "Run E2E tests locally with clean output", 
-      "test:local:verbose": "Run E2E tests locally with debug logging"
+      "test:local": "Run acceptance tests locally with clean output", 
+      "test:local:verbose": "Run acceptance tests locally with debug logging",
+      "test:kargo-promotion": "Run Kargo promotion workflow tests (validates Kargo is working)"
     },
     "filtering": {
       "examples": {

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Lightweight acceptance tests for Backstage E2E verification",
   "private": true,
-  "type": "module",
   "engines": {
     "node": "20 || 22"
   },

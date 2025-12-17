@@ -48,7 +48,11 @@ spec:
 
   verification:
     analysisTemplates:
-      - name: backstage-verification
+      - name: backstage-acceptance-verification
     args:
       - name: backstage-url
-        value: http://backstage.backstage.svc.cluster.local:7007
+        value: https://backstage.127.0.0.1.nip.io
+    # Declare log file as artifact for Kargo UI
+    # artifacts:
+    #   - name: verification-logs
+    #     path: /artifacts/verification.log

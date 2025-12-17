@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * E2E Test for Backstage Kargo Promotion Pipeline
+ * Acceptance Test for Backstage Kargo Promotion Pipeline
  * 
  * This test validates the complete promotion flow:
  * 1. Freight creation from new images
@@ -11,8 +11,16 @@
  * Requirements: 2.1, 2.2, 2.3, 3.1, 3.2
  */
 
-import { execSync } from 'child_process';
-import { setTimeout } from 'timers/promises';
+// @ts-ignore - Node.js built-in modules
+const { execSync } = require('child_process');
+
+// Simple delay function to avoid TypeScript issues with setTimeout
+const delay = (ms: number): Promise<void> => {
+  return new Promise(resolve => {
+    // @ts-ignore - Node.js setTimeout
+    setTimeout(resolve, ms);
+  });
+};
 
 interface KargoResource {
   metadata: {
@@ -58,10 +66,21 @@ interface Promotion extends KargoResource {
       name: string;
     };
     finishedAt?: string;
+    currentStep?: number;
+    stepExecutionMetadata?: Array<{
+      alias?: string;
+      status?: string;
+      message?: string;
+      errorCount?: number;
+      startedAt?: string;
+      finishedAt?: string;
+    }>;
+    message?: string;
+    state?: any;
   };
 }
 
-class KargoE2ETest {
+class KargoAcceptanceTest {
   private readonly namespace = 'backstage-kargo';
   private readonly stageName = 'local';
   private readonly warehouseName = 'backstage';
@@ -70,7 +89,7 @@ class KargoE2ETest {
   private readonly pollInterval = 10000; // 10 seconds
 
   async run(): Promise<void> {
-    console.log('🚀 Starting Backstage Kargo E2E Test');
+    console.log('🚀 Starting Backstage Kargo Acceptance Test');
     
     try {
       // Step 1: Validate initial setup
@@ -92,15 +111,16 @@ class KargoE2ETest {
       await this.validateBackstageDeployment();
       
       // Step 7: Wait for and validate Kargo verification (AnalysisRun)
-      await this.validateKargoVerification(freight.metadata.name);
+      await this.validateKargoVerification(freight.metadata.name, promotion.metadata.name);
       
       // Step 8: Validate artifacts were generated
       await this.validateArtifactsGenerated();
       
-      console.log('✅ Backstage Kargo E2E Test PASSED');
+      console.log('✅ Backstage Kargo Acceptance Test PASSED');
       
     } catch (error) {
-      console.error('❌ Backstage Kargo E2E Test FAILED:', error);
+      console.error('❌ Backstage Kargo Acceptance Test FAILED:', error);
+      // @ts-ignore - Node.js globals
       process.exit(1);
     }
   }
@@ -164,7 +184,7 @@ class KargoE2ETest {
         // Continue waiting
       }
       
-      await setTimeout(this.pollInterval);
+      await delay(this.pollInterval);
     }
     
     throw new Error('Timeout waiting for freight creation');
@@ -173,7 +193,7 @@ class KargoE2ETest {
   private async createPromotion(freightName: string): Promise<Promotion> {
     console.log(`🚀 Creating promotion for freight: ${freightName}`);
     
-    const promotionName = `e2e-test-${Date.now()}`;
+    const promotionName = `acceptance-test-${Date.now()}`;
     const promotionManifest = {
       apiVersion: 'kargo.akuity.io/v1alpha1',
       kind: 'Promotion',
@@ -215,7 +235,7 @@ class KargoE2ETest {
             as: 'commit',
             config: {
               path: './repo',
-              message: 'Update backstage image to ${{ imageFrom("ghcr.io/craigedmunds/backstage").Tag }} - Automated E2E test promotion by Kargo'
+              message: 'Update backstage image to ${{ imageFrom("ghcr.io/craigedmunds/backstage").Tag }} - Automated Acceptance test promotion by Kargo'
             }
           },
           {
@@ -255,10 +275,15 @@ class KargoE2ETest {
     
     const startTime = Date.now();
     let lastPhase = '';
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 5;
     
     while (Date.now() - startTime < this.timeout) {
       try {
         const promotion = await this.kubectl<Promotion>(`get promotion ${promotionName} -n ${this.namespace} -o json`);
+        
+        // Reset error counter on successful status check
+        consecutiveErrors = 0;
         
         if (promotion.status?.phase === 'Succeeded') {
           console.log('✅ Promotion completed successfully');
@@ -269,6 +294,13 @@ class KargoE2ETest {
           console.log('❌ Promotion failed, showing detailed status:');
           console.log(JSON.stringify(promotion.status, null, 2));
           throw new Error(`Promotion failed with phase: ${promotion.status.phase}`);
+        }
+        
+        // Also check for other terminal failure states
+        if (promotion.status?.phase && ['Aborted', 'Terminated'].includes(promotion.status.phase)) {
+          console.log('❌ Promotion terminated, showing detailed status:');
+          console.log(JSON.stringify(promotion.status, null, 2));
+          throw new Error(`Promotion terminated with phase: ${promotion.status.phase}`);
         }
         
         // Log current status with more detail
@@ -298,10 +330,15 @@ class KargoE2ETest {
         }
         
       } catch (error) {
-        console.log(`⚠️  Error checking promotion status: ${error}`);
+        consecutiveErrors++;
+        console.log(`⚠️  Error checking promotion status (${consecutiveErrors}/${maxConsecutiveErrors}): ${error}`);
+        
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          throw new Error(`Failed to check promotion status after ${maxConsecutiveErrors} consecutive errors. Last error: ${error}`);
+        }
       }
       
-      await setTimeout(this.pollInterval);
+      await delay(this.pollInterval);
     }
     
     throw new Error('Timeout waiting for promotion completion');
@@ -326,7 +363,7 @@ class KargoE2ETest {
         console.log(`⚠️  Error checking ArgoCD status: ${error}`);
       }
       
-      await setTimeout(this.pollInterval);
+      await delay(this.pollInterval);
     }
     
     throw new Error('Timeout waiting for ArgoCD sync');
@@ -355,7 +392,7 @@ class KargoE2ETest {
         console.log(`⚠️  Error checking deployment: ${error}`);
       }
       
-      await setTimeout(this.pollInterval);
+      await delay(this.pollInterval);
     }
     
     // Test HTTP endpoint
@@ -373,7 +410,7 @@ class KargoE2ETest {
         }
       } catch (error) {
         console.log('📊 Backstage endpoint not ready yet, retrying...');
-        await setTimeout(5000);
+        await delay(5000);
       }
     }
     
@@ -404,39 +441,62 @@ class KargoE2ETest {
     }
   }
 
-  private async validateKargoVerification(freightName: string): Promise<void> {
+  private async validateKargoVerification(freightName: string, promotionName: string): Promise<void> {
     console.log('🔍 Validating Kargo verification (AnalysisRun)...');
+    
+    // Force reverification to ensure verification runs even with existing freight
+    console.log('🔄 Forcing stage reverification to ensure verification runs...');
+    const reverifyTimestamp = new Date().toISOString();
+    await this.kubectlRaw(`patch stage ${this.stageName} -n ${this.namespace} --type='merge' -p='{"metadata":{"annotations":{"kargo.akuity.io/reverify":"${reverifyTimestamp}"}}}'`);
+    console.log('✅ Stage reverification triggered');
     
     // Wait for AnalysisRun to be created and complete
     const startTime = Date.now();
+    // Get the promotion creation time to ensure we only look at AnalysisRuns created after this promotion
+    const promotion = await this.kubectl<Promotion>(`get promotion ${promotionName} -n ${this.namespace} -o json`);
+    const promotionStartTime = new Date(promotion.metadata.creationTimestamp!);
+    console.log(`🕐 Promotion created at: ${promotionStartTime.toISOString()}`);
+    console.log(`🔍 Looking for AnalysisRuns created after: ${promotionStartTime.toISOString()}`);
     let analysisRun: any = null;
     
-    // First, wait for AnalysisRun to be created
-    while (Date.now() - startTime < 300000) { // 5 minute timeout
+    // First, wait for AnalysisRun to be created for this specific freight
+    while (Date.now() - startTime < 15000) { // 15 second timeout
       try {
         const analysisRuns = await this.kubectl(`get analysisruns -n ${this.namespace} -o json`);
-        const runs = analysisRuns.items.filter((run: any) => 
-          run.metadata.labels && 
-          run.metadata.labels['kargo.akuity.io/stage'] === this.stageName &&
-          run.status && 
-          run.status.startedAt
+        
+        // Debug: Show all AnalysisRuns to understand what's available
+        console.log(`🔍 Found ${analysisRuns.items.length} AnalysisRuns in namespace ${this.namespace}`);
+        analysisRuns.items.forEach((run: any, index: number) => {
+          console.log(`  ${index + 1}. ${run.metadata.name} (created: ${run.metadata.creationTimestamp})`);
+          if (run.metadata.labels) {
+            console.log(`     Labels: ${JSON.stringify(run.metadata.labels)}`);
+          }
+        });
+        
+        // Look for AnalysisRun with the exact promotion annotation
+        const promotionAnalysisRuns = analysisRuns.items.filter((run: any) => 
+          run.metadata.annotations?.['kargo.akuity.io/promotion'] === promotionName
         );
         
-        if (runs.length > 0) {
-          // Get the most recent one
-          analysisRun = runs.sort((a: any, b: any) => 
-            new Date(b.status.startedAt).getTime() - new Date(a.status.startedAt).getTime()
+        if (promotionAnalysisRuns.length > 0) {
+          // Get the most recent one for this specific promotion
+          analysisRun = promotionAnalysisRuns.sort((a: any, b: any) => 
+            new Date(b.metadata.creationTimestamp).getTime() - new Date(a.metadata.creationTimestamp).getTime()
           )[0];
+          console.log(`✅ Found AnalysisRun for promotion ${promotionName}: ${analysisRun.metadata.name}`);
           break;
         }
         
         console.log('⏳ Waiting for AnalysisRun to be created...');
-        await setTimeout(5000);
+        await delay(5000);
       } catch (error) {
+        console.log(`⚠️ Error checking for AnalysisRuns: ${error}`);
         console.log('⏳ Waiting for AnalysisRun to be created...');
-        await setTimeout(5000);
+        await delay(5000);
       }
     }
+    
+    // No fallback needed - we should only proceed with the correct AnalysisRun
     
     if (!analysisRun) {
       throw new Error('AnalysisRun was not created within timeout period');
@@ -445,36 +505,76 @@ class KargoE2ETest {
     console.log(`📊 Found AnalysisRun: ${analysisRun.metadata.name}`);
     
     // Wait for AnalysisRun to complete
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
+    let lastPhase = '';
+    let logsShownForPhase = false;
+    
     while (Date.now() - startTime < 900000) { // 15 minute total timeout
       try {
         const currentRun = await this.kubectl(`get analysisrun ${analysisRun.metadata.name} -n ${this.namespace} -o json`);
         
         if (currentRun.status && currentRun.status.phase) {
           const phase = currentRun.status.phase;
-          console.log(`📊 AnalysisRun status: ${phase}`);
           
-          // Show logs from the analysis job if it's running
-          if (phase === 'Running') {
+          // Only log status change when phase actually changes
+          if (phase !== lastPhase) {
+            console.log(`📊 AnalysisRun status: ${phase}`);
+            lastPhase = phase;
+            logsShownForPhase = false; // Reset logs flag when phase changes
+          }
+          
+          // Reset error counter on successful status check
+          consecutiveErrors = 0;
+          
+          // Show logs from the analysis job if it's running (but only once per phase)
+          if (phase === 'Running' && !logsShownForPhase) {
             await this.showAnalysisRunLogs(analysisRun.metadata.name);
+            logsShownForPhase = true;
           }
           
           if (phase === 'Successful') {
             console.log('✅ AnalysisRun completed successfully');
-            // Show final logs
-            await this.showAnalysisRunLogs(analysisRun.metadata.name);
+            // Show final logs only if we haven't shown them yet
+            if (!logsShownForPhase) {
+              await this.showAnalysisRunLogs(analysisRun.metadata.name);
+            }
             return;
-          } else if (phase === 'Failed' || phase === 'Error') {
+          } else if (phase === 'Failed' || phase === 'Error' || phase === 'Errored') {
             console.log('❌ AnalysisRun failed, showing logs:');
             await this.showAnalysisRunLogs(analysisRun.metadata.name);
+            
+            // Show detailed error message from AnalysisRun
+            if (currentRun.status.message) {
+              console.log(`💥 Error details: ${currentRun.status.message}`);
+            }
+            
+            // Show metric results if available
+            if (currentRun.status.metricResults) {
+              console.log('📊 Metric Results:');
+              currentRun.status.metricResults.forEach((metric: any, index: number) => {
+                console.log(`  ${index + 1}. ${metric.name}: ${metric.phase}`);
+                if (metric.message) {
+                  console.log(`     Message: ${metric.message}`);
+                }
+              });
+            }
+            
             throw new Error(`AnalysisRun failed with phase: ${phase}`);
           }
           // Continue waiting for Running, Pending, etc.
         }
         
-        await setTimeout(10000); // Check every 10 seconds
+        await delay(10000); // Check every 10 seconds
       } catch (error) {
-        console.log(`⚠️ Error checking AnalysisRun: ${error}`);
-        await setTimeout(10000);
+        consecutiveErrors++;
+        console.log(`⚠️ Error checking AnalysisRun (${consecutiveErrors}/${maxConsecutiveErrors}): ${error}`);
+        
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          throw new Error(`Failed to check AnalysisRun status after ${maxConsecutiveErrors} consecutive errors`);
+        }
+        
+        await delay(10000);
       }
     }
     
@@ -522,10 +622,26 @@ class KargoE2ETest {
     try {
       // Get the job associated with the AnalysisRun
       const jobs = await this.kubectl(`get jobs -n ${this.namespace} -o json`);
-      const analysisJob = jobs.items.find((job: any) => 
-        job.metadata.name.includes('backstage-e2e-tests') ||
-        job.metadata.labels?.['analysisrun'] === analysisRunName
+      
+      // Debug: Show all jobs to understand what's available
+      console.log(`🔍 Found ${jobs.items.length} jobs in namespace ${this.namespace}`);
+      jobs.items.forEach((job: any, index: number) => {
+        console.log(`  ${index + 1}. ${job.metadata.name} (created: ${job.metadata.creationTimestamp})`);
+        if (job.metadata.labels) {
+          console.log(`     Labels: ${JSON.stringify(job.metadata.labels)}`);
+        }
+      });
+      
+      // Find job using ownerReferences - this is the concrete link
+      let analysisJob = jobs.items.find((job: any) => 
+        job.metadata.ownerReferences?.some((ref: any) => 
+          ref.kind === 'AnalysisRun' && ref.name === analysisRunName
+        )
       );
+      
+      if (!analysisJob) {
+        console.log(`⚠️ No job found with ownerReference to AnalysisRun: ${analysisRunName}`);
+      }
       
       if (analysisJob) {
         console.log(`📋 Showing logs from job: ${analysisJob.metadata.name}`);
@@ -558,24 +674,24 @@ class KargoE2ETest {
   }
 
   private async validateArtifactsGenerated(): Promise<void> {
-    console.log('📦 Validating E2E test artifacts were generated...');
+    console.log('📦 Validating Acceptance test artifacts were generated...');
     
     // Check if artifacts directory exists and has recent content on local filesystem
     try {
-      const artifactsPath = '.backstage-e2e-artifacts';
+      const artifactsPath = '.backstage-acceptance-artifacts';
       
       // Check if directory exists
       const lsResult = execSync(`ls -la ${artifactsPath}`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
       
       // Look for recent artifact directories
-      const findResult = execSync(`find ${artifactsPath} -name 'backstage-e2e-*' -type d -mmin -30 2>/dev/null || true`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const findResult = execSync(`find ${artifactsPath} -name 'backstage-acceptance-*' -type d -mmin -30 2>/dev/null || true`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
       
       if (findResult.trim()) {
-        console.log('✅ E2E test artifacts found');
+        console.log('✅ Acceptance test artifacts found');
         const recentArtifacts = findResult.trim().split('\n').slice(0, 3);
         console.log('📋 Recent artifacts:', recentArtifacts.join('\n'));
       } else {
-        console.log('⚠️ No recent E2E test artifacts found - this may indicate the verification did not run properly');
+        console.log('⚠️ No recent acceptance test artifacts found - this may indicate the verification did not run properly');
         // Don't fail the test for missing artifacts, just warn
       }
     } catch (error) {
@@ -598,12 +714,15 @@ class KargoE2ETest {
 }
 
 // Run the test
+// @ts-ignore - Node.js globals
 if (require.main === module) {
-  const test = new KargoE2ETest();
-  test.run().catch(error => {
+  const test = new KargoAcceptanceTest();
+  test.run().catch((error: any) => {
     console.error('Test execution failed:', error);
+    // @ts-ignore - Node.js globals
     process.exit(1);
   });
 }
 
-export { KargoE2ETest };
+// @ts-ignore - CommonJS export
+module.exports = { KargoAcceptanceTest };

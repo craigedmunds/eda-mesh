@@ -7,6 +7,6 @@ configMapGenerator:
       - events.spec.ts
     options:
       labels:
-        app: backstage-e2e
+        app: backstage-acceptance
         component: eda-plugin-tests
       disableNameSuffixHash: true

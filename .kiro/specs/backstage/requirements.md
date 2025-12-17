@@ -122,15 +122,19 @@ This specification defines the requirements for a Backstage developer portal pla
 
 ### Requirement 8
 
-**User Story:** As a quality assurance engineer, I want a unified acceptance test execution system integrated with Kargo verification that can discover and run all relevant tests regardless of their location in the repository, so that deployment validation provides comprehensive feedback about application health.
+**User Story:** As a quality assurance engineer, I want a unified acceptance test execution system integrated with Kargo verification, so that deployment validation provides clear and consistent feedback.
 
 #### Acceptance Criteria
 
-1. WHEN executing tests via kustomize/backstage-kargo/package.json test:docker, THEN the Test_Discovery_System SHALL locate and execute acceptance tests from apps/backstage/tests/acceptance and plugin-specific directories
-2. WHEN Kargo verification runs, THEN Acceptance_Tests SHALL execute successfully against the deployed Backstage instance
-3. WHEN tests are distributed across multiple directories, THEN the Test_Discovery_System SHALL maintain proper test isolation while producing consolidated reports
-4. WHEN Acceptance_Tests complete, THEN they SHALL produce accessible test reports and artifacts with clear traceability of which tests ran from which locations
-5. WHEN tests fail, THEN failure information SHALL be clearly visible in Kargo promotion status and debugging artifacts SHALL be easily accessible for investigation
+1. WHEN executing tests via local_e2e.py with --kubernetes flag, THEN the Test_Discovery_System SHALL locate and execute acceptance tests from /workspace/backstage/app/tests/acceptance and plugin-specific directories without duplication
+2. WHEN Kargo verification runs, THEN Acceptance_Tests SHALL execute exactly once per promotion and produce artifacts with consistent naming patterns based on promotion and freight IDs
+3. WHEN tests are distributed across multiple directories, THEN the Test_Discovery_System SHALL eliminate duplicate test execution while maintaining proper test isolation and producing consolidated reports
+4. WHEN Acceptance_Tests complete, THEN they SHALL produce accessible test reports and artifacts including screenshots, videos, and traces with clear traceability of which tests ran from which locations
+5. WHEN tests fail, THEN failure information SHALL be clearly visible in Kargo promotion status and debugging artifacts including screenshots SHALL be easily accessible for investigation
+6. WHEN Kargo AnalysisTemplate executes verification, THEN it SHALL use appropriate failureLimit, interval, and count settings to prevent unintended test retries or duplicate executions
+7. WHEN test execution completes (success or failure), THEN the system SHALL not automatically retry tests and SHALL generate exactly one artifact directory per promotion
+8. WHEN investigating test execution issues, THEN artifact directory names SHALL provide clear traceability to specific Kargo promotions and freight without ambiguous suffixes
+9. WHEN Kargo verification executes, THEN the system SHALL write all test execution logs to a dedicated log file and declare it as an artifact in the Verification spec for access through the Kargo UI
 
 ### Requirement 9
 
@@ -179,3 +183,4 @@ This specification defines the requirements for a Backstage developer portal pla
 3. WHEN artifact cleanup runs, THEN it SHALL work correctly regardless of the test execution environment (local, CI, Kargo)
 4. WHEN cleanup completes, THEN the system SHALL ensure the most recent test artifacts remain accessible for debugging
 5. WHEN multiple test runs occur simultaneously, THEN artifact cleanup SHALL handle concurrent access safely without corruption
+

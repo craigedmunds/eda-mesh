@@ -82,3 +82,15 @@ This specification defines the organizational structure and conventions for the 
 3. WHEN applications support branch targeting, THEN they SHALL be labeled with repo=argocd-eda to enable the targeting mechanism
 4. WHEN using the branch targeting component, THEN it SHALL support both single-source and multi-source ArgoCD applications
 5. WHEN branch targeting is applied, THEN it SHALL work for both Application and ApplicationSet resources
+
+### Requirement 6
+
+**User Story:** As a platform engineer, I want to provide multiple messaging infrastructure options, so that developers can choose the appropriate messaging solution for their use case and environment constraints.
+
+#### Acceptance Criteria
+
+1. WHEN supporting messaging infrastructure, THE System SHALL provide both enterprise and open source Kafka options
+2. WHEN deploying Confluent Kafka, THE System SHALL treat it as a supporting application available in development environments
+3. WHEN deploying open source Kafka, THE System SHALL provide a simple single-node configuration suitable for development and testing
+4. WHEN configuring environment overlays, THE System SHALL allow selective deployment of messaging infrastructure based on environment needs
+5. WHEN managing supporting applications, THE System SHALL maintain consistent ArgoCD application patterns for all messaging infrastructure components

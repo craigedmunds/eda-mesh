@@ -9,3 +9,14 @@ spec:
         repoURL: ghcr.io/craigedmunds/backstage
         semverConstraint: ">=0.6.0"
         discoveryLimit: 10
+    
+    # This is a temporary measure that generates new freight each time the backstage-verification.yaml
+    # changes so that the verification is forced to run
+    - git:
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        branch: feature/backstage-events
+        # Watch the verification template so changes force new freight
+        includePaths:
+          - backstage/kustomize/kargo
+          # /backstage-verification.yaml
+          # - backstage/kustomize/kargo/scripts/post_deployment_e2e.py

@@ -340,6 +340,18 @@ Based on the prework analysis, I'll consolidate related properties to eliminate 
 *For any* simultaneous test runs, artifact cleanup should handle concurrent access safely without corruption
 **Validates: Requirements 12.5**
 
+**Property 28: Single test execution per promotion**
+*For any* Kargo promotion, the verification system should execute tests exactly once and generate exactly one artifact directory
+**Validates: Requirements 8.7**
+
+**Property 29: Artifact directory naming consistency**
+*For any* test execution, artifact directory names should provide clear traceability to specific Kargo promotions and freight without ambiguous suffixes
+**Validates: Requirements 8.8**
+
+**Property 30: Verification log artifact collection**
+*For any* Kargo verification execution, the system should write all test execution logs to a dedicated log file and declare it as an artifact in the Verification spec
+**Validates: Requirements 8.9**
+
 ## Error Handling
 
 ### Error Categories
@@ -512,13 +524,14 @@ Implement reliable acceptance test execution:
 
 ## Test Organization Architecture
 
-### Current Test Distribution Challenge
+### Current Test Distribution Solution
 
-The Backstage platform has acceptance tests distributed across multiple locations:
+The Backstage platform has successfully implemented unified test execution across multiple locations:
 
-1. **Centralized Tests**: `apps/backstage/tests/acceptance/` - Core platform functionality tests
-2. **Plugin Tests**: `apps/backstage/plugins/*/tests/acceptance/` - Plugin-specific functionality tests
-3. **Kargo Integration**: `kustomize/backstage-kargo/package.json` - Unified test execution entry point
+1. **Centralized Tests**: `/workspace/backstage/app/tests/acceptance/` - Core platform functionality tests
+2. **Plugin Tests**: `/workspace/backstage/app/plugins/*/tests/acceptance/` - Plugin-specific functionality tests  
+3. **Unified Execution**: `local_e2e.py` with `--kubernetes` flag - Kubernetes pod execution with proper networking
+4. **Duplicate Elimination**: System prevents duplicate test execution from overlapping directories
 
 ### Unified Test Execution System
 
@@ -591,10 +604,11 @@ kustomize/backstage-kargo/
 
 #### Test Execution Flow
 
-1. **Pattern Matching**: Playwright uses glob patterns to find all test files across directories
-2. **Execution**: Single Playwright command runs all discovered tests
-3. **Reporting**: Playwright generates consolidated HTML report with test results
-4. **Artifacts**: Screenshots, traces, and other artifacts collected automatically
+1. **Environment Setup**: `setup_traefik_hosts.sh` configures host aliases for HTTPS access through Traefik ingress
+2. **Test Discovery**: `post_deployment_e2e.py` discovers tests across directories while eliminating duplicates
+3. **Execution**: Tests run in Kubernetes pods with proper SSL handling and networking configuration
+4. **Artifact Generation**: Screenshots, videos, and traces automatically captured and stored in timestamped directories
+5. **Reporting**: Consolidated HTML reports with clear traceability of test locations and results
 
 #### Playwright Configuration Example
 
@@ -621,21 +635,40 @@ export default {
 
 The test execution system integrates seamlessly with Kargo verification workflows:
 
-1. **Trigger**: Kargo promotion triggers unified test execution via `npm run test:docker`
-2. **Pattern Matching**: Playwright automatically finds all tests using configured glob patterns
-3. **Execution**: All tests run against deployed Backstage instance in single command
-4. **Reporting**: Consolidated results feed back to Kargo promotion status
-5. **Artifacts**: Test artifacts stored in mounted volume for debugging
+1. **Trigger**: Kargo promotion triggers test execution via `local_e2e.py --kubernetes` in analysis pods
+2. **SSL Resolution**: Tests access `https://backstage.127.0.0.1.nip.io` through Traefik ingress with proper host aliases
+3. **Duplicate Prevention**: System eliminates duplicate test execution while maintaining comprehensive coverage
+4. **Execution**: All tests run against deployed Backstage instance with proper networking and SSL handling
+5. **Reporting**: Consolidated results with screenshots and traces feed back to Kargo promotion status
+6. **Artifacts**: Test artifacts stored in mounted volume at `.backstage-acceptance-artifacts` for debugging
 
-### Benefits of Playwright-Based Test Organization
+### SSL/HTTPS Networking Architecture
 
-- **Simple Configuration**: Uses Playwright's native glob pattern matching
-- **Single Command**: One `playwright test` command executes all relevant tests
-- **Comprehensive Coverage**: Glob patterns ensure no tests are missed
+The test execution system handles SSL connectivity across different environments:
+
+#### Kubernetes Pod Environment
+- **Host Resolution**: Uses `setup_traefik_hosts.sh` to inject `/etc/hosts` entries
+- **Traefik Integration**: Resolves `backstage.127.0.0.1.nip.io` to Traefik service IP (`10.43.64.171`)
+- **SSL Context**: Configures SSL context to ignore certificate verification for self-signed certificates
+- **Consistent Access**: Maintains identical HTTPS access patterns across local and Kubernetes environments
+
+#### Networking Components
+```bash
+# Host alias injection for Kubernetes pods
+TRAEFIK_IP=$(kubectl get svc traefik -n kube-system -o jsonpath='{.spec.clusterIP}')
+echo "$TRAEFIK_IP backstage.127.0.0.1.nip.io" >> /etc/hosts
+```
+
+### Benefits of Current Test Organization
+
+- **SSL Resolution**: Eliminates SSL protocol errors through proper networking configuration
+- **Duplicate Prevention**: Validates and prevents duplicate test execution from overlapping directories
+- **Comprehensive Coverage**: Discovers tests across all plugin directories without missing any
+- **Artifact Generation**: Reliable screenshot, video, and trace capture for debugging
+- **Environment Consistency**: Works identically in local Docker and Kubernetes pod environments
 - **Maintainable**: Plugin teams can add tests without changing central configuration
 - **Native Reporting**: Leverages Playwright's built-in HTML reporter and artifact collection
-- **Scalable**: Adding new plugins automatically includes their tests via patterns
-- **No Custom Code**: Eliminates need for custom discovery and orchestration logic
+- **Scalable**: Adding new plugins automatically includes their tests via discovery patterns
 
 ## Local Acceptance Test Artifact Management Architecture
 
@@ -841,3 +874,261 @@ interface AcceptanceTest {
 - **Local Development Focus**: Optimized for local development workflow efficiency
 
 **Production Environment Note**: Production-like cluster artifacts are managed by the separate e2e-artifact-management system which handles extraction and persistence of artifacts from remote test executions.
+
+## Kargo Test Execution Reliability
+
+### Problem Analysis
+
+The Kargo verification system has been experiencing issues with duplicate test executions, evidenced by multiple artifact directories with different suffixes (e.g., `add69fd1-ea0` vs `7efcfd78-a4e`) for what should be single test runs. This creates confusion, wastes resources, and makes it difficult to determine which test results are authoritative.
+
+#### Root Cause Investigation
+
+The duplicate execution pattern suggests several potential causes:
+
+1. **Job Retry Logic**: Kubernetes Job `restartPolicy` or Kargo's `failureLimit` settings may be causing unintended retries
+2. **Timeout Handling**: Test execution timeouts may trigger new job creation rather than graceful failure
+3. **Promotion Retry**: Kargo promotion policies may be re-triggering verification
+4. **Artifact Naming**: The suffix pattern (`add69fd1-ea0`) appears to be a truncated job or pod identifier, suggesting multiple jobs are being created
+
+#### Observed Behavior
+
+```
+.backstage-acceptance-artifacts/
+├── backstage-acceptance-20251217-204048-7efcfd78-a4e/  # First execution
+├── backstage-acceptance-20251217-204443-7efcfd78-a4e/  # Retry?
+├── backstage-acceptance-20251217-204846-7efcfd78-a4e/  # Retry?
+├── backstage-acceptance-20251217-212005-add69fd1-ea0/  # Different promotion?
+├── backstage-acceptance-20251217-212351-add69fd1-ea0/  # Retry?
+└── backstage-acceptance-20251217-212750-add69fd1-ea0/  # Retry?
+```
+
+The pattern shows:
+- Multiple directories with the same suffix within minutes of each other (suggesting retries)
+- Different suffixes for different time periods (suggesting different promotions or jobs)
+- Timestamps approximately 4-5 minutes apart (suggesting timeout-based retries)
+
+### Solution Design
+
+#### AnalysisTemplate Configuration
+
+The AnalysisTemplate must be configured to prevent automatic retries:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backstage-acceptance-verification
+  namespace: backstage-kargo
+spec:
+  metrics:
+    - name: acceptance-tests
+      provider:
+        job:
+          spec:
+            template:
+              spec:
+                restartPolicy: Never  # Critical: Prevent pod restarts
+                containers:
+                  - name: e2e-runner
+                    # ... container spec
+      successCondition: "result.phase == Succeeded"
+      failureCondition: "result.phase == Failed"  # Explicit failure condition
+      failureLimit: 1          # Do not retry on failure
+      interval: 60s            # Check status every 60 seconds
+      count: 1                 # Run exactly once
+```
+
+#### Key Configuration Parameters
+
+1. **restartPolicy: Never**: Prevents Kubernetes from automatically restarting failed pods
+2. **failureLimit: 1**: Tells Kargo to fail the verification after one failure, not retry
+3. **count: 1**: Specifies that the metric should be evaluated exactly once
+4. **interval: 60s**: How often to check job status (not how often to run the job)
+5. **Explicit failureCondition**: Ensures failed jobs are recognized as failures, not triggers for retry
+
+#### Artifact Naming Strategy
+
+Implement consistent artifact naming based on promotion metadata:
+
+```python
+def generate_artifact_directory_name(promotion_id: str, freight_id: str, timestamp: str) -> str:
+    """
+    Generate consistent artifact directory name from Kargo metadata.
+    
+    Args:
+        promotion_id: Full Kargo promotion ID from KARGO_PROMOTION_ID env var
+        freight_id: Full Kargo freight ID from KARGO_FREIGHT_ID env var
+        timestamp: Execution timestamp in format YYYYMMDD-HHMMSS
+    
+    Returns:
+        Directory name in format: backstage-acceptance-{timestamp}-{short_id}
+        where short_id is derived consistently from promotion_id
+    """
+    # Extract consistent identifier from promotion ID
+    # Promotion IDs look like: 174985a1-d5e4-473f-8dd3-8c1be51f4e73.acceptance-tests.1-z4h5w
+    # We want to use the first 12 characters of the UUID portion
+    
+    if '.' in promotion_id:
+        # Kargo job format: extract UUID portion
+        job_uuid = promotion_id.split('.')[0][:12]
+        return f"backstage-acceptance-{timestamp}-{job_uuid}"
+    else:
+        # Local or non-standard format: use first 12 chars
+        short_id = promotion_id[:12] if len(promotion_id) > 12 else promotion_id
+        return f"backstage-e2e-{timestamp}-{short_id}"
+```
+
+#### Log Artifact Collection
+
+Implement log collection for Kargo UI visibility:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: backstage-acceptance-verification
+spec:
+  metrics:
+    - name: acceptance-tests
+      provider:
+        job:
+          spec:
+            template:
+              spec:
+                containers:
+                  - name: e2e-runner
+                    command: ["/bin/bash"]
+                    args:
+                      - "-c"
+                      - |
+                        # Redirect all output to log file
+                        exec > >(tee /artifacts/verification.log) 2>&1
+                        
+                        # Run test execution
+                        python3 /scripts/post_deployment_e2e.py \
+                          --url "https://backstage.127.0.0.1.nip.io" \
+                          --max-wait-time 300 \
+                          --verbose
+                        
+                        # Capture exit code
+                        EXIT_CODE=$?
+                        
+                        # Ensure log is flushed
+                        sync
+                        
+                        exit $EXIT_CODE
+                    volumeMounts:
+                      - name: acceptance-artifacts
+                        mountPath: /artifacts
+```
+
+Then declare the log as an artifact in the Verification spec:
+
+```yaml
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: local
+spec:
+  verification:
+    analysisTemplates:
+      - name: backstage-acceptance-verification
+    args:
+      - name: backstage-url
+        value: https://backstage.127.0.0.1.nip.io
+    # Declare log file as artifact for Kargo UI
+    artifacts:
+      - name: verification-logs
+        path: /artifacts/verification.log
+```
+
+### Diagnostic and Monitoring
+
+#### Traceability Metadata
+
+Enhance test execution metadata to aid in debugging:
+
+```python
+def collect_execution_metadata() -> dict:
+    """Collect comprehensive execution metadata for traceability."""
+    return {
+        'kargo_promotion_id': os.environ.get('KARGO_PROMOTION_ID', 'unknown'),
+        'kargo_freight_id': os.environ.get('KARGO_FREIGHT_ID', 'unknown'),
+        'kubernetes_pod_name': os.environ.get('HOSTNAME', 'unknown'),
+        'kubernetes_job_name': extract_job_name_from_pod(),
+        'execution_timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC'),
+        'artifact_directory': os.environ.get('TEST_RESULTS_DIR', 'unknown'),
+        'test_execution_id': generate_unique_execution_id(),
+        'is_kargo_execution': is_running_in_kargo(),
+        'retry_attempt': detect_retry_attempt()  # Detect if this is a retry
+    }
+```
+
+#### Retry Detection
+
+Implement logic to detect and log unexpected retries:
+
+```python
+def detect_retry_attempt() -> int:
+    """
+    Detect if this execution is a retry by checking for existing artifacts.
+    
+    Returns:
+        Retry attempt number (0 for first execution, 1+ for retries)
+    """
+    promotion_id = os.environ.get('KARGO_PROMOTION_ID', 'unknown')
+    artifacts_dir = Path('/artifacts')
+    
+    if not artifacts_dir.exists():
+        return 0
+    
+    # Count existing directories for this promotion
+    pattern = f"*{promotion_id[:12]}*"
+    existing_dirs = list(artifacts_dir.glob(pattern))
+    
+    if len(existing_dirs) > 0:
+        logger.warning(
+            f"⚠️  RETRY DETECTED: Found {len(existing_dirs)} existing artifact "
+            f"directories for promotion {promotion_id}. This should not happen!"
+        )
+        return len(existing_dirs)
+    
+    return 0
+```
+
+### Validation and Testing
+
+#### Local Testing
+
+Test the configuration locally to ensure single execution:
+
+```bash
+# Run test with Kubernetes execution
+npm run test:kubernetes -- --grep "should have Events link"
+
+# Verify only one artifact directory created
+ls -la .backstage-acceptance-artifacts/ | tail -5
+
+# Check for retry warnings in logs
+grep "RETRY DETECTED" .backstage-acceptance-artifacts/*/verification.log
+```
+
+#### Kargo Integration Testing
+
+Validate in Kargo environment:
+
+1. Trigger a promotion
+2. Monitor AnalysisRun creation: `kubectl get analysisrun -n backstage-kargo -w`
+3. Verify only one job is created: `kubectl get jobs -n backstage-kargo`
+4. Check artifact directory count matches promotion count
+5. Verify logs are accessible in Kargo UI
+
+### Expected Outcomes
+
+After implementing these changes:
+
+1. **Single Execution**: Each Kargo promotion triggers exactly one test execution
+2. **Consistent Naming**: Artifact directories use predictable names based on promotion IDs
+3. **No Retries**: Failed tests fail the promotion without automatic retries
+4. **Clear Logs**: Verification logs accessible through Kargo UI for debugging
+5. **Traceability**: Clear mapping between promotions, executions, and artifacts

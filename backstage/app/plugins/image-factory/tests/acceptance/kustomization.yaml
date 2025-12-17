@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+configMapGenerator:
+  - name: backstage-image-factory-plugin-tests
+    files:
+      - build-pipeline-visibility.test.ts
+      - container-registry-integration.test.ts
+      - image-catalog-viewing.test.ts
+      - image-factory-enrollment.test.ts
+      - simple-navigation.test.ts
+    options:
+      labels:
+        app: backstage-acceptance
+        component: image-factory-tests
+      disableNameSuffixHash: true

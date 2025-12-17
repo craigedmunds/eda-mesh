@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { authenticateWithBackstage, suppressConsoleNoise, navigateAfterAuth } from '../../../../tests/acceptance/lib/auth-helper';
-import { takeStepScreenshot } from '../../../../tests/acceptance/lib/screenshot-helper';
 
 /**
  * Backstage Navigation Tests for Image Factory
@@ -28,8 +27,8 @@ test.describe('Image Factory Backstage Navigation Tests', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000);
     
-    // Take screenshot for documentation - saved in same folder as Playwright artifacts
-    await takeStepScreenshot(page, testInfo, '01', 'catalog-direct-access');
+    // Take screenshot for documentation - using Playwright's built-in screenshot
+    await page.screenshot({ path: `catalog-direct-access-${Date.now()}.png`, fullPage: true });
     
     console.log('Page title:', await page.title());
     console.log('Page URL:', page.url());
@@ -77,8 +76,8 @@ test.describe('Image Factory Backstage Navigation Tests', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000);
     
-    // Take screenshot for documentation - saved in same folder as Playwright artifacts
-    await takeStepScreenshot(page, testInfo, '01', 'create-direct-access');
+    // Take screenshot for documentation - using Playwright's built-in screenshot
+    await page.screenshot({ path: `create-direct-access-${Date.now()}.png`, fullPage: true });
     
     console.log('Create page title:', await page.title());
     console.log('Create page URL:', page.url());
