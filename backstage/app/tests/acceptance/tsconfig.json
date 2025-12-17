@@ -13,9 +13,12 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": false,
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "../..",
     "baseUrl": ".",
     "types": ["node", "@playwright/test"]
+  },
+  "paths": {
+    "@lib/*": ["./lib/*"]
   },
   "ts-node": {
     "esm": true,
@@ -23,7 +26,11 @@
   },
   "include": [
     "**/*.ts",
-    "**/*.js"
+    "**/*.js",
+    "./lib/**/*.ts",
+    "./lib/**/*.js",
+    "../../plugins/*/tests/acceptance/**/*.ts",
+    "../../plugins/*/tests/acceptance/**/*.js"
   ],
   "exclude": [
     "node_modules",

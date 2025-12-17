@@ -21,24 +21,24 @@
 - **API contract validation**: Ensure frontend and backend agree on data formats and endpoints
 - **Limited scope**: Focus on critical integration points, not full system flows
 
-#### End-to-End Tests
-- **Minimal but critical**: Keep E2E tests to a small, focused set that validates core user journeys
+#### Acceptance Tests
+- **Minimal but critical**: Keep acceptance tests to a small, focused set that validates core user journeys & requirements
 - **Real system validation**: Test against actual deployed systems
 - **User perspective**: Test from the user's point of view, not internal implementation details
-- **Success gate**: E2E tests are the final validation before considering work complete
+- **Success gate**: Acceptance tests are the final validation before considering work complete
 
 ## Success Criteria
 
 ### Definition of Done
 1. **Unit tests pass**: All business logic is validated in isolation
 2. **Integration tests pass**: Component interactions work correctly
-3. **E2E tests pass**: Critical user flows work end-to-end
+3. **Acceptance tests pass**: Critical user flows work end-to-end
 4. **Only then celebrate success**: Do not consider work complete until all test layers pass
 
 ### Test Execution Order
 1. Run unit tests first (fastest feedback)
 2. Run integration tests second (moderate feedback)
-3. Run E2E tests last (comprehensive validation)
+3. Run acceptance tests last (comprehensive validation)
 4. All layers must pass before deployment or completion
 
 ## Implementation Guidelines
@@ -46,7 +46,7 @@
 ### Test Organization
 - Co-locate unit tests with source code using `.test.ts` suffix
 - Place integration tests in dedicated `integration/` directories
-- Keep E2E tests in separate `e2e-tests/` directories
+- Keep acceptance tests separate directories, usually `tests/acceptance/` 
 - Use descriptive test names that explain the behavior being tested
 
 ### Mocking Strategy
@@ -69,7 +69,7 @@
 - Integration tests for modified components must pass
 
 ### Before Deployment
-- Complete test suite must pass (unit + integration + E2E)
+- Complete test suite must pass (unit + integration + acceptance)
 - No test warnings or errors in output
 - Performance tests (if applicable) must meet thresholds
 
@@ -80,8 +80,9 @@
 
 ## Anti-Patterns to Avoid
 
-- **Don't skip E2E validation**: Unit and integration tests alone are insufficient
+- **Don't skip acceptance validation**: Unit and integration tests alone are insufficient
 - **Don't ignore test warnings**: Clean up noisy test output
 - **Don't mock everything in integration tests**: Some real components should interact
-- **Don't write too many E2E tests**: Keep them focused and maintainable
-- **Don't celebrate before E2E passes**: Premature success declarations lead to production issues
+- **Don't write too many acceptance tests**: Keep them focused and maintainable
+- **Don't celebrate before acceptance passes**: Premature success declarations lead to production issues
+- **Don't invent new test mechanisms or setups unless confirmed**: The test structure is deliberate, if you think new things are needed, cover it in the design.md & seek confirmation before continuing.

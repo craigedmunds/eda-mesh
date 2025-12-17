@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
-  name: backstage-e2e-verification
+  name: backstage-acceptance-verification
   namespace: backstage-kargo
 spec:
   args:
@@ -9,8 +9,8 @@ spec:
       value: http://backstage.backstage.svc.cluster.local:7007
   
   metrics:
-    # Run comprehensive E2E tests using the Python script
-    - name: backstage-e2e-tests
+    # Run comprehensive acceptance tests using the Python script
+    - name: acceptance-tests
       provider:
         job:
           spec:
@@ -24,17 +24,28 @@ spec:
                     args:
                       - "-c"
                       - |
-                        set -euo pipefail
-                        echo "🚀 Starting Backstage E2E verification..."
+                        # Redirect all output to log file for Kargo UI
+                        exec > >(tee /artifacts/verification.log) 2>&1
                         
-                        # Execute the E2E test runner
+                        # Setup Traefik host resolution
+                        /scripts/setup_traefik_hosts.sh
+                        
+                        # Execute verification tests directly with Python script
                         python3 /scripts/post_deployment_e2e.py \
-                          --url "{{args.backstage-url}}" \
+                          --url "https://backstage.127.0.0.1.nip.io" \
                           --max-wait-time 300 \
                           --verbose
+                        
+                        # Capture exit code
+                        EXIT_CODE=$?
+                        
+                        # Ensure log is flushed
+                        sync
+                        
+                        exit $EXIT_CODE
                     env:
                       - name: BACKSTAGE_URL
-                        value: "{{args.backstage-url}}"
+                        value: "https://backstage.127.0.0.1.nip.io"
                       - name: PLAYWRIGHT_BROWSERS_PATH
                         value: "/ms-playwright"
                       - name: KARGO_PROMOTION_ID
@@ -46,35 +57,50 @@ spec:
                           fieldRef:
                             fieldPath: metadata.labels['kargo.akuity.io/freight-collection']
                     volumeMounts:
-                      - name: e2e-scripts
+                      - name: acceptance-scripts
                         mountPath: /scripts
                         readOnly: true
                       - name: acceptance-tests
                         mountPath: /workspace/backstage/app/tests/acceptance
                         readOnly: true
+                      - name: acceptance-lib
+                        mountPath: /workspace/backstage/app/tests/acceptance/lib
+                        readOnly: true
                       - name: eda-plugin-tests
                         mountPath: /workspace/backstage/app/plugins/eda/tests/acceptance
                         readOnly: true
-                      - name: e2e-artifacts
+                      - name: image-factory-plugin-tests
+                        mountPath: /workspace/backstage/app/plugins/image-factory/tests/acceptance
+                        readOnly: true
+                      - name: acceptance-artifacts
                         mountPath: /artifacts
                 volumes:
-                  - name: e2e-scripts
+                  - name: acceptance-scripts
                     configMap:
-                      name: backstage-e2e-scripts
+                      name: backstage-acceptance-scripts
                       defaultMode: 0755
                   - name: acceptance-tests
                     configMap:
                       name: backstage-acceptance-tests
                       defaultMode: 0755
+                  - name: acceptance-lib
+                    configMap:
+                      name: backstage-acceptance-lib
+                      defaultMode: 0755
                   - name: eda-plugin-tests
                     configMap:
                       name: backstage-eda-plugin-tests
                       defaultMode: 0755
-                  - name: e2e-artifacts
+                  - name: image-factory-plugin-tests
+                    configMap:
+                      name: backstage-image-factory-plugin-tests
+                      defaultMode: 0755
+                  - name: acceptance-artifacts
                     hostPath:
-                      path: /Users/craig/src/hmrc-eis/eda/argocd-eda/.backstage-e2e-artifacts
+                      path: /Users/craig/src/hmrc-eis/eda/argocd-eda/.backstage-acceptance-artifacts
                       type: DirectoryOrCreate
       successCondition: "result.phase == Succeeded"
+      failureCondition: "result.phase == Failed"
       failureLimit: 1
       interval: 60s
       count: 1

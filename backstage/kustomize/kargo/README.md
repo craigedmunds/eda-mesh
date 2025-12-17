@@ -144,6 +144,50 @@ npm run test:local
 npm run test:local:verbose
 ```
 
+#### Test Filtering and Listing
+
+**IMPORTANT:** When passing arguments to the test scripts, you must use the double dash (`--`) separator:
+
+```bash
+# ✅ CORRECT: List all tests
+npm run test:docker -- --list
+
+# ✅ CORRECT: List tests matching a pattern
+npm run test:docker -- --grep "should handle registry unavailability gracefully" --list
+
+# ✅ CORRECT: Run specific tests
+npm run test:docker -- --grep "should authenticate"
+
+# ✅ CORRECT: Filter by plugin
+npm run test:docker -- --filter image-factory
+
+# ❌ INCORRECT: Missing double dash (arguments will be ignored)
+npm run test:docker --list
+npm run test:docker --grep "pattern" --list
+```
+
+**Available Filtering Options:**
+- `--list`: List all tests without running them
+- `--grep "pattern"`: Run only tests matching the pattern
+- `--filter plugin-name`: Run tests for specific plugin (image-factory, eda, etc.)
+- `--verbose`: Enable detailed logging
+- `--url https://example.com`: Test against custom URL
+
+**Examples:**
+```bash
+# List all available tests
+npm run test:docker -- --list
+
+# List tests for image factory plugin
+npm run test:docker -- --filter image-factory --list
+
+# Run specific test and show verbose output
+npm run test:docker -- --grep "registry unavailability" --verbose
+
+# Test against custom deployment
+npm run test:docker -- --url https://my-backstage.example.com
+```
+
 **Docker vs Local Testing:**
 - **Docker** (`test:docker`): Uses the same container image as Kargo verification, ensuring identical environment
 - **Local** (`test:local`): Runs directly on your machine, faster but may have environment differences
@@ -200,6 +244,127 @@ kubectl logs -n backstage-kargo -l job-name=backstage-e2e-tests
 
 ## Troubleshooting
 
+### Test Execution Reliability Issues
+
+#### Detecting Duplicate Executions
+
+**Symptoms:**
+- Multiple artifact directories with same promotion ID but different suffixes
+- Example: `backstage-acceptance-20251217-212005-add69fd1-ea0` and `backstage-acceptance-20251217-212351-add69fd1-ea0`
+
+**Investigation Steps:**
+
+1. **Check artifact directory pattern:**
+   ```bash
+   ls -la .backstage-acceptance-artifacts/ | grep -E "add69fd1|7efcfd78"
+   ```
+   Multiple directories with same suffix indicate retries
+
+2. **Review execution logs for retry warnings:**
+   ```bash
+   grep -r "RETRY DETECTED" .backstage-acceptance-artifacts/*/execution-metadata/
+   ```
+
+3. **Check Kargo job creation:**
+   ```bash
+   kubectl get jobs -n backstage-kargo --sort-by=.metadata.creationTimestamp
+   ```
+   Multiple jobs for same promotion indicate configuration issue
+
+4. **Examine AnalysisRun status:**
+   ```bash
+   kubectl get analysisrun -n backstage-kargo -o yaml | grep -A 10 -B 10 "phase:"
+   ```
+
+**Root Causes and Solutions:**
+
+1. **Missing `restartPolicy: Never`**
+   - **Cause:** Kubernetes automatically restarts failed pods
+   - **Fix:** Ensure AnalysisTemplate has `restartPolicy: Never` in job spec
+   - **Validation:** Check `backstage-verification.yaml`
+
+2. **Incorrect `failureLimit` setting**
+   - **Cause:** Kargo retries failed verifications
+   - **Fix:** Set `failureLimit: 1` in AnalysisTemplate
+   - **Validation:** Verify failed tests fail the promotion without retry
+
+3. **Missing `failureCondition`**
+   - **Cause:** Failed jobs not recognized as failures, triggering retries
+   - **Fix:** Add `failureCondition: "result.phase == Failed"`
+   - **Validation:** Test with intentional failure
+
+4. **Timeout-based retries**
+   - **Cause:** Test execution exceeds timeout, triggering new job
+   - **Fix:** Increase timeout or optimize test execution time
+   - **Validation:** Monitor test execution duration
+
+#### Investigating Retry Causes
+
+**Step 1: Examine execution metadata**
+```bash
+# Check retry information in metadata
+cat .backstage-acceptance-artifacts/*/execution-metadata/environment.json | jq '.retry_attempt, .is_retry'
+```
+
+**Step 2: Review Kargo promotion history**
+```bash
+# Check promotion attempts
+kubectl get promotions -n backstage-kargo --sort-by=.metadata.creationTimestamp
+```
+
+**Step 3: Analyze job failure patterns**
+```bash
+# Check job completion status
+kubectl get jobs -n backstage-kargo -o wide
+```
+
+**Step 4: Review AnalysisTemplate configuration**
+```bash
+# Verify retry prevention settings
+kubectl get analysistemplate backstage-acceptance-verification -n backstage-kargo -o yaml | grep -A 5 -B 5 "failureLimit\|restartPolicy\|count"
+```
+
+#### Validating Single Execution Behavior
+
+**Test Procedure:**
+
+1. **Clean slate test:**
+   ```bash
+   # Clear existing artifacts
+   rm -rf .backstage-acceptance-artifacts/backstage-acceptance-*
+   
+   # Trigger promotion
+   kargo promote --project backstage-kargo --stage local
+   ```
+
+2. **Monitor execution:**
+   ```bash
+   # Watch job creation
+   kubectl get jobs -n backstage-kargo -w
+   
+   # Monitor AnalysisRun
+   kubectl get analysisrun -n backstage-kargo -w
+   ```
+
+3. **Verify single artifact creation:**
+   ```bash
+   # Should see exactly one directory
+   ls -la .backstage-acceptance-artifacts/ | grep backstage-acceptance | wc -l
+   ```
+
+4. **Check for retry warnings:**
+   ```bash
+   # Should return no results
+   grep -r "RETRY DETECTED" .backstage-acceptance-artifacts/
+   ```
+
+**Expected Results:**
+- ✅ One job created per promotion
+- ✅ One AnalysisRun per promotion
+- ✅ One artifact directory per promotion
+- ✅ No retry warnings in logs
+- ✅ Consistent artifact naming pattern
+
 ### Common Issues
 
 1. **E2E Tests Timeout**
@@ -217,6 +382,11 @@ kubectl logs -n backstage-kargo -l job-name=backstage-e2e-tests
    - Check Git repository access
    - Verify ArgoCD application health
 
+4. **Artifact Naming Inconsistencies**
+   - Check promotion ID extraction logic in `post_deployment_e2e.py`
+   - Verify environment variables are set correctly
+   - Review artifact directory naming function
+
 ### Debug Commands
 ```bash
 # View detailed stage status
@@ -230,6 +400,15 @@ kubectl get analysisrun -n backstage-kargo -o yaml
 
 # E2E test job logs
 kubectl logs -n backstage-kargo -l job-name=backstage-e2e-tests --tail=100
+
+# Check for duplicate jobs
+kubectl get jobs -n backstage-kargo --sort-by=.metadata.creationTimestamp
+
+# Verify AnalysisTemplate configuration
+kubectl get analysistemplate -n backstage-kargo -o yaml
+
+# Monitor real-time job creation
+kubectl get jobs,analysisruns -n backstage-kargo -w
 ```
 
 ## Requirements Validation
@@ -241,6 +420,146 @@ This integration addresses all E2E testing requirements:
 - **3.3**: ✅ Validates catalog entity display
 - **3.4**: ✅ Tests entity relationships and links
 - **3.5**: ✅ Provides detailed pass/fail reporting
+
+## Test Execution Reliability
+
+### Preventing Duplicate Test Runs
+
+The Kargo verification system is configured to prevent duplicate test executions and ensure single execution per promotion:
+
+#### AnalysisTemplate Configuration
+
+The `backstage-verification.yaml` template includes critical settings to prevent retries:
+
+```yaml
+spec:
+  metrics:
+    - name: acceptance-tests
+      provider:
+        job:
+          spec:
+            template:
+              spec:
+                restartPolicy: Never  # Prevents pod restarts
+      successCondition: "result.phase == Succeeded"
+      failureCondition: "result.phase == Failed"  # Explicit failure recognition
+      failureLimit: 1    # Do not retry on failure
+      interval: 60s      # Status check interval (not execution frequency)
+      count: 1           # Run exactly once
+```
+
+**Key Settings:**
+- `restartPolicy: Never` - Prevents Kubernetes from automatically restarting failed pods
+- `failureLimit: 1` - Tells Kargo to fail the verification after one failure, not retry
+- `count: 1` - Specifies that the metric should be evaluated exactly once
+- `interval: 60s` - How often to check job status (not how often to run the job)
+- `failureCondition` - Ensures failed jobs are recognized as failures, not triggers for retry
+
+### Artifact Naming Strategy
+
+Test artifacts are named consistently based on Kargo promotion metadata:
+
+**Format:** `backstage-acceptance-{timestamp}-{short_id}`
+
+Where:
+- `timestamp`: Execution time in format `YYYYMMDD-HHMMSS`
+- `short_id`: First 12 characters of the promotion UUID
+
+**Examples:**
+- Kargo execution: `backstage-acceptance-20251218-104716-174985a1d5e4`
+- Local execution: `backstage-e2e-20251218-104716-test-run`
+
+This naming strategy provides:
+- **Traceability**: Clear mapping to specific Kargo promotions
+- **Uniqueness**: Timestamp + promotion ID prevents collisions
+- **Consistency**: Same format across all executions
+- **Debuggability**: Easy to identify which promotion generated which artifacts
+
+### Retry Detection
+
+The test execution script includes automatic retry detection:
+
+```python
+def detect_retry_attempt(self) -> int:
+    """Detect if this execution is a retry by checking for existing artifacts."""
+    # Scans artifact directory for existing directories matching promotion ID
+    # Logs warnings if retries are detected
+    # Returns retry count (0 for first execution, 1+ for retries)
+```
+
+**When retries are detected:**
+- ⚠️ Warning logged prominently in execution logs
+- Retry count included in execution metadata
+- Investigation recommended to identify configuration issues
+
+### Log Artifact Collection
+
+All test execution logs are captured and made available through the Kargo UI:
+
+**Implementation:**
+```bash
+# In AnalysisTemplate job spec
+exec > >(tee /artifacts/verification.log) 2>&1
+# ... run tests ...
+sync  # Ensure log is flushed
+```
+
+**Stage Configuration:**
+```yaml
+verification:
+  artifacts:
+    - name: verification-logs
+      path: /artifacts/verification.log
+```
+
+**Benefits:**
+- Logs accessible through Kargo UI without kubectl access
+- Complete execution history preserved
+- Debugging information readily available
+- No need for direct pod access
+
+### Execution Metadata
+
+Comprehensive metadata is collected for every test execution:
+
+**Metadata Includes:**
+- Kargo promotion ID and freight ID
+- Kubernetes pod name and job name
+- Execution timestamp and duration
+- Retry attempt number
+- Execution environment (Kargo vs local)
+- Artifact directory path
+- Test results summary
+
+**Location:** `/artifacts/{artifact-dir}/execution-metadata/`
+
+### Validation Steps
+
+To verify single execution behavior:
+
+1. **Check artifact directory count:**
+   ```bash
+   ls -la .backstage-acceptance-artifacts/ | grep backstage-acceptance
+   ```
+   Should see one directory per promotion
+
+2. **Review execution logs:**
+   ```bash
+   grep "RETRY DETECTED" .backstage-acceptance-artifacts/*/verification.log
+   ```
+   Should return no results
+
+3. **Monitor Kargo jobs:**
+   ```bash
+   kubectl get jobs -n backstage-kargo -w
+   ```
+   Should see one job per promotion
+
+4. **Check AnalysisRun status:**
+   ```bash
+   kubectl get analysisrun -n backstage-kargo
+   ```
+   Should show single run per promotion
 
 ## Security Considerations
 

@@ -13,14 +13,16 @@ resources:
 components:
   - ../../app/tests/acceptance
   - ../../app/plugins/eda/tests/acceptance
+  - ../../app/plugins/image-factory/tests/acceptance
 
 configMapGenerator:
-  - name: backstage-e2e-scripts
+  - name: backstage-acceptance-scripts
     files:
       - scripts/post_deployment_e2e.py
+      - scripts/setup_traefik_hosts.sh
       - scripts/requirements.txt
     options:
       labels:
-        app: backstage-e2e
+        app: backstage-acceptance
         component: test-scripts
       disableNameSuffixHash: true

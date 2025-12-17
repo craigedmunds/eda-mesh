@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { takeStepScreenshot, takeNamedScreenshot } from '../../../../tests/acceptance/lib/screenshot-helper';
+import { takeStepScreenshot } from '../../../../tests/acceptance/lib/screenshot-helper';
 
 // Local auth helper functions to avoid import type conflicts
 async function authenticateWithBackstage(page: Page): Promise<void> {
@@ -44,7 +44,7 @@ async function navigateAfterAuth(page: Page, path: string): Promise<void> {
 }
 
 /**
- * Container Registry Integration E2E Tests
+ * Container Registry Integration Acceptance Tests
  * 
  * Validates Image Factory Requirements:
  * - Requirement 12.1-12.2: Display image tags with metadata
@@ -224,12 +224,12 @@ test.describe('Container Registry Integration Tests', () => {
       if (registryInfoFound) {
         console.log('✅ Found container registry integration');
         // Take screenshot showing the registry integration
-        await takeNamedScreenshot(page, testInfo, 'registry-integration-found');
+        await takeStepScreenshot(page, testInfo, '02', 'registry-integration-found');
         expect(registryInfoFound).toBe(true);
       } else {
         console.log('❌ No container registry integration found - this should be displayed for image entities');
         // Take screenshot showing the missing integration
-        await takeNamedScreenshot(page, testInfo, 'registry-integration-missing');
+        await takeStepScreenshot(page, testInfo, '02', 'registry-integration-missing');
         expect(registryInfoFound).toBe(true);
       }
     } else {

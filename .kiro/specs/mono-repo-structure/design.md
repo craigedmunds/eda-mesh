@@ -135,6 +135,8 @@ platform/kustomize/seed/
 │   ├── kargo-app.yaml             # Kargo application
 │   ├── central-secret-store-app.yaml # Secret management
 │   ├── cert-manager-app.yaml      # Certificate management
+│   ├── confluent-app.yaml         # Confluent Kafka platform
+│   ├── kafka-app.yaml             # Open source Kafka
 │   └── kustomization.yaml          # Supporting applications
 ├── kustomization.yaml             # Main seed kustomization
 └── overlays/                      # Environment-specific configs
@@ -146,6 +148,24 @@ platform/kustomize/seed/
     └── production/                # Production environment (core only)
         └── kustomization.yaml     # Core components only
 ```
+
+### Messaging Infrastructure Components
+
+The platform offers multiple messaging infrastructure options to support demonstrating different technologies, use cases and environment constraints:
+
+#### Confluent Kafka Platform
+- **Purpose**: Enterprise-grade Kafka platform with additional tooling and management capabilities
+- **Deployment**: ArgoCD application pointing to `eda/kustomize/confluent/`
+- **Target Environments**: Development and testing environments where enterprise features are beneficial
+- **Configuration**: Kustomize-based configuration with ingress for management interfaces
+
+#### Open Source Kafka
+- **Purpose**: Lightweight, single-node Kafka deployment for development and testing
+- **Deployment**: ArgoCD application using upstream Helm charts
+- **Target Environments**: Resource-constrained development environments
+- **Configuration**: Minimal configuration suitable for local development workflows
+
+Both messaging platforms are managed as supporting applications, allowing environment overlays to selectively include them based on requirements and resource constraints.
 
 ### Application Structure Standards
 
@@ -274,6 +294,22 @@ After reviewing the prework analysis, several properties can be consolidated:
 **Property 6: Overlay Pattern Support**
 *For any* service with multiple environments, it should support independent deployment through properly structured overlay patterns
 **Validates: Requirements 4.2**
+
+**Property 7: Messaging Infrastructure Options**
+*For any* messaging infrastructure deployment, the system should provide both enterprise (Confluent) and open source Kafka options as supporting applications
+**Validates: Requirements 6.1, 6.2**
+
+**Property 8: Kafka Configuration Appropriateness**
+*For any* open source Kafka deployment, the configuration should specify single-node setup suitable for development environments
+**Validates: Requirements 6.3**
+
+**Property 9: Selective Messaging Deployment**
+*For any* environment overlay, it should be able to selectively include or exclude messaging infrastructure components based on environment requirements
+**Validates: Requirements 6.4**
+
+**Property 10: Messaging Application Consistency**
+*For any* messaging infrastructure ArgoCD application, it should follow the same structural patterns and labeling conventions as other supporting applications
+**Validates: Requirements 6.5**
 
 ## Error Handling
 

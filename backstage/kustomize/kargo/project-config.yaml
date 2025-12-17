@@ -1,0 +1,10 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: ProjectConfig
+metadata:
+  name: backstage-kargo
+  namespace: backstage-kargo
+spec:
+  # Enable auto-promotion for the local stage
+  promotionPolicies:
+    - stage: local
+      autoPromotionEnabled: true

@@ -331,8 +331,130 @@
   - Ensure consistent behavior across all plugin tests
   - _Requirements: 10.2, 10.3, 10.4, 10.5_
 
+- [x] 22. Update acceptance test script for verification execution consistency
+- [x] 22.1 Update run-acceptance-tests.sh to handle verification execution
+  - Ensure the script works correctly when called from Kargo verification
+  - Update the script to handle both promotion and verification phases
+  - Configure the script to work with `verification.reuse: false` setting
+  - _Requirements: 8.2_
+
+- [x] 22.2 Configure Stage for consistent verification execution
+  - Add `verification.reuse: false` to Stage spec to disable verification caching
+  - Ensure verification runs for every promotion during development
+  - Test that verification executes consistently for the same freight
+  - _Requirements: 8.2_
+
+- [x] 22.3 Validate verification execution consistency
+  - Test that verification runs every time when reuse is disabled
+  - Verify that the acceptance test script integrates properly with verification
+  - Ensure repeated promotions trigger verification each time
+  - _Requirements: 8.2_
+
+
+
+## Kargo Test Execution Reliability (Requirements 8.6, 8.7, 8.8, 8.9)
+
+- [ ] 23. Fix Kargo AnalysisTemplate configuration to prevent duplicate test executions
+- [x] 23.1 Update AnalysisTemplate with correct retry prevention settings
+  - Set `restartPolicy: Never` in job spec to prevent pod restarts
+  - Configure `failureLimit: 1` to prevent automatic retries on failure
+  - Set `count: 1` to ensure metric is evaluated exactly once
+  - Add explicit `failureCondition` to recognize failed jobs
+  - _Requirements: 8.6, 8.7_
+
+- [x] 23.2 Validate AnalysisTemplate configuration
+  - Review current `backstage-verification.yaml` settings
+  - Ensure interval setting (60s) is for status checking, not job execution frequency
+  - Test that failed tests fail the promotion without retry
+  - _Requirements: 8.6_
+
+- [ ] 24. Implement consistent artifact directory naming
+- [x] 24.1 Update artifact naming logic in post_deployment_e2e.py
+  - Extract consistent identifier from KARGO_PROMOTION_ID environment variable
+  - Use first 12 characters of UUID portion for Kargo jobs
+  - Implement fallback naming for local/non-standard executions
+  - _Requirements: 8.8_
+
+- [x] 24.2 Add retry detection logic
+  - Implement function to detect if execution is a retry by checking existing artifacts
+  - Log warnings when retries are detected
+  - Include retry count in execution metadata
+  - _Requirements: 8.7, 8.8_
+
+- [ ]* 24.3 Write property test for single execution per promotion
+  - **Property 28: Single test execution per promotion**
+  - **Validates: Requirements 8.7**
+
+- [ ]* 24.4 Write property test for artifact naming consistency
+  - **Property 29: Artifact directory naming consistency**
+  - **Validates: Requirements 8.8**
+
+- [ ] 25. Implement log artifact collection for Kargo UI
+- [x] 25.1 Update test execution script to capture logs
+  - Redirect all stdout/stderr to dedicated log file at /artifacts/verification.log
+  - Ensure log file is flushed before script exits
+  - Capture exit code properly after log redirection
+  - _Requirements: 8.9_
+
+- [x] 25.2 Declare log artifact in Verification spec
+  - Add artifacts section to Stage verification configuration
+  - Declare verification.log as artifact with name "verification-logs"
+  - Specify correct path for log file collection
+  - _Requirements: 8.9_
+
+- [ ]* 25.3 Write property test for log artifact collection
+  - **Property 30: Verification log artifact collection**
+  - **Validates: Requirements 8.9**
+
+- [ ] 26. Enhance execution metadata for traceability
+- [x] 26.1 Expand metadata collection
+  - Add kubernetes_pod_name and kubernetes_job_name to metadata
+  - Include is_kargo_execution flag to distinguish execution environments
+  - Add retry_attempt field to track unexpected retries
+  - _Requirements: 8.7, 8.8_
+
+- [x] 26.2 Implement comprehensive logging
+  - Log all execution metadata at test start
+  - Log artifact directory creation with full path
+  - Log retry detection warnings prominently
+  - _Requirements: 8.7, 8.8_
+
+- [ ] 27. Validate reliability improvements
+- [x] 27.1 Test local execution for single artifact creation
+  - Run test with `npm run test:kubernetes -- --grep "should have Events link"`
+  - Verify only one artifact directory is created
+  - Check logs for absence of retry warnings
+  - _Requirements: 8.7, 8.8_
+
+- [ ] 27.2 Test Kargo integration for single execution
+  - Trigger Kargo promotion and monitor AnalysisRun creation
+  - Verify only one job is created per promotion
+  - Check artifact directory count matches promotion count
+  - Verify logs are accessible in Kargo UI
+  - _Requirements: 8.6, 8.7, 8.9_
+
+- [ ] 27.3 Test failure handling without retries
+  - Introduce intentional test failure
+  - Verify promotion fails without automatic retry
+  - Confirm only one artifact directory created for failed execution
+  - _Requirements: 8.6, 8.7_
+
+- [ ] 28. Document reliability improvements
+- [x] 28.1 Update Kargo configuration documentation
+  - Document AnalysisTemplate retry prevention settings
+  - Explain artifact naming strategy and traceability
+  - Document log artifact collection for Kargo UI
+  - _Requirements: 8.6, 8.7, 8.8, 8.9_
+
+- [x] 28.2 Create troubleshooting guide
+  - Document how to detect duplicate executions
+  - Explain how to investigate retry causes
+  - Provide steps for validating single execution behavior
+  - _Requirements: 8.7, 8.8_
+
 ## Current Blockers
 
 1. **Kyverno Policy**: Only configured for `image-factory-kargo`, not `backstage-kargo`
 2. **Promotion Execution**: Promotions created but not processed by controller
 3. **Manual Secret Creation**: Must stop creating secrets manually - use Kyverno only
+4. **Duplicate Test Executions**: Multiple artifact directories with different suffixes suggest retries or duplicate job creation
