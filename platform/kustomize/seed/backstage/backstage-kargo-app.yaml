@@ -7,6 +7,7 @@ metadata:
     repo: argocd-eda
     capability: backstage
     component: kargo
+    argocd-branch-targetrevision: "true"
 spec:
   project: eventing
   source:

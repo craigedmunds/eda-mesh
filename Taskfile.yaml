@@ -1,0 +1,10 @@
+version: '3'
+
+includes:
+  seed:
+    taskfile: platform/kustomize/seed/Taskfile.yaml
+    dir: platform/kustomize/seed
+
+  # api:
+  #   taskfile: apps/api/Taskfile.yml
+  #   dir: apps/api

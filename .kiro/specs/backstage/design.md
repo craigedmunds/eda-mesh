@@ -21,13 +21,17 @@ graph TB
         GHCR[ghcr.io/craigedmunds/backstage]
     end
     
-    subgraph "Git Repository"
-        REPO[GitHub Repository<br/>argocd-eda]
-        KUSTOMIZE[Kustomize Overlays]
+    subgraph "Git Repository argocd-eda"
+        subgraph "Repository Components"
+            APP[backstage/app]
+            PLUGIN[backstage/app/plugins]
+            KUSTOMIZE[backstage/kustomize]
+            KARGO_CONFIG[backstage/kustomize/kargo]
+        end
     end
     
     subgraph "Kargo System"
-        WAREHOUSE[Warehouse<br/>Image Detection]
+        WAREHOUSE[Warehouse<br/>Monitors Images & Config]
         STAGE[Local Stage<br/>Promotion Pipeline]
     end
     
@@ -35,6 +39,7 @@ graph TB
         ARGOCD[ArgoCD<br/>GitOps Controller]
         BACKSTAGE[Backstage Platform<br/>backstage.127.0.0.1.nip.io]
         POSTGRES[PostgreSQL Database]
+        KARGO_RESOURCES[Kargo Resources<br/>AnalysisTemplates]
     end
     
     subgraph "Testing Infrastructure"
@@ -43,15 +48,20 @@ graph TB
     end
     
     DEV --> LOCAL
-    LOCAL --> GHCR
+    LOCAL --> APP
+    PLUGIN--> APP
+    APP --> GHCR
     GHCR --> WAREHOUSE
+    KARGO_CONFIG --> WAREHOUSE
     WAREHOUSE --> STAGE
-    STAGE --> REPO
-    REPO --> KUSTOMIZE
+    STAGE --> KUSTOMIZE
     KUSTOMIZE --> ARGOCD
+    KARGO_CONFIG --> ARGOCD
     ARGOCD --> BACKSTAGE
+    ARGOCD --> KARGO_RESOURCES
     BACKSTAGE --> POSTGRES
-    BACKSTAGE --> E2E
+    KARGO_RESOURCES --> E2E
+    E2E --> APP
     E2E --> REPORTS
 ```
 

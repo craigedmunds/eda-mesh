@@ -1,6 +1,6 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: camel-k-mesh
+  name: eda-mesh
   labels:
-    backstage.io/kubernetes-id: camel-k-mesh-rabbit-mq-cluster
+    backstage.io/kubernetes-id: eda-mesh-rabbit-mq-cluster

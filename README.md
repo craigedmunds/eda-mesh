@@ -2,6 +2,67 @@
 
 This mono repository contains a comprehensive platform implementation featuring event-driven architecture, developer tooling, and container lifecycle management, all orchestrated through GitOps practices.
 
+## Quickstart
+
+`brew install go-task/tap/go-task`
+
+Create the central secret store namespace:
+
+`kubectl create namespace central-secret-store`
+
+Create all secrets in the `central-secret-store` namespace (assumes you have the relevent secrets in your env):
+
+### GitHub Personal Access Token
+```bash
+kubectl create secret generic github-pat \
+  --from-literal=token="$GITHUB_PAT_BUILDTOOLING" \
+  --from-literal=username="$GITHUB_BUILD_USERNAME" \
+  -n central-secret-store
+```
+
+### GitHub OAuth Credentials
+```bash
+kubectl create secret generic github-oauth \
+  --from-literal=client-id="$GITHUB_BUILD_CLIENTID" \
+  --from-literal=client-secret="$GITHUB_BUILD_CLIENTSECRET" \
+  -n central-secret-store
+```
+
+### Cloudflare API Token (for cert-manager DNS challenges)
+```bash
+kubectl create secret generic cloudflare-api-token \
+  --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
+  -n central-secret-store
+```
+
+### Admin secret for Kargo
+```bash
+pass=K4rg0!
+echo "Password: $pass"
+hashed_pass=$(htpasswd -bnBC 10 "" $pass | tr -d ':\n')
+signing_key=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
+
+kubectl create secret generic kargo-admin-credentials \
+  --from-literal=passwordHash="$hashed_pass" \
+  --from-literal=tokenSigningKey="$signing_key" \
+  -n central-secret-store
+```
+
+### Apply the seed
+
+```bash
+kustomize build platform/kustomize/seed/overlays/local/lab --enable-helm | kubectl apply -f - 
+```
+
+
+### Get the argocd admin password
+
+Get the admin password:
+
+```bash
+kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
+```
+
 ## Architecture Overview
 
 ```mermaid
@@ -132,6 +193,11 @@ kubectl apply -k platform/kustomize/seed/overlays/local/pi/
 kubectl apply -k platform/kustomize/seed/overlays/local/craig/
 ```
 
+#### Local Development (Craig Lab Environment)
+```bash
+kubectl apply -k platform/kustomize/seed/overlays/local/lab/
+```
+
 #### Local Development (Niv Environment - Full Capabilities)
 ```bash
 kubectl apply -k platform/kustomize/seed/overlays/local/niv/
@@ -185,6 +251,10 @@ kubectl apply -k kustomize/central-secret-store/
 
 ### Required Secrets
 
+Create the central secret store namespace
+
+`kubectl create namespace central-secret-store`
+
 Create all secrets in the `central-secret-store` namespace:
 
 #### GitHub Personal Access Token
@@ -210,17 +280,15 @@ kubectl create secret generic cloudflare-api-token \
   -n central-secret-store
 ```
 
-
-
 **Note**: Secrets will be automatically distributed to target namespaces via Kyverno policies based on namespace labels.
 
 ## 3. Get ArgoCD Admin Password
 
 Get the rabbitmq admin user & password:
 
-`kubectl get secret camel-k-mesh-default-user -n camel-k-mesh -o json | jq '.data.username' -r | base64 -D`
+`kubectl get secret eda-mesh-default-user -n eda-mesh -o json | jq '.data.username' -r | base64 -D`
 
-`kubectl get secret camel-k-mesh-default-user -n camel-k-mesh -o json | jq '.data.password' -r | base64 -D`
+`kubectl get secret eda-mesh-default-user -n eda-mesh -o json | jq '.data.password' -r | base64 -D`
 
 ## Working on a feature branch
 
@@ -238,7 +306,7 @@ Re-Apply the seed with the overlay:
 
 ## Kargo
 
-If including kargo, it expects a secret to be pre
+If including kargo, it expects a secret to be the namespace ahead of time. We create it with kyverno.
 
 # Run this once to create the secret
 pass=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)

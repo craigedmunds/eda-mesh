@@ -15,23 +15,23 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
   name: consumer-{{ $service }}-{{ $domain }}-{{ $subdomain }}{{ $event }}
-  namespace: camel-k-mesh
+  namespace: eda-mesh
 spec:
   name: q.{{ $service }}.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
-    name: camel-k-mesh
+    name: eda-mesh
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
   name: consumer-{{ $service }}-{{ $domain }}-{{ $subdomain }}-{{ $event }}-binding
-  namespace: camel-k-mesh
+  namespace: eda-mesh
 spec:
   destination: q.{{ $service }}.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   source: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   destinationType: queue
   rabbitmqClusterReference:
-    name: camel-k-mesh
+    name: eda-mesh
 {{- end }}

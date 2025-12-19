@@ -8,7 +8,7 @@ resources:
   - ../../../backstage
   - ../../../image-factory
   - ../../../supporting-applications
-  - ../../../seed-app
+  # - ../../../seed-app
   - letsencrypt-issuer.yaml
 
 components:
@@ -16,6 +16,7 @@ components:
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
+    namespace: argocd
     behavior: add
     literals:
       - targetRevision=feature/backstage-events

@@ -8,7 +8,7 @@ resources:
   - ../../../backstage
   - ../../../image-factory
   - ../../../supporting-applications
-  - ../../../seed-app
+  # - ../../../seed-app
 
 generatorOptions:
   disableNameSuffixHash: true

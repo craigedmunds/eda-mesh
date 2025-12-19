@@ -2,19 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
-    backstage.io/kubernetes-id: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
-  name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-deployment
-  namespace: camel-k-mesh-{{.Values.lob}}
+    app: eda-mesh-{{.Values.lob}}-{{.Values.name}}
+    backstage.io/kubernetes-id: eda-mesh-{{.Values.lob}}-{{.Values.name}}
+  name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-deployment
+  namespace: eda-mesh-{{.Values.lob}}
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
+      app.kubernetes.io/name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
   template:
     metadata:
       labels:
-        backstage.io/kubernetes-id: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
-        app.kubernetes.io/name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
+        backstage.io/kubernetes-id: eda-mesh-{{.Values.lob}}-{{.Values.name}}
+        app.kubernetes.io/name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
     spec:
       containers:
       - name: integration
@@ -30,7 +30,7 @@ spec:
       volumes:
       - name: camel-conf
         configMap: 
-          name: camel-k-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-config
+          name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-config
           items:
             - key: integration.yaml
               path: integration.yaml

@@ -2,10 +2,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   labels:
-    app: camel-k-mesh-producer-demo-user-updated
-    backstage.io/kubernetes-id: camel-k-mesh-producer-demo-user-updated
-  name: camel-k-mesh-producer-jbang-config
-  namespace: camel-k-mesh-producer-demo-user-updated
+    app: eda-mesh-producer-demo-user-updated
+    backstage.io/kubernetes-id: eda-mesh-producer-demo-user-updated
+  name: eda-mesh-producer-jbang-config
+  namespace: eda-mesh-producer-demo-user-updated
 data:
   integration.yaml: |
     - route:
@@ -32,7 +32,7 @@ data:
                 {
                   "specversion": "1.0",
                   "id": "${exchangeProperty.userId}",
-                  "source": "urn:eda:camel-k-mesh-producer-demo-user-service",
+                  "source": "urn:eda:eda-mesh-producer-demo-user-service",
                   "type": "user.created",
                   "time": "${exchangeProperty.updatedAt}",
                   "data": {
