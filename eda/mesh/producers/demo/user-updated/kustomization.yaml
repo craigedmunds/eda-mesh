@@ -2,7 +2,7 @@
 helmChartInflationGenerator:
   - chartHome: ../../../helm
     chartName: jbang-camel-integration
-    releaseName: camel-k-mesh-producer-demo-user-updated
+    releaseName: eda-mesh-producer-demo-user-updated
     values: values.yaml
 
 resources:

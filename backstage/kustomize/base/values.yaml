@@ -48,12 +48,7 @@ backstage:
     - name: backstage-catalog
       configMap:
         name: backstage-catalog
-    # - name: catalog-mesh
-    #   projected:
-    #     sources:
-    #     - configMap:
-    #         name: catalog-component-camel-k-mesh-consumer-my-simple-http-service
-
+    
   extraVolumeMounts:
     - name: backstage-root-location
       mountPath: /etc/backstage/catalog
@@ -61,10 +56,7 @@ backstage:
     - name: backstage-catalog
       mountPath: /etc/backstage/catalog/catalog-items
       readOnly: true
-    # - name: catalog-mesh
-    #   mountPath: /etc/backstage/catalog/mesh
-    #   readOnly: true
-
+    
   appConfig:
     app:
       title: Backstage

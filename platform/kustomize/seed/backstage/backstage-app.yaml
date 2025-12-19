@@ -6,6 +6,7 @@ metadata:
   labels:
     repo: argocd-eda
     capability: backstage
+    argocd-branch-targetrevision: "true"
   annotations:
     kargo.akuity.io/authorized-stage: backstage-kargo:local
 spec:

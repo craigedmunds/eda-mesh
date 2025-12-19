@@ -65,6 +65,6 @@ metadata:
     repo: argocd-eda
 ```
 
-Applications may also have a `branch-strategy` label to control how targeting is applied:
-- No label or `branch-strategy notin (multisource)`: Single-source application
-- `branch-strategy in (multisource)`: Multi-source application
+Applications may also have an `argocd-branch-targetrevision-strategy` label to control how targeting is applied:
+- No label or `argocd-branch-targetrevision-strategy notin (multisource)`: Single-source application
+- `argocd-branch-targetrevision-strategy in (multisource)`: Multi-source application

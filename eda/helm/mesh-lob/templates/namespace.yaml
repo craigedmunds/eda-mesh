@@ -6,4 +6,4 @@ metadata:
     # These two labels are currently used by kyverno to add the rabbit secret
     apim/service.type: mesh-lob
     apim/deps.rabbitmq: 'true'
-  name: camel-k-mesh-{{.Values.name}}
+  name: eda-mesh-{{.Values.name}}

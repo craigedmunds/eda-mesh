@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: camel-k-mesh-consumer-{{.Values.name}}
+    app: eda-mesh-consumer-{{.Values.name}}
     app.kubernetes.io/runtime: camel
-    backstage.io/kubernetes-id: camel-k-mesh-consumer-{{.Values.name}}
-  name: camel-k-mesh-consumer-{{.Values.name}}-jbang
-  namespace: camel-k-mesh-consumer-{{.Values.name}}
+    backstage.io/kubernetes-id: eda-mesh-consumer-{{.Values.name}}
+  name: eda-mesh-consumer-{{.Values.name}}-jbang
+  namespace: eda-mesh-consumer-{{.Values.name}}
 spec:
   ports:
   - name: http
@@ -14,5 +14,5 @@ spec:
     protocol: TCP
     targetPort: http
   selector:
-    app.kubernetes.io/name: camel-k-mesh-consumer-{{.Values.name}}
+    app.kubernetes.io/name: eda-mesh-consumer-{{.Values.name}}
   type: ClusterIP

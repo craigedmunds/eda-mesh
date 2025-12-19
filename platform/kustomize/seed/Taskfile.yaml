@@ -1,0 +1,85 @@
+version: '3'
+
+tasks:
+  status:
+    desc: Print status for the seed component
+    cmds:
+      - echo "###############################################"
+      - echo "Seed Component Status"
+      - echo "###############################################"
+      - echo "Central secret store secrets:"
+      - kubectl get secrets -n central-secret-store
+      - echo ""
+      - echo "Argocd applications:"
+      - kubectl get applications --all-namespaces
+      - echo ""
+      - echo "Argocd initial password:"
+      - kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
+      
+  passwords:
+    desc: Ensure initial passwords exist and create them
+    cmds:
+      - |
+        while read var; do
+          [ -z "${!var}" ] && { echo "$var is empty or not set. Exiting.."; exit 1; }
+        done << EOF
+        GITHUB_PAT_BUILDTOOLING
+        GITHUB_BUILD_USERNAME
+        GITHUB_BUILD_CLIENTID
+        GITHUB_BUILD_CLIENTSECRET
+        CLOUDFLARE_API_TOKEN
+        EOF
+
+      - ignore_error: true
+        cmd: kubectl create namespace central-secret-store
+        
+      - ignore_error: true
+        cmd: |
+          kubectl create secret generic github-pat \
+          --from-literal=token="$GITHUB_PAT_BUILDTOOLING" \
+          --from-literal=username="$GITHUB_BUILD_USERNAME" \
+          -n central-secret-store
+        
+      - ignore_error: true
+        cmd: |
+          kubectl create secret generic github-oauth \
+          --from-literal=client-id="$GITHUB_BUILD_CLIENTID" \
+          --from-literal=client-secret="$GITHUB_BUILD_CLIENTSECRET" \
+          -n central-secret-store
+
+      - ignore_error: true
+        cmd: |
+          kubectl create secret generic cloudflare-api-token \
+          --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
+          -n central-secret-store
+
+      - ignore_error: true
+        cmd: |
+          pass=K4rg0!
+          echo "Password: $pass"
+          hashed_pass=$(htpasswd -bnBC 10 "" $pass | tr -d ':\n')
+          signing_key=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
+
+          kubectl create secret generic kargo-admin-credentials \
+            --from-literal=passwordHash="$hashed_pass" \
+            --from-literal=tokenSigningKey="$signing_key" \
+            -n central-secret-store
+
+  apply:
+    desc: Apply seed
+    vars:
+      OVERLAY: overlays/local/lab
+    cmds:
+      - kustomize build --enable-helm | kubectl apply --server-side=true -f -
+      # - kustomize build kustomize/seed/{{.OVERLAY}} --enable-helm | kubectl apply -f -
+
+  init:
+    desc: Apply _init seed
+    cmds:
+      - kustomize build _init --enable-helm | kubectl apply --server-side=true -f -
+
+  
+  argo:logs:
+    desc: Get the logs from argocd
+    cmds:
+      - kubectl logs deployment/argocd-server -n argocd -f

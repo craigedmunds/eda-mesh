@@ -6,6 +6,7 @@ metadata:
   labels:
     repo: argocd-eda
     capability: image-factory
+    argocd-branch-targetrevision: "true"
 spec:
   project: sdlc
   source:

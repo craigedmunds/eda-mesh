@@ -2,11 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  # ArgoCD Applications (still managed by ArgoCD)
   - central-secret-store-app.yaml
-  - kargo-app.yaml
-  - argo-rollouts-app.yaml
-  - camel-karavan-app.yaml
-  - cert-manager-app.yaml
-  - kyverno-app.yaml
-  - prometheus-app.yaml
-  - rabbitmq-app.yaml
+  # - camel-karavan-app.yaml
+  
+  # Direct installations (no longer ArgoCD applications)
+  - cert-manager/
+  - kyverno/  # Temporarily disabled due to CRD annotation size issues
+  # - rabbitmq-operator/
+  - strimzi/
+  - argo-rollouts/
+  - kargo/
+  # - prometheus/

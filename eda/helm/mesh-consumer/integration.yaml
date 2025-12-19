@@ -18,13 +18,13 @@
     from:
       uri: "kamelet:spring-rabbitmq-source"
       parameters:
-        host: "camel-k-mesh.camel-k-mesh.svc.cluster.local"
+        host: "eda-mesh.eda-mesh.svc.cluster.local"
         port: 5672
         # TODO : we shouldn't need exchange name; must be mandatory in the kamelet...
         exchangeName: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
         queues: q.{{ $service }}.{{ $domain }}.{{ $subdomain }}.{{ $event }}
-        username: "{{`{{secret:camel-k-mesh-rabbit-user/username}}`}}"
-        password: "{{`{{secret:camel-k-mesh-rabbit-user/password}}`}}"
+        username: "{{`{{secret:eda-mesh-rabbit-user/username}}`}}"
+        password: "{{`{{secret:eda-mesh-rabbit-user/password}}`}}"
       steps:
       - log: ${body}
       - to:

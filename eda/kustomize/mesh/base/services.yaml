@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: camel-k-mesh-services
+  name: eda-mesh-services
   namespace: argocd
   labels:
     repo: argocd-eda
@@ -19,7 +19,7 @@ spec:
 
   template:
     metadata:     
-      name: 'camel-k-mesh-service-{{.values.service}}'
+      name: 'eda-mesh-service-{{.values.service}}'
 
     spec:
       project: "eventing"
@@ -29,7 +29,7 @@ spec:
         path: 'eda/mesh/services/{{.values.service}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: "camel-k-mesh-service-{{.values.service}}"
+        namespace: "eda-mesh-service-{{.values.service}}"
       syncPolicy:
         syncOptions:
         - CreateNamespace=true

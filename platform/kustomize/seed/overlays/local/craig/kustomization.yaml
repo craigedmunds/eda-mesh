@@ -4,16 +4,18 @@ kind: Kustomization
 # Craig environment overlay - excludes Image Factory capability
 resources:
   - ../../../argocd
+  - ../../../talos
   - ../../../eda
   - ../../../backstage
   - ../../../supporting-applications
-  - ../../../seed-app
+  # - ../../../seed-app
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
+    namespace: argocd
     behavior: add
     literals:
       - targetRevision=feature/backstage-events

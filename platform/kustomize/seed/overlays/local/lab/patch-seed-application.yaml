@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seed
+spec:
+  project: eventing
+  
+  source:
+    
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    # path: platform/kustomize/seed
+    # targetRevision: main
+    targetRevision: feature/backstage-events
+    path: platform/kustomize/seed/overlays/local/lab
+
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true
+  ignoreDifferences:
+    # Ignore differences in the seed application itself to prevent infinite loops
+    - group: argoproj.io
+      kind: Application
+      name: seed
+      jsonPointers:
+        - /status
+        - /operation

@@ -16,23 +16,23 @@ replacements:
     targets:
       - select:
           kind: Application
-          labelSelector: "repo=argocd-eda,branch-strategy notin (multisource)"
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy notin (multisource),source-type!=helm"
         fieldPaths:
           - spec.source.targetRevision
       - select:
           kind: Application
-          labelSelector: "repo=argocd-eda,branch-strategy in (multisource)"
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy in (multisource),source-type!=helm"
         fieldPaths:
           - spec.sources.*.targetRevision
       - select:
           kind: ApplicationSet
-          labelSelector: "repo=argocd-eda,branch-strategy notin (multisource)"
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy notin (multisource),source-type!=helm"
         fieldPaths:
           - spec.generators.0.git.revision
           - spec.template.spec.source.targetRevision
       - select:
           kind: ApplicationSet
-          labelSelector: "repo=argocd-eda,branch-strategy in (multisource)" #
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy in (multisource),source-type!=helm"
         fieldPaths:
           - spec.generators.*.git.revision
           - spec.template.spec.sources.*.targetRevision

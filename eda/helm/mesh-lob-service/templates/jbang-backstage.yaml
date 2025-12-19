@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: catalog-component-camel-k-mesh-{{.Values.lob}}-{{.Values.name}}
+  name: catalog-component-eda-mesh-{{.Values.lob}}-{{.Values.name}}
   namespace: backstage 
   
   labels:
@@ -32,7 +32,7 @@ data:
     metadata:
       name: {{ $domain }}-{{ $subdomain }}
       annotations:
-        backstage.io/kubernetes-id: camel-k-mesh-{{ $domain }}-{{ $subdomain }}
+        backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}
     spec:
       type: service
       lifecycle: production
@@ -64,7 +64,7 @@ data:
     metadata:
       name: {{ $domain }}-{{ $subdomain }}-{{ $event }}
       annotations:
-        backstage.io/kubernetes-id: camel-k-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}
+        backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}
     spec:
       type: event
       lifecycle: production
@@ -77,12 +77,12 @@ data:
     metadata:
       name: {{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
       annotations:
-        backstage.io/kubernetes-id: camel-k-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
+        backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
     spec:
       type: topic
       lifecycle: production
       owner: apim
-      system: camel-k-mesh
+      system: eda-mesh
       subcomponentOf: {{ $domain }}-{{ $subdomain }}-{{ $event }}
     ---
 {{- end }}

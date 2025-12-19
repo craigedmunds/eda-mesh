@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: catalog-component-camel-k-mesh
+  name: catalog-component-eda-mesh
   namespace: backstage
 data:
 
-  catalog-component-camel-k-mesh.yaml: |
+  catalog-component-eda-mesh.yaml: |
     apiVersion: backstage.io/v1alpha1
     kind: Domain
     metadata:
@@ -26,7 +26,7 @@ data:
     apiVersion: backstage.io/v1alpha1
     kind: System
     metadata:
-      name: camel-k-mesh
+      name: eda-mesh
       description: A POC event mesh system built with Camel-K
     spec:
       owner: apim
@@ -34,16 +34,16 @@ data:
     apiVersion: backstage.io/v1alpha1
     kind: Component
     metadata:
-      name: camel-k-mesh-rabbit-mq-cluster
+      name: eda-mesh-rabbit-mq-cluster
       annotations:
-        backstage.io/kubernetes-id: camel-k-mesh-rabbit-mq-cluster
+        backstage.io/kubernetes-id: eda-mesh-rabbit-mq-cluster
     spec:
       type: service
       lifecycle: production
       owner: apim
-      system: camel-k-mesh
+      system: eda-mesh
 
-  catalog-component-camel-k-mesh-sample.yaml: |
+  catalog-component-eda-mesh-sample.yaml: |
     apiVersion: backstage.io/v1alpha1
     kind: Domain
     metadata:
@@ -66,7 +66,7 @@ data:
     metadata:
       name: sample-service
       annotations:
-        backstage.io/kubernetes-id: camel-k-mesh-sample
+        backstage.io/kubernetes-id: eda-mesh-sample
     spec:
       type: service
       lifecycle: production

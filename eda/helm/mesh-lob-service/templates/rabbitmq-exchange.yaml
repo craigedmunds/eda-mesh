@@ -10,47 +10,47 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Exchange
 metadata:
   name: cm-{{ $domain }}-{{ $subdomain }}-{{ $event }}
-  namespace: camel-k-mesh
+  namespace: eda-mesh
   labels:
-    backstage.io/kubernetes-id: camel-k-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
+    backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
 spec:
   name: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   type: headers # default to 'direct' if not provided; can be set to 'direct', 'fanout', 'headers', and 'topic'
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
-    name: camel-k-mesh
+    name: eda-mesh
 
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
   name: cm-{{ $domain }}-{{ $subdomain }}-sample-{{ $event }}
-  namespace: camel-k-mesh
+  namespace: eda-mesh
 
   labels:
-    backstage.io/kubernetes-id: camel-k-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
+    backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
 spec:
   name: q.{{ $domain }}.{{ $subdomain }}.sample.{{ $event }} # name of the queue
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
-    name: camel-k-mesh
+    name: eda-mesh
 
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
   name: cm-{{ $domain }}-{{ $subdomain }}-sample-{{ $event }}-binding
-  namespace: camel-k-mesh
+  namespace: eda-mesh
 
   labels:
-    backstage.io/kubernetes-id: camel-k-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
+    backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
 spec:
   source: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }} # an existing exchange (the rabbit mq internal name)
   destination: q.{{ $domain }}.{{ $subdomain }}.sample.{{ $event }} # an existing queue (the rabbit mq internal name)
   destinationType: queue # can be 'queue' or 'exchange'
   rabbitmqClusterReference:
-    name: camel-k-mesh
+    name: eda-mesh
 
 {{- end }}
