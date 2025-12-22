@@ -1,0 +1,39 @@
+version: '3'
+
+tasks:
+  logs:
+    desc: Follow Backstage logs
+    cmds:
+      - kubectl logs deployment/backstage -n backstage -f
+
+  status:
+    desc: Show Backstage application and pod status
+    cmds:
+      - cmd: echo "=== Backstage Application Status ==="
+        silent: true
+      - kubectl get application backstage -n argocd -o wide
+      - cmd: echo -e "\n=== Backstage Pods ==="
+        silent: true
+      - kubectl get pods -n backstage
+      - cmd: echo -e "\n=== Backstage Services ==="
+        silent: true
+      - kubectl get services -n backstage
+
+  ui:
+    desc: Open Backstage UI (requires port-forward)
+    cmds:
+      - cmd: echo "Backstage UI will be available at - http://localhost:3000"
+        silent: true
+      - kubectl port-forward svc/backstage -n backstage 3000:7007
+
+  apply:
+    desc: Apply Backstage kustomize configuration directly
+    cmds:
+      - kubectl apply -k kustomize/
+      - cmd: echo "Applied Backstage configuration"
+        silent: true
+
+  diff:
+    desc: Show diff between local changes and cluster state
+    cmds:
+      - kubectl diff -k kustomize/

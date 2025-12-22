@@ -7,6 +7,13 @@ image:
   tag: "v3.1.6"
   pullPolicy: IfNotPresent
 
+# Disable Traefik CRD providers - use only standard Kubernetes Ingress
+providers:
+  kubernetesCRD:
+    enabled: false
+  kubernetesIngress:
+    enabled: true
+
 # Use LoadBalancer service instead of hostNetwork to avoid Pod Security issues
 service:
   type: LoadBalancer

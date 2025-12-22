@@ -1,0 +1,172 @@
+version: '3'
+
+tasks:
+  status:
+    desc: Check ingress status and troubleshoot connectivity issues
+    vars:
+      HOST: '{{.HOST | default "argocd.lab.local.ctoaas.co"}}'
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Ingress Status Check for {{.HOST}}"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "0. All Ingress Resources:"
+        silent: true
+      - kubectl get ingress -A
+      - cmd: echo "1. Ingress Resources For Hostname {{.HOST}}:"
+        silent: true
+      - kubectl get ingress -A | grep -E "(NAMESPACE|{{.HOST}})" || echo "No ingress found for {{.HOST}}"
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "2. Ingress Details for {{.HOST}}:"
+        silent: true
+      - |
+        INGRESS_INFO=$(kubectl get ingress -A -o json | jq -r '.items[] | select(.spec.rules[]?.host == "{{.HOST}}") | "\(.metadata.namespace)/\(.metadata.name)"' | head -1)
+        if [ -n "$INGRESS_INFO" ]; then
+          NAMESPACE=$(echo $INGRESS_INFO | cut -d'/' -f1)
+          NAME=$(echo $INGRESS_INFO | cut -d'/' -f2)
+          echo "Found ingress: $NAME in namespace: $NAMESPACE"
+          kubectl describe ingress $NAME -n $NAMESPACE
+        else
+          echo "No ingress found for {{.HOST}}"
+        fi
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "3. Backend Services for {{.HOST}}:"
+        silent: true
+      - |
+        kubectl get ingress -A -o json | jq -r '.items[] | select(.spec.rules[]?.host == "{{.HOST}}") | .spec.rules[].http.paths[] | "\(.backend.service.namespace // "same-ns")/\(.backend.service.name):\(.backend.service.port.number // .backend.service.port.name)"' | while read svc_info; do
+          if [ -n "$svc_info" ]; then
+            echo "Backend service: $svc_info"
+            SVC_NS=$(echo $svc_info | cut -d'/' -f1)
+            SVC_NAME=$(echo $svc_info | cut -d'/' -f2 | cut -d':' -f1)
+            if [ "$SVC_NS" = "same-ns" ]; then
+              SVC_NS=$(kubectl get ingress -A -o json | jq -r '.items[] | select(.spec.rules[]?.host == "{{.HOST}}") | .metadata.namespace' | head -1)
+            fi
+            kubectl get svc $SVC_NAME -n $SVC_NS 2>/dev/null || echo "Service $SVC_NAME not found in $SVC_NS"
+          fi
+        done
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "4. Traefik Ingress Controller Status:"
+        silent: true
+      - kubectl get pods -n traefik-system -l app.kubernetes.io/name=traefik || kubectl get pods -A -l app.kubernetes.io/name=traefik
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "5. Traefik Services:"
+        silent: true
+      - kubectl get svc -n traefik-system -l app.kubernetes.io/name=traefik || kubectl get svc -A -l app.kubernetes.io/name=traefik
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "6. HTTP Test:"
+        silent: true
+      - |
+        echo "Testing HTTP connection to {{.HOST}}..."
+        curl -I -k https://{{.HOST}} 2>&1 | head -10 || echo "Connection failed"
+
+  ssl:check:
+    desc: Check SSL certificate status for a given host
+    vars:
+      HOST: '{{.HOST | default "argocd.lab.local.ctoaas.co"}}'
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "SSL Certificate Check for {{.HOST}}"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "1. Certificate Resources:"
+        silent: true
+      - kubectl get certificate -A | grep -E "(NAMESPACE|{{.HOST}})" || echo "No certificates found for {{.HOST}}"
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "2. Certificate Details:"
+        silent: true
+      - |
+        CERT_NAME=$(kubectl get certificate -A -o json | jq -r '.items[] | select(.spec.dnsNames[]? | contains("{{.HOST}}")) | "\(.metadata.namespace)/\(.metadata.name)"' | head -1)
+        if [ -n "$CERT_NAME" ]; then
+          NAMESPACE=$(echo $CERT_NAME | cut -d'/' -f1)
+          NAME=$(echo $CERT_NAME | cut -d'/' -f2)
+          echo "Found certificate: $NAME in namespace: $NAMESPACE"
+          kubectl describe certificate $NAME -n $NAMESPACE
+        else
+          echo "No certificate found for {{.HOST}}"
+        fi
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "3. ACME Challenge Status:"
+        silent: true
+      - |
+        kubectl get challenge -A -o json | jq -r '.items[] | select(.spec.dnsName == "{{.HOST}}") | "\(.metadata.namespace)/\(.metadata.name)"' | while read challenge; do
+          if [ -n "$challenge" ]; then
+            NAMESPACE=$(echo $challenge | cut -d'/' -f1)
+            NAME=$(echo $challenge | cut -d'/' -f2)
+            echo "Challenge: $NAME in namespace: $NAMESPACE"
+            kubectl describe challenge $NAME -n $NAMESPACE
+          fi
+        done || echo "No challenges found for {{.HOST}}"
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "4. ClusterIssuer Status:"
+        silent: true
+      - kubectl get clusterissuer -o wide
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "5. External Secrets Status:"
+        silent: true
+      - kubectl get externalsecret -A | grep cloudflare || echo "No cloudflare external secrets found"
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "6. Cloudflare API Token Secret:"
+        silent: true
+      - |
+        for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+          if kubectl get secret cloudflare-api-token -n $ns >/dev/null 2>&1; then
+            echo "✓ Secret exists in $ns namespace"
+          fi
+        done
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "7. SSL Test (curl):"
+        silent: true
+      - |
+        echo "Testing HTTPS connection to {{.HOST}}..."
+        curl -I https://{{.HOST}} 2>&1 | head -5 || echo "Connection failed"
+
+  cert:debug:
+    desc: Debug certificate issues for a specific certificate
+    vars:
+      NAMESPACE: '{{.NAMESPACE | default "argocd"}}'
+      CERT_NAME: '{{.CERT_NAME | default "argocd-ctoaas-tls"}}'
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: 'echo "Certificate Debug: {{.CERT_NAME}} in {{.NAMESPACE}}"'
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - 'kubectl describe certificate {{.CERT_NAME}} -n {{.NAMESPACE}}'
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Certificate Request:"
+        silent: true
+      - |
+        CR_NAME=$(kubectl get certificaterequest -n {{.NAMESPACE}} -o json | jq -r '.items[] | select(.metadata.ownerReferences[]?.name == "{{.CERT_NAME}}") | .metadata.name' | head -1)
+        if [ -n "$CR_NAME" ]; then
+          kubectl describe certificaterequest $CR_NAME -n {{.NAMESPACE}}
+        else
+          echo "No certificate request found"
+        fi
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "ACME Order:"
+        silent: true
+      - |
+        ORDER_NAME=$(kubectl get order -n {{.NAMESPACE}} -o json | jq -r '.items[] | select(.metadata.annotations["cert-manager.io/certificate-name"] == "{{.CERT_NAME}}") | .metadata.name' | head -1)
+        if [ -n "$ORDER_NAME" ]; then
+          kubectl describe order $ORDER_NAME -n {{.NAMESPACE}}
+        else
+          echo "No ACME order found"
+        fi

@@ -28,15 +28,15 @@ When adding extra resources to ArgoCD applications:
   - Example: `kustomize/backstage/kargo/` contains Project, Warehouse, Stage for backstage
   - Set explicit namespace in kargo kustomization to avoid parent namespace override
 
-## Kyverno Secret Sync Pattern
+## ESO Secret Sync Pattern
 
 Use label-based selectors for syncing secrets to namespaces:
 
-- **Source secret** - Lives in application namespace (e.g., `ghcr-creds` in `backstage`)
-- **Target selector** - Use specific labels (e.g., `kargo.deps/ghcr: "true"`)
-- **Kargo secrets** - Must have `kargo.akuity.io/secret-type: repository` label
+- **Source secret** - Lives in `central-secret-store` namespace
+- **Target selector** - Use specific labels (e.g., `secrets/gh-docker-registry: "true"`)
+- **Kargo secrets** - ESO creates secrets with `kargo.akuity.io/cred-type` labels from the start
 
-Example: `kyverno-sync-ghcr-secret.yaml` clones `ghcr-creds` to any Kargo project namespace with the `kargo.deps/ghcr` label
+Example: ClusterExternalSecrets distribute secrets from central-secret-store to any namespace with matching labels
 
 ## Kargo Project Conventions
 

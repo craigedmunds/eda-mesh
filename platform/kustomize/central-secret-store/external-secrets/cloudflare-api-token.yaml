@@ -1,0 +1,34 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterExternalSecret
+metadata:
+  name: cloudflare-api-token
+spec:
+  # Refresh every 5 minutes
+  refreshTime: 5m
+  
+  # Target namespaces with this label
+  namespaceSelector:
+    matchLabels:
+      secrets/cloudflare-api-token: "true"
+  
+  # ExternalSecret template to create in each namespace
+  externalSecretSpec:
+    secretStoreRef:
+      name: central-secret-store
+      kind: ClusterSecretStore
+    
+    target:
+      name: cloudflare-api-token
+      creationPolicy: Owner
+      template:
+        metadata:
+          labels:
+            managed-by: external-secrets
+            source: central-secret-store
+            secret-type: cloudflare-api-token
+    
+    data:
+    - secretKey: api-token
+      remoteRef:
+        key: cloudflare-api-token
+        property: api-token

@@ -42,13 +42,13 @@ def setup_infrastructure(chart: Construct, namespace: str, script_dir: Path):
     # ServiceAccount
     create_service_account(chart, name="image-factory")
     
-    # Docker pull secret (managed by Kyverno)
+    # Docker pull secret (managed by ESO)
     create_secret(
         chart,
         name="ghcr-pull-secret",
         secret_type="kubernetes.io/dockerconfigjson",
-        data={".dockerconfigjson": "e30K"},  # Empty JSON - replaced by Kyverno
-        annotations={"kyverno.io/source": "backstage/ghcr-creds"}
+        data={".dockerconfigjson": "e30K"},  # Empty JSON - replaced by ESO
+        annotations={"eso.io/source": "central-secret-store/github-docker-registry"}
     )
     
     # Analysis ConfigMap

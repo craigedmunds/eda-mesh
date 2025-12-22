@@ -1,89 +1,113 @@
 # Central Secret Store
 
-This directory contains the central secret management configuration for the EDA platform.
+This directory manages centralized secret distribution using External Secrets Operator (ESO).
 
 ## Overview
 
-All secrets are managed centrally in the `central-secret-store` namespace and automatically distributed to other namespaces via Kyverno policies.
+The central secret store approach provides:
+- **Single source of truth** for all secrets
+- **Automated distribution** to namespaces that need them
+- **Consistent credentials** across all environments
+- **No manual secret creation** required
 
-## Namespace
+## Architecture
 
+1. **Source secrets** are stored in the `central-secret-store` namespace
+2. **ClusterSecretStore** provides access to the source namespace
+3. **ClusterExternalSecrets** define which secrets to sync to which namespaces
+4. **ExternalSecrets** are automatically created in target namespaces
+5. **Secrets** are automatically created and kept in sync
+
+## Components
+
+### ClusterSecretStore
+- `cluster-secret-store.yaml` - Defines access to the central-secret-store namespace
+- Uses Kubernetes provider to read secrets from the source namespace
+
+### RBAC
+- `eso-rbac.yaml` - Provides necessary permissions for ESO to read source secrets
+
+### ClusterExternalSecrets
+- `external-secrets/kargo-admin-credentials.yaml` - Syncs Kargo admin credentials
+- `external-secrets/github-oauth.yaml` - Syncs GitHub OAuth credentials  
+- `external-secrets/github-docker-registry.yaml` - Syncs GitHub container registry credentials
+- `external-secrets/github-git-credentials.yaml` - Syncs GitHub Git credentials
+- `external-secrets/cloudflare-api-token.yaml` - Syncs Cloudflare API token
+
+## Usage
+
+### Adding a New Secret
+
+1. Create the source secret in the `central-secret-store` namespace:
+   ```bash
+   kubectl create secret generic my-secret -n central-secret-store \
+     --from-literal=key1=value1 \
+     --from-literal=key2=value2
+   ```
+
+2. Create a ClusterExternalSecret in `external-secrets/`:
+   ```yaml
+   apiVersion: external-secrets.io/v1
+   kind: ClusterExternalSecret
+   metadata:
+     name: my-secret
+   spec:
+     refreshTime: 5m
+     namespaceSelector:
+       matchLabels:
+         secrets/my-secret: "true"
+     externalSecretSpec:
+       secretStoreRef:
+         name: central-secret-store
+         kind: ClusterSecretStore
+       target:
+         name: my-secret
+         creationPolicy: Owner
+       data:
+       - secretKey: key1
+         remoteRef:
+           key: my-secret
+           property: key1
+   ```
+
+3. Label target namespaces:
+   ```bash
+   kubectl label namespace my-namespace secrets/my-secret=true
+   ```
+
+### Namespace Labels
+
+Namespaces must be labeled to receive secrets:
+- `secrets/kargo-admin-credentials=true` - Receives Kargo admin credentials
+- `secrets/gh-oauth-credentials=true` - Receives GitHub OAuth credentials
+- `secrets/gh-docker-registry=true` - Receives GitHub container registry credentials
+- `secrets/gh-git-credentials=true` - Receives GitHub Git credentials
+- `secrets/cloudflare-api-token=true` - Receives Cloudflare API token
+
+## Monitoring
+
+Check ClusterExternalSecret status:
 ```bash
-kubectl create namespace central-secret-store
-kubectl label namespace central-secret-store purpose=central-secrets
+kubectl get clusterexternalsecrets
 ```
 
-## Required Secrets
-
-### 1. GitHub Personal Access Token (PAT)
-Used for Git operations and GitHub API access.
-
+Check ExternalSecret status in target namespaces:
 ```bash
-kubectl create secret generic github-pat \
-  --from-literal=token=ghp_your_token_here \
-  --from-literal=username=your-github-username \
-  -n central-secret-store
+kubectl get externalsecrets -A
 ```
 
-### 2. GitHub OAuth App Credentials
-Used for GitHub OAuth authentication in applications.
-
+Check secret creation:
 ```bash
-kubectl create secret generic github-oauth \
-  --from-literal=client-id=your_oauth_client_id \
-  --from-literal=client-secret=your_oauth_client_secret \
-  -n central-secret-store
+kubectl get secrets -n <target-namespace>
 ```
-
-
-
-## Secret Distribution
-
-Secrets are automatically distributed to target namespaces via Kyverno policies based on namespace labels. Label your namespaces with the secret types they need:
-
-### Available Secret Types
-
-- **`secrets/gh-docker-registry=true`**: Creates GHCR docker-registry secret from GitHub PAT
-- **`secrets/gh-git-credentials=true`**: Creates GitHub Git credentials from GitHub PAT  
-- **`secrets/gh-oauth-credentials=true`**: Creates GitHub OAuth credentials for app authentication
-
-### Example Namespace Labels
-
-```yaml
-# For Kargo namespaces (need both docker registry and git access)
-metadata:
-  labels:
-    secrets/gh-docker-registry: "true"
-    secrets/gh-git-credentials: "true"
-
-# For Backstage namespaces (need OAuth for authentication)
-metadata:
-  labels:
-    secrets/gh-oauth-credentials: "true"
-```
-
-## Kyverno Policies
-
-All secret distribution policies are managed in this directory (`kyverno-policies.yaml`). Policies:
-
-1. **sync-gh-docker-registry**: Creates GHCR docker-registry secrets from GitHub PAT
-2. **sync-gh-git-credentials**: Creates GitHub Git credentials from GitHub PAT
-3. **sync-gh-oauth-credentials**: Creates GitHub OAuth credentials for applications
-
-All policies use tag-based namespace targeting with `secrets/*` labels and source secrets from `central-secret-store`.
-
-## Security Notes
-
-1. **Never commit secrets to Git** - always create them manually in the cluster
-2. **Use least privilege** - each secret should have minimal required permissions
-3. **Rotate regularly** - implement proper secret rotation processes
-4. **Audit access** - monitor secret usage across namespaces
 
 ## Troubleshooting
 
-If secrets are not appearing in target namespaces:
+1. **ClusterExternalSecret not ready**: Check the ClusterSecretStore status
+2. **ExternalSecret not syncing**: Check RBAC permissions and source secret existence
+3. **Secret not created**: Check ExternalSecret events and ESO controller logs
 
-1. Check namespace labels match Kyverno policy selectors
-2. Verify Kyverno policies are active: `kubectl get cpol`
-3. Check Kyverno logs: `kubectl logs -n kyverno -l app.kubernetes.io/name=kyverno`
-4. Manually trigger policy: Add/update namespace labels
+View ESO logs:
+```bash
+kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets
+```

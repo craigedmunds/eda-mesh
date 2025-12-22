@@ -1,0 +1,46 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kargo-api
+  namespace: kargo
+spec:
+  rules:
+  - host: kargo.lab.ctoaas.co
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: kargo-api
+            port:
+              number: 80
+      - pathType: Prefix
+        path: /webhooks
+        backend:
+          service:
+            name: kargo-external-webhooks-server
+            port:
+              number: 80
+  - host: kargo.lab.local.ctoaas.co
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: kargo-api
+            port:
+              number: 80
+      - pathType: Prefix
+        path: /webhooks
+        backend:
+          service:
+            name: kargo-external-webhooks-server
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - kargo.lab.ctoaas.co
+    - kargo.lab.local.ctoaas.co
+    secretName: kargo-ctoaas-tls

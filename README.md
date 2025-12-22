@@ -4,6 +4,8 @@ This mono repository contains a comprehensive platform implementation featuring 
 
 ## Quickstart
 
+Install the task manager:
+
 `brew install go-task/tap/go-task`
 
 Create the central secret store namespace:
@@ -213,7 +215,7 @@ kubectl apply -k platform/kustomize/seed/overlays/production/
 The bootstrap process creates:
 - **ArgoCD**: GitOps deployment engine with configuration
 - **Core Capabilities**: Backstage, Image Factory, EDA Mesh (depending on overlay)
-- **Supporting Applications**: Kargo, Kyverno, cert-manager, etc. (local environments only)
+- **Supporting Applications**: Kargo, External Secrets Operator, cert-manager, etc. (local environments only)
 
 ### Environment Differences
 
@@ -280,7 +282,7 @@ kubectl create secret generic cloudflare-api-token \
   -n central-secret-store
 ```
 
-**Note**: Secrets will be automatically distributed to target namespaces via Kyverno policies based on namespace labels.
+**Note**: Secrets will be automatically distributed to target namespaces via External Secrets Operator (ESO) based on namespace labels.
 
 ## 3. Get ArgoCD Admin Password
 
@@ -306,9 +308,9 @@ Re-Apply the seed with the overlay:
 
 ## Kargo
 
-If including kargo, it expects a secret to be the namespace ahead of time. We create it with kyverno.
+If including kargo, it expects a secret to be the namespace ahead of time. We create it with ESO.
 
-# Run this once to create the secret
+# Run this once to create the secret in the central-secret-store namespace
 pass=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
 echo "Password: $pass"
 hashed_pass=$(htpasswd -bnBC 10 "" $pass | tr -d ':\n')

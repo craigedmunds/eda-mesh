@@ -4,13 +4,13 @@ metadata:
   name: confluent-ingress
   namespace: confluent
   annotations:
-
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   rules:
-  - host: confluent.127.0.0.1.nip.io
+  - host: confluent.lab.ctoaas.co
     http:
       paths:
       - path: /
@@ -20,3 +20,18 @@ spec:
             name: controlcenter
             port:
               name: external
+  - host: confluent.lab.local.ctoaas.co
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: controlcenter
+            port:
+              name: external
+  tls:
+  - hosts:
+    - confluent.lab.ctoaas.co
+    - confluent.lab.local.ctoaas.co
+    secretName: confluent-ctoaas-tls

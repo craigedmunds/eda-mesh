@@ -1,0 +1,52 @@
+version: '3'
+
+tasks:
+  logs:
+    desc: Follow Kargo controller logs
+    cmds:
+      - kubectl logs deployment/kargo-controller -n kargo -f
+
+  logs:api:
+    desc: Follow Kargo API logs
+    cmds:
+      - kubectl logs deployment/kargo-api -n kargo -f
+
+  password:
+    desc: Show Kargo admin password
+    cmds:
+      - cmd: echo "Kargo admin password - K4rg0!"
+        silent: true
+
+  ui:
+    desc: Open Kargo UI (requires port-forward)
+    cmds:
+      - cmd: echo "Kargo UI will be available at - http://localhost:8081"
+        silent: true
+      - cmd: echo "Username - admin"
+        silent: true
+      - cmd: echo "Password - K4rg0!"
+        silent: true
+      - kubectl port-forward svc/kargo-api -n kargo 8081:80
+
+  status:
+    desc: Show Kargo status
+    cmds:
+      - cmd: echo "=== Kargo Pods ==="
+        silent: true
+      - kubectl get pods -n kargo
+      - cmd: echo -e "\n=== Kargo Projects ==="
+        silent: true
+      - kubectl get projects -A
+      - cmd: echo -e "\n=== Kargo Stages ==="
+        silent: true
+      - kubectl get stages -A
+      - cmd: echo -e "\n=== Kargo Freight ==="
+        silent: true
+      - kubectl get freight -A
+
+  apply:
+    desc: Apply Kargo kustomize configuration directly
+    cmds:
+      - kustomize build --enable-helm . | kubectl apply --server-side=true -f -
+      - cmd: echo "Applied Kargo configuration"
+        silent: true

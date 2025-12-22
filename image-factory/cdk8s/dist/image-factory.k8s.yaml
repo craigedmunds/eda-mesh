@@ -43,7 +43,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   annotations:
-    kyverno.io/source: backstage/ghcr-creds
+    eso.io/source: central-secret-store/github-docker-registry
   name: ghcr-pull-secret
   namespace: image-factory-kargo
 type: kubernetes.io/dockerconfigjson

@@ -5,10 +5,11 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   rules:
-  - host: rabbitmq.127.0.0.1.nip.io
+  - host: rabbitmq.lab.ctoaas.co
     http:
       paths:
       - path: /
@@ -18,3 +19,18 @@ spec:
             name: eda-mesh
             port:
               name: management
+  - host: rabbitmq.lab.local.ctoaas.co
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: eda-mesh
+            port:
+              name: management
+  tls:
+  - hosts:
+    - rabbitmq.lab.ctoaas.co
+    - rabbitmq.lab.local.ctoaas.co
+    secretName: rabbitmq-ctoaas-tls

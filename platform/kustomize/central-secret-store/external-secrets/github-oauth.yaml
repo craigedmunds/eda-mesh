@@ -1,0 +1,39 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterExternalSecret
+metadata:
+  name: github-oauth-credentials
+spec:
+  # Refresh every 5 minutes
+  refreshTime: 5m
+  
+  # Target namespaces with this label
+  namespaceSelector:
+    matchLabels:
+      secrets/gh-oauth-credentials: "true"
+  
+  # ExternalSecret template to create in each namespace
+  externalSecretSpec:
+    secretStoreRef:
+      name: central-secret-store
+      kind: ClusterSecretStore
+    
+    target:
+      name: github-oauth
+      creationPolicy: Owner
+      template:
+        metadata:
+          labels:
+            managed-by: external-secrets
+            source: central-secret-store
+            secret-type: gh-oauth-credentials
+    
+    data:
+    - secretKey: GITHUB_CLIENT_ID
+      remoteRef:
+        key: github-oauth
+        property: client-id
+    
+    - secretKey: GITHUB_CLIENT_SECRET
+      remoteRef:
+        key: github-oauth
+        property: client-secret
