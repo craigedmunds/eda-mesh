@@ -115,7 +115,7 @@ services/
 - **Backstage**: Service catalog and documentation
 - **Kargo**: GitOps deployment pipelines
 - **Monitoring**: Prometheus metrics and Grafana dashboards
-- **Security**: Kyverno policies for secret management
+- **Security**: External Secrets Operator for secret management
 
 ## Development
 

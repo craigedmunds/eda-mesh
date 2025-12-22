@@ -17,4 +17,4 @@ spec:
     name: backstage-selfsigned
     kind: Issuer
   dnsNames:
-    - backstage.127.0.0.1.nip.io
+    - backstage.lab.ctoaas.co

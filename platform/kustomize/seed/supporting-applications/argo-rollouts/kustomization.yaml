@@ -20,7 +20,7 @@ helmCharts:
             traefik.ingress.kubernetes.io/router.entrypoints: websecure
             traefik.ingress.kubernetes.io/router.tls: "true"
           hosts:
-            - argo-rollouts.127.0.0.1.nip.io
+            - argo-rollouts.lab.ctoaas.co
           pathType: Prefix
       
       # Configure log streaming for AnalysisRuns

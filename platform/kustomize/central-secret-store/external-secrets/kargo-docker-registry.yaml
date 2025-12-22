@@ -1,0 +1,54 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterExternalSecret
+metadata:
+  name: kargo-docker-registry
+spec:
+  # Refresh every 5 minutes
+  refreshTime: 5m
+  
+  # Target Kargo namespaces (ending with -kargo)
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: In
+      values: ["backstage-kargo", "image-factory-kargo"]
+  
+  # ExternalSecret template to create in each namespace
+  externalSecretSpec:
+    secretStoreRef:
+      name: central-secret-store
+      kind: ClusterSecretStore
+    
+    target:
+      name: ghcr-creds
+      creationPolicy: Owner
+      template:
+        type: kubernetes.io/dockerconfigjson
+        metadata:
+          labels:
+            managed-by: external-secrets
+            source: central-secret-store
+            secret-type: gh-docker-registry
+            kargo.akuity.io/cred-type: image
+        data:
+          .dockerconfigjson: |
+            {
+              "auths": {
+                "ghcr.io": {
+                  "username": "{{ .username }}",
+                  "password": "{{ .token }}",
+                  "auth": "{{ printf "%s:%s" .username .token | b64enc }}"
+                }
+              }
+            }
+    
+    data:
+    - secretKey: username
+      remoteRef:
+        key: github-pat
+        property: username
+    
+    - secretKey: token
+      remoteRef:
+        key: github-pat
+        property: token

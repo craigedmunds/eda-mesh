@@ -7,3 +7,6 @@ resources:
 images:
 - name: ghcr.io/craigedmunds/backstage
   newTag: 0.7.3 # Kargo will update this
+
+patchesStrategicMerge:
+- ingress-patch.yaml

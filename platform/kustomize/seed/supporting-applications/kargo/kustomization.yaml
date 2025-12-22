@@ -6,7 +6,8 @@ namespace: kargo
 resources:
   # Remove manual namespace.yaml to avoid conflict with Helm chart
   # - namespace.yaml
-  - kargo-policies.yaml
+  # Kyverno policies removed - now using ESO for secret management
+  - ingress.yaml
 
 # Create namespace with required labels using labels field
 labels:
@@ -18,18 +19,4 @@ helmCharts:
     repo: oci://ghcr.io/akuity/kargo-charts
     version: 1.8.4
     namespace: kargo
-    valuesInline:
-      api:
-        host: kargo.127.0.0.1.nip.io
-        secret:
-          name: kargo-admin-credentials
-        adminAccount:
-          enabled: true
-        tls:
-          enabled: false
-        ingress:
-          enabled: true
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: websecure
-            traefik.ingress.kubernetes.io/router.tls: "true"
-          pathType: Prefix
+    valuesFile: values.yaml

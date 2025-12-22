@@ -4,3 +4,5 @@
 - Do not create uneccessary .md files. Useful information should either be in the appropriate spec, or in the appropriate README.md
 - Don't create new spec folders without confirming; new requirements often part of an existing spec.
 - When reviewing new requirements, ensure the existing requirements for the spec are understood & modify them where applicable rather than adding new ones
+- If you regularly execute a command, consider adding it to an appropriate Taskfile and using it from there.
+- The lab k8s cluster is managed by proxmox and should be regularly tested by reverting to a clean state, before argo is installed and then runnign the init task `task seed:_init`

@@ -4,18 +4,65 @@ tasks:
   status:
     desc: Print status for the seed component
     cmds:
-      - echo "###############################################"
-      - echo "Seed Component Status"
-      - echo "###############################################"
-      - echo "Central secret store secrets:"
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Seed Component Status"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
       - kubectl get secrets -n central-secret-store
-      - echo ""
-      - echo "Argocd applications:"
-      - kubectl get applications --all-namespaces
-      - echo ""
-      - echo "Argocd initial password:"
-      - kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
       
+  app:
+    desc: Print status for the seed app
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Seed Application Status"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Application Overview:"
+        silent: true
+      - kubectl get applications seed -n argocd
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Last Sync:"
+        silent: true
+      - kubectl get applications seed -n argocd -o jsonpath='{.status.operationState.finishedAt}' && echo
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Resources with Issues:"
+        silent: true
+      - silent: true
+        cmd: |
+          kubectl get applications seed -n argocd -o json | jq -r '
+            .status.resources[] | 
+            select(.status == "OutOfSync" or (.health.status != null and .health.status != "Healthy" and .health.status != "Unknown")) | 
+            "\(.kind)/\(.name) - Status: \(.status // "Unknown"), Health: \(.health.status // "Unknown")"
+          ' | head -20 || echo "All resources are synced and healthy"
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Summary:"
+        silent: true
+      - silent: true
+        cmd: |
+          ISSUES=$(kubectl get applications seed -n argocd -o json | jq '[.status.resources[] | select(.status == "OutOfSync" or (.health.status != null and .health.status != "Healthy" and .health.status != "Unknown"))] | length')
+          if [ "$ISSUES" -gt 0 ]; then
+            echo "⚠️  Found $ISSUES resources with issues"
+          else
+            echo "✅ All resources are synced and healthy"
+          fi
+  
+  app:refresh:
+    desc: Trigger a refresh
+    cmds:
+      - kubectl annotate app/seed -n argocd argocd.argoproj.io/refresh="hard"
+
+  app:sync:
+    desc: Force sync of the ArgoCD application
+    cmds:
+      - kubectl patch application seed -n argocd --type='merge' -p='{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}}}}}'
+
   passwords:
     desc: Ensure initial passwords exist and create them
     cmds:
@@ -65,21 +112,29 @@ tasks:
             --from-literal=tokenSigningKey="$signing_key" \
             -n central-secret-store
 
+  build:
+    desc: Build seed
+    vars:
+      OVERLAY: overlays/local/lab
+    cmds:
+      - kustomize build {{.OVERLAY}} --enable-helm
+      # - kustomize build kustomize/seed/{{.OVERLAY}} --enable-helm | kubectl apply -f -
+
+
   apply:
     desc: Apply seed
     vars:
       OVERLAY: overlays/local/lab
     cmds:
-      - kustomize build --enable-helm | kubectl apply --server-side=true -f -
+      - kustomize build {{.OVERLAY}} --enable-helm | kubectl apply --server-side=true -f -
       # - kustomize build kustomize/seed/{{.OVERLAY}} --enable-helm | kubectl apply -f -
 
-  init:
+
+
+  _init:
     desc: Apply _init seed
+    deps: [passwords]
     cmds:
-      - kustomize build _init --enable-helm | kubectl apply --server-side=true -f -
+      - kustomize build _init --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
 
   
-  argo:logs:
-    desc: Get the logs from argocd
-    cmds:
-      - kubectl logs deployment/argocd-server -n argocd -f

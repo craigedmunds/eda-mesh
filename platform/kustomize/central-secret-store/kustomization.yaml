@@ -5,12 +5,17 @@ namespace: central-secret-store
 
 resources:
   - namespace.yaml
-  - kyverno-rbac.yaml
-  - policies/sync-github-docker-registry.yaml
-  - policies/sync-github-git-credentials.yaml
-  - policies/sync-github-oauth-credentials.yaml
-  - policies/sync-cloudflare-api-token.yaml
-  - policies/sync-kargo-admin-credentials.yaml
+  # External Secrets Operator approach
+  - cluster-secret-store.yaml
+  - eso-rbac.yaml
+  - external-secrets/kargo-admin-credentials.yaml
+  - external-secrets/github-oauth.yaml
+  - external-secrets/github-docker-registry.yaml
+  - external-secrets/github-git-credentials.yaml
+  - external-secrets/cloudflare-api-token.yaml
+  # Kargo-specific secrets (with kargo.akuity.io labels)
+  - external-secrets/kargo-docker-registry.yaml
+  - external-secrets/kargo-git-credentials.yaml
 
 # Secrets are created manually - never committed to Git
 # See README.md for secret creation instructions

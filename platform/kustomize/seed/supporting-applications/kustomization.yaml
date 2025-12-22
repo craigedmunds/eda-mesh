@@ -4,11 +4,12 @@ kind: Kustomization
 resources:
   # ArgoCD Applications (still managed by ArgoCD)
   - central-secret-store-app.yaml
+  - external-secrets
+  # - external-secrets-app.yaml
   # - camel-karavan-app.yaml
   
   # Direct installations (no longer ArgoCD applications)
   - cert-manager/
-  - kyverno/  # Temporarily disabled due to CRD annotation size issues
   # - rabbitmq-operator/
   - strimzi/
   - argo-rollouts/

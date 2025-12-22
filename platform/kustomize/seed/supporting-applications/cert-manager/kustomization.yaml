@@ -14,6 +14,13 @@ helmCharts:
     valuesInline:
       crds:
         enabled: true
+      # Configure cert-manager controller to use cert-manager namespace for leader election
+      extraArgs:
+        - --leader-election-namespace=cert-manager
+      # Configure cainjector to use cert-manager namespace for leader election
+      cainjector:
+        extraArgs:
+          - --leader-election-namespace=cert-manager
       # Configure cert-manager to use external DNS servers for SOA record resolution
       podDnsPolicy: "None"
       podDnsConfig:

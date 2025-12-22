@@ -4,13 +4,13 @@ metadata:
   name: camel-karavan
   namespace: camel-karavan
   annotations:
-
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   rules:
-  - host: karavan.127.0.0.1.nip.io
+  - host: karavan.lab.ctoaas.co
     http:
       paths:
       - path: /
@@ -20,3 +20,18 @@ spec:
             name: karavan
             port:
               name: https
+  - host: karavan.lab.local.ctoaas.co
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: karavan
+            port:
+              name: https
+  tls:
+  - hosts:
+    - karavan.lab.ctoaas.co
+    - karavan.lab.local.ctoaas.co
+    secretName: karavan-ctoaas-tls

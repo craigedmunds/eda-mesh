@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   # - argocd
   - eda
+  # - external-secrets  # Directory doesn't exist
   - backstage
   - image-factory
   - supporting-applications

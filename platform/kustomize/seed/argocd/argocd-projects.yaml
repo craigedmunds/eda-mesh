@@ -11,7 +11,6 @@ spec:
     - oci://ghcr.io/akuity/kargo-charts/kargo
     - https://argoproj.github.io/argo-helm 
     - oci://quay.io/jetstack/charts/cert-manager
-    - https://kyverno.github.io/kyverno/
   sourceNamespaces: []
   destinations:
   - namespace: '*'

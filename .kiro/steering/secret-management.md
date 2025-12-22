@@ -2,7 +2,7 @@
 
 ## Rule: Never Create Secrets Manually
 
-**NEVER** create or modify secrets manually. Always use automated systems (kyverno/ESO) to sync from central secret locations.
+**NEVER** create or modify secrets manually. Always use automated systems (ESO) to sync from central secret locations.
 
 ## Central Secret Management
 
@@ -26,7 +26,7 @@ All secrets must be managed centrally and distributed automatically:
 - ❌ Create secrets manually with `kubectl create secret`
 - ❌ Copy/paste credentials between namespaces
 - ❌ Hardcode credentials in manifests or scripts
-- ❌ Hardcode credentials in kyverno policies
+- ❌ Hardcode credentials in ESO policies
 - ❌ Create environment-specific credential variations
 
 ## What TO Do

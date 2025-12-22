@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   labels:
     
-    # These two labels are currently used by kyverno to add the rabbit secret
+    # These two labels are used by ESO to add the rabbit secret
     apim/service.type: mesh-lob
     apim/deps.rabbitmq: 'true'
   name: eda-mesh-{{.Values.name}}
