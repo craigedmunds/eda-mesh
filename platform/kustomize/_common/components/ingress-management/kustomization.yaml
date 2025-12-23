@@ -1,0 +1,55 @@
+# Ingress Management Component
+# Transforms generic ingress resources into environment-specific configurations
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+
+replacements:
+  # Transform first host (local domain) - append domain suffix to service name
+  - source:
+      kind: ConfigMap
+      name: ingress-environment-config
+      namespace: argocd
+      fieldPath: data.localDomainSuffix
+    targets:
+      - select:
+          kind: Ingress
+          labelSelector: "ingress.ctoaas.co/managed=true"
+        fieldPaths:
+          - spec.rules.0.host
+        options:
+          delimiter: "."
+          index: 1
+
+  # Add ingress class
+  - source:
+      kind: ConfigMap
+      name: ingress-environment-config
+      namespace: argocd
+      fieldPath: data.ingressClass
+    targets:
+      - select:
+          kind: Ingress
+          labelSelector: "ingress.ctoaas.co/managed=true"
+        fieldPaths:
+          - spec.ingressClassName
+
+  # Add TLS configuration for environments that support it
+  - source:
+      kind: ConfigMap
+      name: ingress-environment-config
+      namespace: argocd
+      fieldPath: data.tlsEnabled
+    targets:
+      - select:
+          kind: Ingress
+          labelSelector: "ingress.ctoaas.co/managed=true"
+        fieldPaths:
+          - metadata.annotations.[cert-manager.io/cluster-issuer]
+        options:
+          create: true

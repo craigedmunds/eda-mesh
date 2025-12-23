@@ -18,6 +18,8 @@ tasks:
       - kubectl get applications --all-namespaces
       # - kubectl get applications seed -n argocd -o yaml
       - kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
+      - kubectl get pods -n argocd
+      - kubectl get ingress -n argocd
 
   password:
     desc: Get ArgoCD admin password

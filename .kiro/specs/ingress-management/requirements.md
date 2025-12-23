@@ -6,10 +6,10 @@ The current ingress configuration system requires hardcoded domain names and env
 
 ## Glossary
 
-- **Ingress_Management_System**: The automated system that transforms generic ingress definitions into environment-specific configurations
-- **Environment_Context**: The deployment environment (local development, pi cluster) that determines domain and network configuration
-- **Generic_Ingress**: An ingress resource with environment-agnostic configuration using internal service identifiers
-- **Environment_Policy**: A Kyverno policy that applies environment-specific transformations to ingress resources
+- **Ingress_Management_System**: The automated system that transforms generic ingress definitions into environment-specific configurations using kustomize components
+- **Environment_Context**: The deployment environment (local development, lab cluster) that determines domain and network configuration
+- **Generic_Ingress**: An ingress resource with environment-agnostic configuration using internal service identifiers and management labels
+- **Environment_Component**: A kustomize component that applies environment-specific transformations to ingress resources
 - **Domain_Template**: A pattern for generating environment-specific domain names from service identifiers
 - **Network_Annotation**: Environment-specific ingress annotations for load balancers, TLS, and routing
 
@@ -34,22 +34,27 @@ The current ingress configuration system requires hardcoded domain names and env
 #### Acceptance Criteria
 
 1. WHEN an ingress is deployed to a development environment, THE Ingress_Management_System SHALL apply Traefik-specific annotations for local routing
-2. WHEN an ingress is deployed to the pi cluster environment, THE Ingress_Management_System SHALL apply cert-manager annotations for automatic TLS certificate provisioning
+2. WHEN an ingress is deployed to the lab cluster environment, THE Ingress_Management_System SHALL apply cert-manager annotations for automatic TLS certificate provisioning
 3. WHEN network requirements differ between environments, THE Ingress_Management_System SHALL apply the appropriate ingress class and load balancer configuration
 4. WHEN TLS is required, THE Ingress_Management_System SHALL automatically configure certificate management based on Environment_Context
 5. WHEN ingress resources are created, THE Ingress_Management_System SHALL preserve any existing custom annotations while adding environment-specific ones
+6. WHEN an ingress is deployed to the lab cluster environment, THE Ingress_Management_System SHALL configure both `.lab.ctoaas.co` and `.lab.local.ctoaas.co` domain patterns
+7. WHEN multiple domain patterns are configured, THE Ingress_Management_System SHALL create separate host rules for each domain pattern
+8. WHEN TLS is enabled with multiple domains, THE Ingress_Management_System SHALL include all domain variants in the certificate configuration
+9. WHEN local development uses nip.io domains, THE Ingress_Management_System SHALL generate appropriate `.127.0.0.1.nip.io` patterns
+10. WHEN service names contain hyphens or special characters, THE Ingress_Management_System SHALL preserve them in the generated domain names
 
 ### Requirement 3
 
-**User Story:** As a developer, I want to use a simple annotation-based system to mark ingress resources for automatic management, so that I can focus on service logic rather than environment-specific networking details.
+**User Story:** As a developer, I want to use a simple label-based system to mark ingress resources for automatic management, so that I can focus on service logic rather than environment-specific networking details.
 
 #### Acceptance Criteria
 
-1. WHEN an ingress resource includes the management annotation, THE Ingress_Management_System SHALL process it for environment-specific transformation
-2. WHEN an ingress resource lacks the management annotation, THE Ingress_Management_System SHALL leave it unchanged
+1. WHEN an ingress resource includes the management label, THE Ingress_Management_System SHALL process it for environment-specific transformation
+2. WHEN an ingress resource lacks the management label, THE Ingress_Management_System SHALL leave it unchanged
 3. WHEN generating domains, THE Ingress_Management_System SHALL derive the service name from the ingress metadata name
 4. WHEN custom subdomains are specified in placeholder hosts, THE Ingress_Management_System SHALL preserve them in the generated domain
-5. WHEN annotation values are invalid, THE Ingress_Management_System SHALL log errors and skip processing
+5. WHEN label values are invalid, THE Ingress_Management_System SHALL log errors and skip processing
 
 ### Requirement 4
 
@@ -65,15 +70,15 @@ The current ingress configuration system requires hardcoded domain names and env
 
 ### Requirement 5
 
-**User Story:** As a platform engineer, I want different environment policies to be easily maintainable and version-controlled, so that changes to networking configuration can be tracked and deployed systematically.
+**User Story:** As a platform engineer, I want different environment configurations to be easily maintainable and version-controlled, so that changes to networking configuration can be tracked and deployed systematically.
 
 #### Acceptance Criteria
 
-1. WHEN environment policies are updated, THE Ingress_Management_System SHALL apply changes to new ingress resources immediately
-2. WHEN policy configuration contains syntax errors, THE Ingress_Management_System SHALL report validation failures clearly
-3. WHEN local development and pi cluster environments exist, THE Ingress_Management_System SHALL maintain separate policy configurations for each Environment_Context
-4. WHEN policies are deployed, THE Ingress_Management_System SHALL validate domain templates and annotation patterns
-5. WHEN storing policy configurations, THE Ingress_Management_System SHALL encode them using YAML format for version control compatibility
+1. WHEN environment configurations are updated, THE Ingress_Management_System SHALL apply changes to new ingress resources immediately
+2. WHEN configuration contains syntax errors, THE Ingress_Management_System SHALL report validation failures clearly
+3. WHEN local development and lab cluster environments exist, THE Ingress_Management_System SHALL maintain separate configurations for each Environment_Context
+4. WHEN configurations are deployed, THE Ingress_Management_System SHALL validate domain templates and annotation patterns
+5. WHEN storing configurations, THE Ingress_Management_System SHALL encode them using YAML format for version control compatibility
 
 ### Requirement 6
 
@@ -81,7 +86,7 @@ The current ingress configuration system requires hardcoded domain names and env
 
 #### Acceptance Criteria
 
-1. WHEN an ingress is deployed to the pi cluster environment, THE Ingress_Management_System SHALL automatically configure TLS termination
+1. WHEN an ingress is deployed to the lab cluster environment, THE Ingress_Management_System SHALL automatically configure TLS termination
 2. WHEN TLS is enabled, THE Ingress_Management_System SHALL generate appropriate certificate secret names based on domain patterns
 3. WHEN certificate issuers are available, THE Ingress_Management_System SHALL apply the correct issuer annotations for the Environment_Context
 4. WHEN TLS configuration is applied, THE Ingress_Management_System SHALL ensure certificate secrets are properly referenced

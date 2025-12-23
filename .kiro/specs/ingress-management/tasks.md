@@ -1,161 +1,144 @@
-# Implementation Plan
+# Implementation Plan: Ingress Management
 
-- [ ] 1. Set up ingress management kustomize structure
-  - Create base directory with common policy and configuration templates
-  - Set up overlay directories for local and pi environments
-  - Define kustomization files for proper resource management
-  - _Requirements: 5.3_
+## Overview
 
-- [ ] 2. Create base environment configuration
-  - [ ] 2.1 Implement base environment ConfigMap
-    - Define ConfigMap structure with environment variables for domain suffix, TLS settings, and annotations
-    - Set default values for local development environment
-    - Include validation for required configuration fields
+This implementation plan transforms the current hardcoded ingress management approach into an automated, environment-aware system using kustomize components. The plan includes creating a reusable kustomize component, setting up environment-specific configurations, and migrating existing ingress resources to use the new label-based management system.
+
+## Tasks
+
+- [x] 1. Create ingress management kustomize component
+  - Create kustomize component with replacement rules for domain transformation
+  - Set up label-based selection for managed ingress resources
+  - Configure environment-specific ConfigMap integration
+  - _Requirements: 3.1, 3.2_
+
+- [ ] 2. Set up environment-specific overlay configurations
+  - Configure local development overlay with component and ConfigMap
+  - Configure lab cluster overlay with component and ConfigMap  
+  - Set up domain suffixes, TLS settings, and annotations per environment
+  - Test component integration with existing overlays
+  - _Requirements: 5.3, 1.2, 2.1_
+
+- [ ] 3. Test and validate component transformations
+  - [ ] 3.1 Create test ingress resources with management labels
+    - Define test ingress resources with placeholder domains
+    - Add appropriate management labels for component selection
+    - Include both single and multi-domain test cases
     - _Requirements: 1.1, 2.1_
 
-  - [ ]* 2.2 Write property test for environment configuration validation
-    - **Property 4: Service identifier validation**
-    - **Validates: Requirements 1.5**
+  - [ ]* 3.2 Write property test for service identifier validation
+    - **Property 5: Service identifier validation**
+    - **Validates: Requirements 1.5, 2.10**
 
-  - [ ] 2.3 Create environment-specific overlay patches
-    - Implement pi cluster overlay with web.ctoaas.co domain and cert-manager configuration
-    - Configure local development overlay with 127.0.0.1.nip.io domain and Traefik settings
-    - _Requirements: 1.2, 2.1, 2.2_
+  - [ ] 3.3 Validate component transformations in both environments
+    - Test local development transformations with nip.io domains
+    - Test lab cluster transformations with cert-manager and TLS
+    - Verify domain generation and annotation application
+    - _Requirements: 1.2, 2.1, 2.2, 2.6, 2.9_
 
-  - [ ]* 2.4 Write property test for environment-specific domain transformation
-    - **Property 2: Environment-specific domain transformation**
-    - **Validates: Requirements 1.2**
+  - [ ]* 3.4 Write property test for environment-specific transformation
+    - **Property 2: Environment-specific transformation**
+    - **Validates: Requirements 1.2, 2.1, 2.2, 2.3, 2.4, 2.9**
 
-- [ ] 3. Implement base Kyverno ingress management policy
-  - [ ] 3.1 Create Kyverno ClusterPolicy for ingress transformation
-    - Define policy matching rules for ingress resources with management annotation
-    - Implement context loading for environment configuration from ConfigMap
-    - Create mutation rules for domain name generation and annotation application
-    - _Requirements: 3.1, 3.2_
-
-  - [ ]* 3.2 Write property test for management annotation trigger
-    - **Property 8: Management annotation trigger**
-    - **Validates: Requirements 3.1, 3.2**
-
-  - [ ] 3.3 Implement domain generation logic in policy
-    - Extract service name from ingress metadata name
-    - Parse existing host rules for custom subdomain detection
-    - Generate environment-specific domain names using ConfigMap values
-    - _Requirements: 1.1, 1.3, 3.3, 3.4_
-
-  - [ ]* 3.4 Write property test for domain generation consistency
-    - **Property 1: Domain generation consistency**
-    - **Validates: Requirements 1.1, 1.3**
-
-  - [ ]* 3.5 Write property test for service name resolution
-    - **Property 9: Service name resolution**
-    - **Validates: Requirements 3.3, 3.4**
-
-- [ ] 4. Implement annotation and TLS management
-  - [ ] 4.1 Add environment-specific annotation application
-    - Read annotation templates from environment ConfigMap
-    - Apply Traefik annotations for local development environment
-    - Apply cert-manager annotations for pi cluster environment
-    - Preserve existing custom annotations during transformation
-    - _Requirements: 2.1, 2.2, 2.3, 2.5_
-
-  - [ ]* 4.2 Write property test for environment-specific annotation application
-    - **Property 5: Environment-specific annotation application**
-    - **Validates: Requirements 2.1, 2.2, 2.3**
-
-  - [ ]* 4.3 Write property test for annotation preservation during transformation
-    - **Property 7: Annotation preservation during transformation**
-    - **Validates: Requirements 2.5, 4.5**
-
-  - [ ] 4.4 Implement TLS configuration management
-    - Add TLS termination configuration based on environment settings
-    - Generate certificate secret names from domain patterns
-    - Configure cert-manager issuer annotations for pi cluster
-    - Handle TLS disable option for local development
-    - _Requirements: 2.4, 6.1, 6.2, 6.3, 6.4, 6.5_
-
-  - [ ]* 4.5 Write property test for TLS configuration by environment
-    - **Property 6: TLS configuration by environment**
-    - **Validates: Requirements 2.4, 6.1, 6.3**
-
-  - [ ]* 4.6 Write property test for certificate secret name generation
-    - **Property 13: Certificate secret name generation**
-    - **Validates: Requirements 6.2, 6.4**
-
-  - [ ]* 4.7 Write property test for development environment TLS flexibility
-    - **Property 14: Development environment TLS flexibility**
-    - **Validates: Requirements 6.5**
-
-- [ ] 5. Checkpoint - Ensure all tests pass
-  - Ensure all tests pass, ask the user if questions arise.
-
-- [ ] 6. Create integration with existing applications
-  - [ ] 6.1 Update backstage ingress configuration
-    - Modify kustomize/backstage/base/values.yaml to use generic domain placeholder
-    - Add ingress management annotation to backstage Helm values
-    - Remove hardcoded domain-specific configuration
+- [ ] 4. Migrate existing applications to use ingress management
+  - [ ] 4.1 Update backstage ingress configuration
+    - Modify backstage ingress to use management labels and placeholder domains
+    - Remove hardcoded domain-specific configuration from overlays
+    - Test backstage ingress transformation in both environments
     - _Requirements: 4.1, 4.2_
 
-  - [ ] 6.2 Update uv-service ingress template
-    - Modify helm/uv-service/templates/ingress.yaml to use management annotation
+  - [ ]* 4.2 Write property test for management label trigger
+    - **Property 7: Management label trigger**
+    - **Validates: Requirements 3.1, 3.2**
+
+  - [ ] 4.3 Update ArgoCD ingress configuration
+    - Modify ArgoCD ingress to use management labels and placeholder domains
+    - Replace hardcoded domain with placeholder pattern
+    - Remove environment-specific patches from overlays
+    - _Requirements: 4.1, 4.2_
+
+  - [ ]* 4.4 Write property test for domain generation consistency
+    - **Property 1: Domain generation consistency**
+    - **Validates: Requirements 1.1, 1.3, 3.3**
+
+  - [ ] 4.5 Update uv-service ingress template
+    - Modify Helm template to use management labels and placeholder domains
     - Replace hardcoded domain with placeholder pattern
     - Remove environment-specific annotations from template
     - _Requirements: 4.1, 4.2_
 
-  - [ ]* 6.3 Write property test for consistent transformation across creation methods
-    - **Property 10: Consistent transformation across creation methods**
+  - [ ]* 4.6 Write property test for creation method independence
+    - **Property 8: Creation method independence**
     - **Validates: Requirements 4.1, 4.2**
+- [ ] 5. Implement advanced component features
+  - [ ] 5.1 Add support for multiple domain patterns
+    - Configure component to handle multi-domain environments
+    - Add secondary domain suffix replacement rules
+    - Test with lab cluster's dual domain configuration
+    - _Requirements: 2.6, 2.7, 2.8_
 
-- [ ] 7. Implement custom subdomain support
-  - [ ] 7.1 Add subdomain parsing from existing host rules
-    - Parse placeholder host patterns to extract custom subdomains
-    - Preserve subdomain preferences in domain generation
-    - Handle multiple host rules with different subdomain patterns
-    - _Requirements: 1.4_
+  - [ ]* 5.2 Write property test for multiple domain pattern support
+    - **Property 3: Multiple domain pattern support**
+    - **Validates: Requirements 2.6, 2.7, 2.8**
 
-  - [ ]* 7.2 Write property test for custom subdomain preservation
-    - **Property 3: Custom subdomain preservation**
-    - **Validates: Requirements 1.4**
+  - [ ] 5.3 Implement custom subdomain preservation
+    - Add logic to preserve custom subdomains from placeholder hosts
+    - Support complex subdomain patterns in transformations
+    - Test with various subdomain configurations
+    - _Requirements: 1.4, 3.4_
 
-- [ ] 8. Add policy deployment and validation
-  - [ ] 8.1 Integrate ingress management into seed applications
-    - Add ingress management kustomize resources to seed/base structure
-    - Configure environment-specific overlays in seed/overlays/local/pi
-    - Update ArgoCD applications to deploy ingress management policies
-    - _Requirements: 5.3_
+  - [ ]* 5.4 Write property test for custom subdomain preservation
+    - **Property 4: Custom subdomain preservation**
+    - **Validates: Requirements 1.4, 3.4**
 
-  - [ ]* 8.2 Write property test for environment policy separation
-    - **Property 12: Environment policy separation**
-    - **Validates: Requirements 5.3**
+  - [ ] 5.5 Add TLS configuration management
+    - Configure automatic TLS secret name generation
+    - Add cert-manager issuer annotation handling
+    - Support TLS disable option for local development
+    - _Requirements: 2.4, 2.8, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-  - [ ] 8.3 Add policy validation and error handling
-    - Implement validation for environment ConfigMap structure
-    - Add error logging for invalid ingress configurations
-    - Create fallback behavior for missing environment configuration
-    - _Requirements: 3.5, 5.2, 5.4_
+  - [ ]* 5.6 Write property test for TLS configuration management
+    - **Property 11: TLS configuration management**
+    - **Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
-- [ ] 9. Create migration tooling and documentation
-  - [ ] 9.1 Develop migration scripts for existing ingress resources
-    - Create tooling to identify hardcoded ingress resources
-    - Generate patches to add management annotations
-    - Provide validation for successful migration
-    - _Requirements: 4.3, 4.4_
+- [ ] 6. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
 
-  - [ ]* 9.2 Write property test for update and recreate consistency
-    - **Property 11: Update and recreate consistency**
-    - **Validates: Requirements 4.3, 4.4**
-
-  - [ ] 9.3 Create comprehensive documentation
-    - Document annotation-based ingress management system
+- [ ] 7. Integration and documentation
+  - [ ] 7.1 Create comprehensive documentation
+    - Document component usage and configuration patterns
     - Provide examples for common ingress patterns
-    - Create troubleshooting guide for policy issues
+    - Create troubleshooting guide for component issues
+    - Document migration process from hardcoded ingress resources
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ]* 9.4 Write integration tests for complete workflow
-  - Test end-to-end ingress transformation in isolated environments
-  - Validate Kyverno policy behavior with real ingress resources
-  - Verify cert-manager integration in pi cluster simulation
-  - Test Helm chart integration with transformed ingress resources
+  - [ ]* 7.2 Write property test for annotation management
+    - **Property 6: Annotation management**
+    - **Validates: Requirements 2.5, 4.5**
 
-- [ ] 10. Final checkpoint - Ensure all tests pass
+  - [ ] 7.3 Create migration tooling and validation
+    - Create tooling to identify hardcoded ingress resources
+    - Generate patches to add management labels
+    - Provide validation for successful component integration
+    - _Requirements: 4.3, 4.4_
+
+  - [ ]* 7.4 Write property test for update and lifecycle consistency
+    - **Property 9: Update and lifecycle consistency**
+    - **Validates: Requirements 4.3, 4.4**
+
+  - [ ]* 7.5 Write property test for development environment TLS flexibility
+    - **Property 12: Development environment TLS flexibility**
+    - **Validates: Requirements 6.5**
+- [ ] 8. Final validation and testing
+  - [ ]* 8.1 Write integration tests for complete workflow
+    - Test end-to-end ingress transformation in isolated environments
+    - Validate component behavior with real ingress resources
+    - Verify cert-manager integration in lab cluster simulation
+    - Test Helm chart integration with transformed ingress resources
+
+  - [ ]* 8.2 Write property test for environment configuration separation
+    - **Property 10: Environment configuration separation**
+    - **Validates: Requirements 5.3, 5.5**
+
+- [ ] 9. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
