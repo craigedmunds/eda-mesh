@@ -9,6 +9,7 @@ resources:
   - ../../../backstage
   - ../../../image-factory
   - ../../../supporting-applications
+  - mobile-ai-dev-seed.yaml
   # - ../../../seed-app
   # - patch-seed-application.yaml
   - letsencrypt-issuer.yaml
