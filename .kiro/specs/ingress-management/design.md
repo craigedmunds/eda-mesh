@@ -2,9 +2,9 @@
 
 ## Overview
 
-The Environment-Aware Ingress Management System uses Kyverno policies to automatically transform generic ingress resources into environment-specific configurations. This eliminates hardcoded domain names and environment-specific annotations from application manifests, enabling the same ingress definitions to work across local development and pi cluster environments.
+The Environment-Aware Ingress Management System uses a kustomize component to automatically transform generic ingress resources into environment-specific configurations. This eliminates hardcoded domain names and environment-specific annotations from application manifests, enabling the same ingress definitions to work across local development and lab cluster environments.
 
-The system works by detecting ingress resources with a special annotation (`ingress.ctoaas.co/managed: "true"`) and applying environment-specific transformations through Kyverno mutating policies. Each environment has its own policy that applies appropriate domain suffixes, TLS configuration, and network annotations.
+The system works by detecting ingress resources with a special label (`ingress.ctoaas.co/managed: "true"`) and applying environment-specific transformations through kustomize's built-in replacement mechanism. Each environment overlay includes the component and provides environment-specific configuration through a ConfigMap.
 
 ## Architecture
 
@@ -15,89 +15,83 @@ graph TB
         B[Helm Chart with Generic Values]
     end
     
-    subgraph "Kyverno Policy Engine"
-        C[Environment Detection]
-        D[Local Dev Policy]
-        E[Pi Cluster Policy]
+    subgraph "Kustomize Component System"
+        C[Environment Detection via ConfigMap]
+        D[Kustomize Replacements]
+        E[Label-based Selection]
     end
     
     subgraph "Environment-Specific Outputs"
         F[Local: *.127.0.0.1.nip.io<br/>Traefik annotations]
-        G[Pi: *.web.ctoaas.co<br/>cert-manager + TLS]
+        G[Lab: *.lab.ctoaas.co + *.lab.local.ctoaas.co<br/>cert-manager + TLS]
     end
     
-    A --> C
-    B --> C
+    A --> E
+    B --> E
+    E --> C
     C --> D
-    C --> E
     D --> F
-    E --> G
+    D --> G
 ```
 
-The system follows a policy-per-environment pattern where each environment has its own Kyverno ClusterPolicy that applies the appropriate transformations.
+The system follows a component-per-environment pattern where each environment overlay includes the ingress management component and provides environment-specific configuration through a ConfigMap.
 
 ## Components and Interfaces
 
-### 1. Generic Ingress Annotation System
+### 1. Generic Ingress Label System
 
-Applications mark ingress resources for management using a single annotation:
+Applications mark ingress resources for management using a label:
 
 ```yaml
 metadata:
   name: backstage  # Used as service name for domain generation
-  annotations:
+  labels:
     ingress.ctoaas.co/managed: "true"
+    ingress.ctoaas.co/multi-domain: "true"  # Optional: for multi-domain environments
 ```
 
-The system derives the service name from the ingress metadata name and extracts any subdomain preferences from existing host rules in the ingress spec.
+The system derives the service name from the ingress metadata name and uses kustomize replacements to transform placeholder domains into environment-specific domains.
 
 ### 2. Environment Detection
 
-Kyverno policies use cluster-specific labels or ConfigMaps to determine the current environment:
+Kustomize components use environment-specific ConfigMaps to determine the current environment configuration:
 
 ```yaml
-context:
-  - name: environment
-    configMap:
-      name: cluster-environment
-      namespace: kyverno
+configMapGenerator:
+  - name: ingress-environment-config
+    literals:
+      - primaryDomainSuffix=lab.ctoaas.co
+      - secondaryDomainSuffix=lab.local.ctoaas.co
+      - ingressClass=traefik
+      - tlsEnabled=letsencrypt-prod
 ```
 
-### 3. Base Ingress Management Policy
+### 3. Kustomize Component System
 
-A single Kyverno ClusterPolicy that reads environment configuration from a ConfigMap and applies appropriate transformations based on the environment context.
+A single kustomize component that uses built-in replacement functionality to transform ingress resources based on environment configuration from ConfigMaps.
 
 ### 4. Environment-Specific Overlays
 
-Each environment uses kustomize overlays to customize the environment configuration:
+Each environment uses kustomize overlays to include the component and provide environment-specific configuration:
 
 **Local Development Overlay:**
 - Domain pattern: `{service-name}.127.0.0.1.nip.io`
 - Traefik annotations for local routing
 - TLS disabled for simplified development
 
-**Pi Cluster Overlay:**
-- Domain pattern: `{service-name}.web.ctoaas.co`
+**Lab Cluster Overlay:**
+- Domain patterns: `{service-name}.lab.ctoaas.co` and `{service-name}.lab.local.ctoaas.co`
 - cert-manager annotations for Let's Encrypt
 - Cloudflare DNS-01 challenge configuration
-- Automatic TLS secret generation
+- Automatic TLS secret generation with multiple domain support
 
-### 5. Policy Configuration Management
+### 5. Component Configuration Management
 
-The system uses a single policy with environment-specific configuration through kustomize overlays:
+The system uses a single component with environment-specific configuration through kustomize overlays:
 ```
-kustomize/ingress-management/
-├── base/
-│   ├── ingress-management-policy.yaml
-│   ├── environment-config.yaml
-│   └── kustomization.yaml
-└── overlays/
-    ├── local/
-    │   ├── environment-config-patch.yaml
-    │   └── kustomization.yaml
-    └── pi/
-        ├── environment-config-patch.yaml
-        └── kustomization.yaml
+kustomize/_common/components/ingress-management/
+├── kustomization.yaml          # Component with replacements
+└── README.md                   # Documentation
 ```
 
 ## Data Models
@@ -106,36 +100,25 @@ kustomize/ingress-management/
 
 **Base Configuration:**
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ingress-environment-config
-  namespace: kyverno
-data:
-  environment: "local"
-  domain-suffix: "127.0.0.1.nip.io"
-  tls-enabled: "false"
-  ingress-class: "traefik"
-  annotations: |
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
+configMapGenerator:
+  - name: ingress-environment-config
+    literals:
+      - primaryDomainSuffix=127.0.0.1.nip.io
+      - ingressClass=traefik
+      - tlsEnabled=""
+      - annotations=traefik.ingress.kubernetes.io/router.tls=true
 ```
 
-**Pi Cluster Overlay Patch:**
+**Lab Cluster Overlay Configuration:**
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ingress-environment-config
-  namespace: kyverno
-data:
-  environment: "pi"
-  domain-suffix: "web.ctoaas.co"
-  tls-enabled: "true"
-  cert-issuer: "letsencrypt-prod"
-  ingress-class: "traefik"
-  annotations: |
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+configMapGenerator:
+  - name: ingress-environment-config
+    literals:
+      - primaryDomainSuffix=lab.ctoaas.co
+      - secondaryDomainSuffix=lab.local.ctoaas.co
+      - ingressClass=traefik
+      - tlsEnabled=letsencrypt-prod
+      - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
 ```
 
 ### Generic Ingress Template
@@ -145,11 +128,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: backstage  # Used for domain generation
-  annotations:
+  labels:
     ingress.ctoaas.co/managed: "true"
 spec:
   rules:
-  - host: "placeholder.local"  # Will be replaced with environment-specific domain
+  - host: "backstage"  # Will be suffixed with environment-specific domain
     http:
       paths:
       - path: /
@@ -165,28 +148,40 @@ For custom subdomains, developers can specify them in the placeholder host:
 ```yaml
 spec:
   rules:
-  - host: "api.placeholder.local"  # Results in api.backstage.web.ctoaas.co
+  - host: "api.backstage.placeholder.local"  # Results in api.backstage.lab.ctoaas.co
 ```
 
-### Transformed Ingress (Pi Cluster)
+### Transformed Ingress (Lab Cluster)
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: backstage
-  annotations:
+  labels:
     ingress.ctoaas.co/managed: "true"
+  annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    managed-by: kyverno-ingress-policy
+    managed-by: kustomize-ingress-component
 spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - backstage.web.ctoaas.co
-    secretName: backstage-web-ctoaas-tls
+    - backstage.lab.ctoaas.co
+    - backstage.lab.local.ctoaas.co
+    secretName: backstage-lab-ctoaas-tls
   rules:
-  - host: backstage.web.ctoaas.co  # Generated from metadata.name + environment domain suffix
+  - host: backstage.lab.ctoaas.co  # Generated from metadata.name + environment domain suffixes
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backstage
+            port:
+              name: http
+  - host: backstage.lab.local.ctoaas.co  # Second domain pattern for internal access
     http:
       paths:
       - path: /
@@ -201,83 +196,74 @@ spec:
 ## Correctness Properties
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
 Property 1: Domain generation consistency
-*For any* valid service identifier and environment context, generating a domain name should produce a predictable pattern that follows the environment's domain suffix rules
-**Validates: Requirements 1.1, 1.3**
+*For any* valid service identifier and environment context, the system should generate predictable domain names that follow the environment's domain suffix patterns and preserve service identifiers
+**Validates: Requirements 1.1, 1.3, 3.3**
 
-Property 2: Environment-specific domain transformation
-*For any* ingress configuration, deploying to different environments should produce different domain suffixes while preserving the service identifier
-**Validates: Requirements 1.2**
+Property 2: Environment-specific transformation
+*For any* ingress configuration, deploying to different environments should produce different domain suffixes, annotations, and network configurations appropriate for each environment
+**Validates: Requirements 1.2, 2.1, 2.2, 2.3, 2.4, 2.9**
 
-Property 3: Custom subdomain preservation
-*For any* ingress with a custom subdomain annotation, the generated domain should preserve the custom subdomain while applying the environment-specific suffix
-**Validates: Requirements 1.4**
+Property 3: Multiple domain pattern support
+*For any* environment configured with multiple domain patterns, the system should create separate host rules for each pattern and include all domains in TLS certificate configuration
+**Validates: Requirements 2.6, 2.7, 2.8**
 
-Property 4: Service identifier validation
-*For any* service identifier input, the system should accept valid identifiers according to the naming grammar and reject invalid ones
-**Validates: Requirements 1.5**
+Property 4: Custom subdomain preservation
+*For any* ingress with custom subdomain specifications, the system should preserve the custom subdomain while applying environment-specific domain suffixes
+**Validates: Requirements 1.4, 3.4**
 
-Property 5: Environment-specific annotation application
-*For any* ingress deployed to a specific environment, the system should apply the correct set of annotations for that environment (Traefik for local, cert-manager for pi)
-**Validates: Requirements 2.1, 2.2, 2.3**
+Property 5: Service identifier validation
+*For any* service identifier input, the system should accept valid identifiers according to naming conventions and preserve special characters like hyphens in generated domains
+**Validates: Requirements 1.5, 2.10**
 
-Property 6: TLS configuration by environment
-*For any* ingress deployed to an environment with TLS enabled, the system should automatically configure certificate management appropriate for that environment
-**Validates: Requirements 2.4, 6.1, 6.3**
-
-Property 7: Annotation preservation during transformation
-*For any* ingress with existing custom annotations, the transformation should preserve all original annotations while adding environment-specific ones
+Property 6: Annotation management
+*For any* ingress transformation, the system should preserve existing custom annotations while adding environment-specific annotations without conflicts
 **Validates: Requirements 2.5, 4.5**
 
-Property 8: Management annotation trigger
-*For any* ingress resource, the system should process it for transformation if and only if it contains the management annotation
+Property 7: Management annotation trigger
+*For any* ingress resource, the system should process it for transformation if and only if it contains the management annotation, leaving unmanaged resources unchanged
 **Validates: Requirements 3.1, 3.2**
 
-Property 9: Service name resolution
-*For any* ingress resource, if a service name is specified in annotations it should be used for domain generation, otherwise the system should derive it from metadata
-**Validates: Requirements 3.3, 3.4**
-
-Property 10: Consistent transformation across creation methods
-*For any* ingress resource, whether created through Helm or direct manifests, the transformation rules should be applied consistently
+Property 8: Creation method independence
+*For any* ingress resource, the transformation rules should be applied consistently regardless of whether it was created through Helm charts or direct Kubernetes manifests
 **Validates: Requirements 4.1, 4.2**
 
-Property 11: Update and recreate consistency
-*For any* ingress resource that is updated or recreated, the environment-specific configurations should be reapplied consistently
+Property 9: Update and lifecycle consistency
+*For any* managed ingress resource that is updated, deleted, or recreated, the system should reapply environment-specific configurations consistently
 **Validates: Requirements 4.3, 4.4**
 
-Property 12: Environment policy separation
-*For any* environment context, the system should maintain separate policy configurations that don't interfere with other environments
-**Validates: Requirements 5.3**
+Property 10: Environment policy separation
+*For any* set of environments, the system should maintain separate policy configurations that don't interfere with each other and are stored in version-controllable YAML format
+**Validates: Requirements 5.3, 5.5**
 
-Property 13: Certificate secret name generation
-*For any* ingress with TLS enabled, the generated certificate secret names should follow predictable patterns based on the domain names
-**Validates: Requirements 6.2, 6.4**
+Property 11: TLS configuration management
+*For any* environment with TLS enabled, the system should automatically configure certificate management with appropriate issuer annotations and generate predictable certificate secret names
+**Validates: Requirements 6.1, 6.2, 6.3, 6.4**
 
-Property 14: Development environment TLS flexibility
-*For any* ingress deployed to development environment, TLS configuration should be optional and when disabled, no TLS-related configuration should be applied
-**Validates: Requirements 6.5**
-
+Property 12: Development environment TLS flexibility
+*For any* development environment, the system should support optional TLS disabling for simplified local testing
 ## Error Handling
 
-### Invalid Annotation Values
-- Log detailed error messages for invalid service names or subdomain patterns
-- Skip processing ingress resources with invalid annotations
-- Maintain original ingress configuration when errors occur
+### Invalid Label Values
+- Kustomize will fail to build if label selectors don't match any resources
+- Clear error messages indicate which ingress resources need management labels
+- Build-time validation prevents deployment of invalid configurations
 
 ### Missing Environment Configuration
-- Fail gracefully when environment ConfigMap is missing
-- Provide clear error messages indicating required configuration
-- Default to safe fallback behavior (no transformation)
+- Kustomize build fails when required ConfigMap values are missing
+- Clear error messages indicate which configuration values are required
+- No runtime failures since all processing happens at build time
 
-### Policy Conflicts
-- Detect and report conflicting Kyverno policies
-- Ensure ingress management policies have appropriate priority
-- Validate policy syntax during deployment
+### Configuration Conflicts
+- Kustomize replacement conflicts are detected at build time
+- Clear error messages show which replacements are conflicting
+- No runtime policy conflicts since no admission controllers are involved
 
-### Certificate Management Errors
-- Handle cert-manager integration failures gracefully
-- Provide clear error messages for TLS configuration issues
-- Fall back to manual certificate management when automated provisioning fails
+### Domain Generation Errors
+- Invalid domain patterns cause kustomize build failures
+- Replacement errors are visible in build output
+- No silent failures since all transformations are explicit
 
 ## Testing Strategy
 
@@ -300,15 +286,15 @@ The system will use both unit testing and property-based testing to ensure compr
 
 ### Property-Based Testing Configuration
 
-The system will use **fast-check** as the property-based testing library for JavaScript/TypeScript components and **Hypothesis** for any Python-based policy validation tools.
+The system will use **fast-check** as the property-based testing library for JavaScript/TypeScript components and **Hypothesis** for any Python-based validation tools.
 
 Each property-based test will be tagged with comments explicitly referencing the correctness property from this design document using the format: `**Feature: ingress-management, Property {number}: {property_text}**`
 
 ### Integration Testing
 
-- Test complete ingress transformation workflows in isolated Kubernetes environments
-- Validate Kyverno policy behavior with real ingress resources
-- Verify cert-manager integration in pi cluster environment
+- Test complete ingress transformation workflows using kustomize build
+- Validate component behavior with real ingress resources
+- Verify cert-manager integration in lab cluster environment
 - Test Helm chart integration with transformed ingress resources
 
 ### End-to-End Testing
@@ -320,22 +306,22 @@ Each property-based test will be tagged with comments explicitly referencing the
 
 ## Implementation Considerations
 
-### Kyverno Policy Performance
-- Use efficient JMESPath expressions for resource matching
-- Minimize API calls in policy context sections
+### Kustomize Component Performance
+- Use efficient replacement patterns for resource transformation
+- Minimize ConfigMap lookups through proper field path specifications
 - Implement proper resource filtering to avoid unnecessary processing
 
 ### Environment Configuration Management
 - Store environment configuration in version-controlled ConfigMaps
-- Use GitOps workflows for policy deployment and updates
-- Implement validation webhooks for environment configuration changes
+- Use GitOps workflows for component deployment and updates
+- Implement validation for environment configuration changes
 
 ### Migration Strategy
 - Provide tooling to migrate existing hardcoded ingress resources
-- Support gradual rollout with annotation-based opt-in
+- Support gradual rollout with label-based opt-in
 - Maintain backward compatibility during transition period
 
 ### Monitoring and Observability
-- Implement metrics for policy execution and transformation success rates
+- Monitor kustomize build success rates for ingress transformations
 - Log transformation events for debugging and audit purposes
 - Provide dashboards for monitoring ingress management system health

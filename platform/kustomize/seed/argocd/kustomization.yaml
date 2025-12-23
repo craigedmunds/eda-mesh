@@ -9,6 +9,9 @@ resources:
   - argocd-ingress.yaml
   - argocd-projects.yaml
 
+patchesStrategicMerge:
+  - namespace-patch.yaml
+
 patches:
   - target:
       kind: ConfigMap
