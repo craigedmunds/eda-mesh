@@ -18,7 +18,7 @@ spec:
       kind: ClusterSecretStore
     
     target:
-      name: ghcr-creds
+      name: gh-docker-registry-creds
       creationPolicy: Owner
       template:
         metadata:

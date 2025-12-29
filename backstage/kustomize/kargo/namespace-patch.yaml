@@ -4,5 +4,4 @@ metadata:
   name: backstage-kargo
   labels:
     kargo.akuity.io/project: "true"
-    secrets/gh-docker-registry: "true"
     secrets/gh-git-credentials: "true"

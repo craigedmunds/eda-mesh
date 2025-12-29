@@ -5,3 +5,5 @@ metadata:
   labels:
     app.kubernetes.io/name: backstage
     secrets/gh-oauth-credentials: "true"
+    secrets/gh-git-credentials: "true"
+    secrets/gh-docker-registry: "true"

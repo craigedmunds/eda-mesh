@@ -18,7 +18,7 @@ spec:
       kind: ClusterSecretStore
     
     target:
-      name: github-oauth
+      name: gh-oauth
       creationPolicy: Owner
       template:
         metadata:
@@ -37,3 +37,8 @@ spec:
       remoteRef:
         key: github-oauth
         property: client-secret
+    
+    - secretKey: GITHUB_TOKEN
+      remoteRef:
+        key: github-pat
+        property: token
