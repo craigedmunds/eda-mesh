@@ -1,15 +1,15 @@
 apiVersion: external-secrets.io/v1beta1
 kind: ClusterExternalSecret
 metadata:
-  name: github-git-credentials
+  name: application-docker-registry
 spec:
   # Refresh every 5 minutes
   refreshTime: 5m
   
-  # Target namespaces with this label
+  # Target namespaces with GitHub Docker registry label
   namespaceSelector:
     matchLabels:
-      secrets/gh-git-credentials: "true"
+      secrets/gh-docker-registry: "true"
   
   # ExternalSecret template to create in each namespace
   externalSecretSpec:
@@ -18,21 +18,26 @@ spec:
       kind: ClusterSecretStore
     
     target:
-      name: github-git-creds
+      name: gh-docker-registry-creds
       creationPolicy: Owner
       template:
+        type: kubernetes.io/dockerconfigjson
         metadata:
           labels:
             managed-by: external-secrets
             source: central-secret-store
-            secret-type: gh-git-credentials
-            kargo.akuity.io/cred-type: git
-            argocd.argoproj.io/secret-type: repo-creds
+            secret-type: application-docker-registry
         data:
-          username: "craigedmunds"
-          password: "{{ .token }}"
-          url: "https://github.com/craigedmunds"
-          type: "git"
+          .dockerconfigjson: |
+            {
+              "auths": {
+                "ghcr.io": {
+                  "username": "{{ .username }}",
+                  "password": "{{ .token }}",
+                  "auth": "{{ printf "%s:%s" .username .token | b64enc }}"
+                }
+              }
+            }
     
     data:
     - secretKey: username

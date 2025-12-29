@@ -15,7 +15,7 @@ backstage:
     repository: craigedmunds/backstage
     tag: '0.0.1'
     pullSecrets:
-      - ghcr-creds
+      - gh-docker-registry-creds
   extraEnvVars:
     - name: NODE_ENV
       value: "development"
@@ -32,8 +32,7 @@ backstage:
     - name: IMAGE_FACTORY_IMAGES_YAML_PATH
       value: "image-factory/images.yaml"
   extraEnvVarsSecrets:
-    - backstage-github-auth
-    - backstage-github-pat
+    - gh-oauth
   extraVolumes:
     - name: backstage-root-location
       configMap:

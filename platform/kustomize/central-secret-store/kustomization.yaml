@@ -10,9 +10,10 @@ resources:
   - eso-rbac.yaml
   - external-secrets/kargo-admin-credentials.yaml
   - external-secrets/github-oauth.yaml
-  - external-secrets/github-docker-registry.yaml
-  - external-secrets/github-git-credentials.yaml
+  # - external-secrets/github-git-credentials.yaml
   - external-secrets/cloudflare-api-token.yaml
+  # Application-specific secrets (simplified labels)
+  - external-secrets/application-docker-registry.yaml
   # Kargo-specific secrets (with kargo.akuity.io labels)
   - external-secrets/kargo-docker-registry.yaml
   - external-secrets/kargo-git-credentials.yaml
