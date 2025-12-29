@@ -612,9 +612,8 @@ spec:
                   - name: analyzer
                     image: ghcr.io/craigedmunds/uv:0.1.16
                     imagePullPolicy: IfNotPresent
-                    command:
-                      - /integration/app.py
                     args:
+                      - /integration/app.py
                       - --image
                       - "{{args.imageName}}"
                       - --tag

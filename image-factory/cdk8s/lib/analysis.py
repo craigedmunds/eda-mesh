@@ -72,10 +72,8 @@ def build_analysis_job_spec() -> dict:
                         "name": "analyzer",
                         "image": get_uv_image_reference(),
                         "imagePullPolicy": "IfNotPresent",
-                        "command": [
-                            "/integration/app.py"
-                        ],
                         "args": [
+                            "/integration/app.py",
                             "--image", "{{args.imageName}}",
                             "--tag", "{{args.imageTag}}",
                             "--digest", "{{args.imageDigest}}",
