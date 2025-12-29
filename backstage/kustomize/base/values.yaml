@@ -2,15 +2,7 @@ postgresql:
   enabled: true
 
 ingress:
-  enabled: true
-  host: backstage
-  className: traefik
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-  tls:
-    enabled: true
-    secretName: backstage-tls
+  enabled: false
 
 # https://artifacthub.io/packages/helm/backstage/backstage
 serviceAccount:

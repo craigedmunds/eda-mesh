@@ -16,6 +16,7 @@ resources:
   - k8s-rbac.yaml
   - configmap-catalog.yaml
   - configmap-rootlocation.yaml
+  - ingress.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
