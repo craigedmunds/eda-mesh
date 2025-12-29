@@ -452,6 +452,102 @@
   - Provide steps for validating single execution behavior
   - _Requirements: 8.7, 8.8_
 
+## Version Comment Implementation (Requirement 13)
+
+- [ ] 29. Implement version comment in Backstage homepage HTML
+- [ ] 29.1 Create version file in container image
+  - Add version.json file to container during build process
+  - Include both our custom image version and Backstage framework version
+  - Extract Backstage version from package.json or node_modules
+  - Include build timestamp and git commit information
+  - Place file in accessible location (e.g., `/app/version.json`)
+  - _Requirements: 13.1_
+
+- [ ] 29.2 Add version information to HTML template
+  - Modify the main HTML template to read version from file during page rendering
+  - Extract both image version and Backstage framework version from version.json
+  - Include error handling for cases where version file is unavailable or corrupted
+  - _Requirements: 13.1, 13.4_
+
+- [ ] 29.3 Format version comments for easy identification
+  - Use clear, consistent format for version HTML comments (e.g., `<!-- Image Version: v1.2.3 -->` and `<!-- Backstage Version: v1.15.0 -->`)
+  - Position comments in HTML head or early in body for easy discovery
+  - Ensure comment format is machine-readable for automated verification
+  - _Requirements: 13.1, 13.2_
+
+- [ ]* 29.4 Write property test for version comment visibility
+  - **Property 31: Version comment visibility**
+  - **Validates: Requirements 13.1, 13.2**
+
+- [ ] 30. Update container build process for version file generation
+- [ ] 30.1 Modify Dockerfile to create version file
+  - Add build step to generate version.json during container build
+  - Extract our custom image version from build arguments or git metadata
+  - Extract Backstage framework version from package.json or installed packages
+  - Ensure both versions are included in final container image
+  - _Requirements: 13.1_
+
+- [ ] 30.2 Update build pipeline to pass version information
+  - Configure CI/CD pipeline to pass image tag and build metadata to container build
+  - Include git commit hash and build timestamp in version file
+  - Ensure both image version and Backstage framework version are accurate and consistent
+  - _Requirements: 13.1_
+
+- [ ] 30.3 Test version file across deployment scenarios
+  - Verify version file contains both versions in local development builds
+  - Test version file with Kargo-deployed images
+  - Validate both version types are accurate after new deployments
+  - _Requirements: 13.1_
+
+- [ ] 31. Create dedicated Kargo version verification step
+- [ ] 31.1 Create version verification script
+  - Write lightweight script that makes HTTP request to Backstage homepage
+  - Parse HTML response to extract version comments using regex or simple parsing
+  - Validate that both image version and Backstage framework version are present
+  - Compare extracted versions against expected values from Kargo promotion metadata
+  - _Requirements: 13.3_
+
+- [ ] 31.2 Create Kargo AnalysisTemplate for version verification
+  - Create separate analysis template specifically for version verification
+  - Configure template to run version verification script in lightweight container
+  - Set appropriate timeout and retry settings for HTTP-based verification
+  - Ensure verification runs independently of acceptance tests
+  - _Requirements: 13.3_
+
+- [ ] 31.3 Integrate version verification with Kargo stage
+  - Add version verification as separate verification step in Kargo stage configuration
+  - Configure verification to run after deployment but before acceptance tests
+  - Ensure version verification failure blocks promotion progression
+  - _Requirements: 13.3, 13.5_
+
+- [ ]* 31.4 Write property test for version verification via HTTP
+  - **Property 32: Version verification via HTTP**
+  - **Validates: Requirements 13.3**
+
+- [ ]* 31.5 Write property test for version verification error handling
+  - **Property 33: Version verification error handling**
+  - **Validates: Requirements 13.4, 13.5**
+
+- [ ] 32. Validate version verification implementation
+- [ ] 32.1 Test version verification in local development environment
+  - Run version verification script against localhost:3000
+  - Verify script correctly extracts both version comments
+  - Test error handling when version comments are missing or malformed
+  - _Requirements: 13.3, 13.4_
+
+- [ ] 32.2 Test version verification with Kargo deployments
+  - Deploy new image version through Kargo promotion
+  - Verify that version verification step runs and passes
+  - Test that version verification fails when versions don't match expectations
+  - Confirm clear error messages when verification fails
+  - _Requirements: 13.3, 13.5_
+
+- [ ] 32.3 Document version verification functionality
+  - Update README to document version verification step
+  - Document how version verification integrates with Kargo promotions
+  - Provide troubleshooting guide for version verification failures
+  - _Requirements: 13.3, 13.5_
+
 ## Current Blockers
 
 1. **Kyverno Policy**: Only configured for `image-factory-kargo`, not `backstage-kargo`

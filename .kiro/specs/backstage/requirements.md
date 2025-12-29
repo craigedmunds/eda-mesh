@@ -33,6 +33,12 @@ This specification defines the requirements for a Backstage developer portal pla
 - **Test_Duplication**: Multiple tests covering the same functionality or user workflow
 - **Artifact_Retention_Policy**: Rules governing how many test run artifacts to retain and when to clean up old ones
 - **Artifact_Storage_Path**: Environment variable defining where test artifacts (screenshots, videos, traces) should be stored during execution
+- **Image_Version**: The specific version tag of our custom Backstage container image currently deployed
+- **Backstage_Framework_Version**: The version of the underlying Backstage framework being used
+- **Version_File**: File embedded in the container image containing both our image version and Backstage framework version (e.g., `/app/version.json`)
+- **Version_Comment**: HTML comment in the page source showing both the current image version and Backstage framework version
+- **Version_Verification**: Dedicated Kargo verification step that validates version information via HTTP request
+- **Homepage**: The main landing page of the Backstage platform that users see when first accessing the system
 
 ## Requirements
 
@@ -183,4 +189,16 @@ This specification defines the requirements for a Backstage developer portal pla
 3. WHEN artifact cleanup runs, THEN it SHALL work correctly regardless of the test execution environment (local, CI, Kargo)
 4. WHEN cleanup completes, THEN the system SHALL ensure the most recent test artifacts remain accessible for debugging
 5. WHEN multiple test runs occur simultaneously, THEN artifact cleanup SHALL handle concurrent access safely without corruption
+
+### Requirement 13
+
+**User Story:** As a developer or operator, I want to verify both the current image version and Backstage framework version through a dedicated Kargo verification step, so that I can confirm the correct versions are deployed without relying on heavy browser-based testing.
+
+#### Acceptance Criteria
+
+1. WHEN users view the Backstage_Platform homepage source, THEN the system SHALL include both the current Image_Version and Backstage_Framework_Version in HTML comments
+2. WHEN the HTML comments are included, THEN they SHALL be clearly formatted and easily identifiable in the page source
+3. WHEN a Kargo verification step runs, THEN it SHALL make an HTTP request to the homepage and verify both version comments are present and accurate
+4. WHEN version information is unavailable, THEN the system SHALL include HTML comments indicating which versions could not be determined
+5. WHEN the version verification fails, THEN the Kargo promotion SHALL fail with clear error messages indicating which version check failed
 

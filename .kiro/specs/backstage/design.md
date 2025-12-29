@@ -84,6 +84,7 @@ The Backstage platform consists of several key components:
 - **Scaffolder**: Template-based project creation interface
 - **Authentication**: GitHub OAuth integration for user authentication
 - **Navigation**: Sidebar navigation and routing system
+- **Version Comment**: HTML comment injection for version information in page source
 
 ### Backend Services
 
@@ -193,6 +194,16 @@ interface KargoPromotion {
     }>;
   };
   steps: PromotionStep[];
+}
+
+interface VersionInfo {
+  imageVersion: string;           // Our custom image version
+  backstageVersion: string;       // Backstage framework version
+  buildTimestamp?: string;
+  gitCommit?: string;
+  isAvailable: boolean;
+  errorMessage?: string;
+  sourceFile?: string;            // Path to version file in container
 }
 ```
 
@@ -361,6 +372,18 @@ Based on the prework analysis, I'll consolidate related properties to eliminate 
 **Property 30: Verification log artifact collection**
 *For any* Kargo verification execution, the system should write all test execution logs to a dedicated log file and declare it as an artifact in the Verification spec
 **Validates: Requirements 8.9**
+
+**Property 31: Version comment visibility**
+*For any* user viewing the Backstage homepage source, both the current image version and Backstage framework version should be included in clearly formatted HTML comments
+**Validates: Requirements 13.1, 13.2**
+
+**Property 32: Version verification via HTTP**
+*For any* Kargo verification step, making an HTTP request to the homepage should successfully extract and validate both version comments
+**Validates: Requirements 13.3**
+
+**Property 33: Version verification error handling**
+*For any* version verification failure, the Kargo promotion should fail with clear error messages indicating which specific version check failed
+**Validates: Requirements 13.4, 13.5**
 
 ## Error Handling
 
