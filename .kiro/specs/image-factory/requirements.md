@@ -38,6 +38,8 @@ When public container base images are updated, our internal images that depend o
 3. WHEN a base image is updated, THEN the System SHALL identify all managed images that depend on it
 4. WHEN dependencies change, THEN the System SHALL update the dependency tracking
 5. WHEN a managed image has no discoverable dependencies, THEN the System SHALL record that state
+6. WHEN analyzing multi-stage Dockerfiles, THEN the System SHALL track all base images from all FROM statements
+7. WHEN multiple FROM statements reference the same base image, THEN the System SHALL track it only once per managed image
 
 ### Requirement 3: Base Image Monitoring
 
@@ -50,6 +52,9 @@ When public container base images are updated, our internal images that depend o
 3. WHEN a base image updates, THEN the System SHALL preserve the update history
 4. WHEN monitoring base images, THEN the System SHALL use event-driven mechanisms without continuous polling
 5. WHEN a base image update is detected, THEN the System SHALL make that information available for rebuild decisions
+6. WHEN monitoring base images (unmanaged upstream images), THEN the System SHALL limit checks to once per day maximum to avoid rate limiting
+7. WHEN configuring Kargo Warehouses for base images, THEN the System SHALL set refresh intervals to 24 hours to respect rate limits
+8. WHEN multiple base images from the same registry are monitored, THEN the System SHALL coordinate Warehouse configurations to minimize total registry requests
 
 ### Requirement 4: Rebuild Orchestration
 
@@ -96,8 +101,10 @@ When public container base images are updated, our internal images that depend o
 1. WHEN a base image is promoted to managed by enrolling it with source information, THEN the System SHALL begin tracking it as a managed image
 2. WHEN a managed image is demoted by removing it from enrollment, THEN the System SHALL continue monitoring it as a base image if other images depend on it
 3. WHEN an image transitions between managed and base, THEN the System SHALL preserve historical tracking data
-4. WHEN an image is removed from enrollment and has no dependents, THEN the System SHALL stop tracking that image
-5. WHEN a previously enrolled image is re-enrolled, THEN the System SHALL restore or create tracking state
+4. WHEN an image is removed from enrollment and has no dependents, THEN the System SHALL archive the tracking data to an _archive directory
+5. WHEN a previously enrolled image is re-enrolled, THEN the System SHALL restore archived tracking data if available, otherwise create new tracking state
+6. WHEN archiving image data, THEN the System SHALL preserve all historical information including digests, timestamps, and update history
+7. WHEN restoring archived data, THEN the System SHALL validate that the restored state is compatible with current configuration
 
 ### Requirement 8: Error Handling
 
@@ -192,7 +199,33 @@ When public container base images are updated, our internal images that depend o
 13. WHEN GitHub API calls fail, THEN the System SHALL provide clear error messages and retry mechanisms
 14. WHEN formatting timestamps, THEN the System SHALL use relative time format (e.g., "2h ago", "yesterday") for better user experience
 
-### Requirement 14: GitHub Extensions Code Organization
+### Requirement 15: Critical Security Response
+
+**User Story:** As a security engineer, I want to bypass normal rebuild delays for critical security vulnerabilities, so that urgent patches can be deployed immediately.
+
+#### Acceptance Criteria
+
+1. WHEN a critical CVE is identified in a base image, THEN the System SHALL support immediate rebuild triggers that bypass configured rebuild delays
+2. WHEN triggering an emergency rebuild, THEN the System SHALL log the security justification and override reason
+3. WHEN multiple images are affected by the same CVE, THEN the System SHALL coordinate emergency rebuilds to prioritize critical applications
+4. WHEN an emergency rebuild is triggered, THEN the System SHALL notify relevant teams through configured channels
+5. WHEN emergency rebuilds complete, THEN the System SHALL resume normal rebuild delay policies for subsequent updates
+6. WHEN configuring emergency rebuild capabilities, THEN the System SHALL require appropriate authorization and audit trails
+7. WHEN emergency rebuilds are used, THEN the System SHALL track usage metrics to prevent abuse of the bypass mechanism
+
+### Requirement 16: Rebuild Coordination
+
+**User Story:** As a platform engineer, I want intelligent coordination when multiple base images update simultaneously, so that rebuild resources are used efficiently.
+
+#### Acceptance Criteria
+
+1. WHEN multiple base images update within a short time window, THEN the System SHALL batch rebuild decisions to minimize redundant builds
+2. WHEN a managed image depends on multiple base images that have updated, THEN the System SHALL trigger only one rebuild incorporating all updates
+3. WHEN rebuild resources are limited, THEN the System SHALL prioritize rebuilds based on image criticality and dependency depth
+4. WHEN coordinating rebuilds, THEN the System SHALL respect individual image rebuild delay configurations
+5. WHEN rebuild coordination conflicts occur, THEN the System SHALL default to the most conservative (longest) delay among affected images
+6. WHEN batching rebuilds, THEN the System SHALL provide clear visibility into which base image updates triggered each rebuild
+7. WHEN rebuild coordination is active, THEN the System SHALL prevent duplicate rebuild triggers for the same managed image within the coordination window
 
 **User Story:** As a platform engineer, I want GitHub Actions and Container Registry functionality organized as reusable components, so that these features can be maintained efficiently and potentially used by other teams.
 
@@ -231,12 +264,17 @@ The System SHALL be designed for testability with unit tests for components and 
 
 ## Open Questions
 
-1. **Multi-stage Dockerfiles**: How should we handle Dockerfiles with multiple FROM statements? Track all or just the primary base image?
+~~1. **Multi-stage Dockerfiles**: How should we handle Dockerfiles with multiple FROM statements? Track all or just the primary base image?~~
+**RESOLVED**: Track all base images from all FROM statements (see Requirement 2.6-2.7)
 
-2. **Critical CVE Response**: Should we support immediate rebuilds that bypass the rebuild delay for critical security vulnerabilities?
+~~2. **Critical CVE Response**: Should we support immediate rebuilds that bypass the rebuild delay for critical security vulnerabilities?~~
+**RESOLVED**: Yes, support emergency rebuilds with proper authorization and audit trails (see Requirement 15)
 
-3. **Rate Limiting**: How should we handle container registry rate limits (especially Docker Hub)?
+~~3. **Rate Limiting**: How should we handle container registry rate limits (especially Docker Hub)?~~
+**RESOLVED**: Limit public registry checks to once per day maximum, coordinate Warehouse refresh intervals (see Requirement 3.6-3.8)
 
-4. **State Cleanup**: When images are removed from enrollment, should we automatically archive their state or preserve it indefinitely?
+~~4. **State Cleanup**: When images are removed from enrollment, should we automatically archive their state or preserve it indefinitely?~~
+**RESOLVED**: Archive state to _archive directory, restore if re-enrolled (see Requirement 7.4-7.7)
 
-5. **Rebuild Coordination**: When multiple base images update simultaneously, how should we coordinate rebuilds to minimize redundant builds?
+~~5. **Rebuild Coordination**: When multiple base images update simultaneously, how should we coordinate rebuilds to minimize redundant builds?~~
+**RESOLVED**: Batch rebuild decisions, prioritize by criticality, respect individual delays (see Requirement 16)

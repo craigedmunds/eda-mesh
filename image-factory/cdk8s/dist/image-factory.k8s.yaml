@@ -549,7 +549,7 @@ metadata:
   name: node-22-bookworm-slim
   namespace: image-factory-kargo
 spec:
-  interval: 5m
+  interval: 24h
   subscriptions:
     - image:
         allowTags: ^22-bookworm-slim$
@@ -564,7 +564,7 @@ metadata:
   name: python-3.12-slim
   namespace: image-factory-kargo
 spec:
-  interval: 5m
+  interval: 24h
   subscriptions:
     - image:
         allowTags: ^3\.12-slim$

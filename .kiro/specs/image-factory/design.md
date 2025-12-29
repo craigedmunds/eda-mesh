@@ -47,6 +47,7 @@ GitHub Actions workflow runs → New image built
 3. **GitOps native**: All configuration in git, all changes committed, ArgoCD applies everything
 4. **Separation of concerns**: Analysis tool generates state, CDK8s generates manifests, Kargo orchestrates
 5. **Data alignment**: Analysis tool output matches CDK8s input requirements exactly
+6. **Rate limit compliance**: Public registry monitoring limited to once per day maximum to avoid rate limiting
 
 ## Components
 
@@ -73,13 +74,18 @@ class ImageFactoryTool:
 
 1. Load images.yaml enrollment configuration (contains only managed images)
 2. For each enrolled managed image:
-   - Parse Dockerfile to discover base images from FROM statements
+   - Parse Dockerfile to discover base images from ALL FROM statements (multi-stage support)
+   - Deduplicate base images if the same image appears in multiple stages
    - Generate state file for the managed image (without warehouse config)
    - For each discovered base image:
      - Generate state file with warehouse config (for monitoring upstream)
      - Track dependency relationship
-3. Merge with existing state to preserve runtime data
-4. Write formatted YAML with comments
+3. Handle image lifecycle transitions:
+   - Archive removed images to _archive/ directory if no dependents
+   - Restore archived data when images are re-enrolled
+   - Preserve all historical information during archiving
+4. Merge with existing state to preserve runtime data
+5. Write formatted YAML with comments
 
 **Key Decisions:**
 - Only base images get warehouse config (repoURL, allowTags) for upstream monitoring
@@ -110,9 +116,13 @@ lib/
 4. For each merged entry:
    - If has source.repo: It's managed → Create warehouse for monitoring built image
    - If has repoURL + allowTags: Create warehouse for monitoring upstream
+   - Apply rate limiting configuration for public registries (24h minimum interval)
+   - Coordinate refresh times when multiple warehouses target same registry
 5. Create AnalysisTemplate for Dockerfile analysis
 6. Create analysis stages for managed images
 7. Build dependency graph and create rebuild-trigger stages
+8. Generate emergency rebuild capabilities for critical CVE response
+9. Implement rebuild coordination to batch simultaneous updates
 
 **Warehouse Generation Rules:**
 - **Managed images**: Generate warehouse to monitor the built image in GHCR (for triggering analysis)
@@ -126,11 +136,22 @@ lib/
 1. **Managed Image Warehouses**: Monitor GHCR for newly built images
    - Example: `backstage` watches `ghcr.io/craigedmunds/backstage`
    - Triggers: Analysis stage when new image is pushed
+   - Refresh interval: Default (frequent checking acceptable for private registries)
 
 2. **Base Image Warehouses**: Monitor upstream registries for base images
    - Example: `node-22-bookworm-slim` watches `docker.io/library/node:22-bookworm-slim`
    - Triggers: Rebuild-trigger stages for dependent managed images
+   - Refresh interval: 24 hours for all base images (unmanaged upstream images) to avoid rate limiting
+   - Coordination: Staggered refresh times when multiple base images from same registry
    - Note: Base images are automatically discovered from Dockerfiles, not manually enrolled
+
+**Rate Limiting Configuration:**
+
+To address Docker Hub and other registry rate limits:
+- **Base Image Detection**: CDK8s App identifies base images (unmanaged upstream images)
+- **Refresh Interval Override**: Sets `spec.interval` to "24h" for all base image warehouses
+- **Managed Image Optimization**: Maintains frequent checking for managed images (our own builds in GHCR)
+- **Coordination**: Staggered refresh times when multiple base images from same registry
 
 **Stage Types:**
 
@@ -337,7 +358,49 @@ This contract ensures:
 
 **Validates: Requirements 6.3**
 
-### Property 10: Error isolation
+### Property 10: Rate limiting compliance for base images
+
+*For any* Kargo Warehouse configuration generated for a base image (unmanaged upstream image), the refresh interval SHALL be set to 24 hours to avoid rate limiting.
+
+**Validates: Requirements 3.6, 3.7**
+
+### Property 11: Registry request coordination
+
+*For any* set of Kargo Warehouses monitoring the same registry, the System SHALL configure staggered refresh intervals or other coordination mechanisms to minimize total registry requests.
+
+**Validates: Requirements 3.8**
+
+### Property 12: Multi-stage Dockerfile parsing completeness
+
+*For any* multi-stage Dockerfile with multiple FROM statements, the Analysis Tool SHALL discover and track all base images from all FROM statements.
+
+**Validates: Requirements 2.6**
+
+### Property 13: Base image deduplication
+
+*For any* Dockerfile with duplicate FROM statements referencing the same base image, the System SHALL track that base image only once per managed image.
+
+**Validates: Requirements 2.7**
+
+### Property 14: Image lifecycle archiving
+
+*For any* image removed from enrollment with no dependents, the System SHALL archive all tracking data to an _archive directory while preserving all historical information, and SHALL restore this data if the image is re-enrolled.
+
+**Validates: Requirements 7.4, 7.5, 7.6, 7.7**
+
+### Property 15: Emergency rebuild capabilities
+
+*For any* critical CVE scenario, the System SHALL support immediate rebuild triggers that bypass configured delays while logging the security justification and override reason.
+
+**Validates: Requirements 15.1, 15.2**
+
+### Property 16: Intelligent rebuild coordination
+
+*For any* managed image with multiple base image dependencies that update within a coordination window, the System SHALL trigger only one rebuild incorporating all updates to minimize redundant builds.
+
+**Validates: Requirements 16.1, 16.2**
+
+### Property 17: Error isolation
 
 *For any* image that fails Dockerfile parsing, the Analysis Tool SHALL continue processing other images without failing the entire batch.
 

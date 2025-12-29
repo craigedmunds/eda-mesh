@@ -53,13 +53,17 @@
 
 ## Phase 2: Enhanced Functionality 📋
 
+**PRIORITY: Task 17 (Rate Limiting) - Fixes current Docker Hub error**
+
 - [ ] 7. Multi-Stage Dockerfile Support
-  - [ ] 7.1 Update Dockerfile parser to extract all FROM statements
-  - [ ] 7.2 Implement logic to track multiple base images per managed image
-  - [ ] 7.3 Update state file format to support multiple base images
-  - [ ] 7.4 Update CDK8s to create rebuild-triggers for all base images
-  - [ ] 7.5 Test with multi-stage Dockerfile examples
-  - _Requirements: 2.5_
+  - [ ] 7.1 Update Dockerfile parser to extract all FROM statements from multi-stage builds
+  - [ ] 7.2 Implement deduplication logic for repeated base images in same Dockerfile
+  - [ ] 7.3 Update state file format to support multiple base images per managed image
+  - [ ] 7.4 Update CDK8s to create rebuild-triggers for all discovered base images
+  - [ ] 7.5 Test with multi-stage Dockerfile examples (Node.js build + runtime stages)
+  - [ ]* 7.6 Write property test for multi-stage FROM statement parsing
+  - [ ]* 7.7 Write property test for base image deduplication
+  - _Requirements: 2.6, 2.7_
 
 - [ ] 8. External Image Enrollment
   - [ ] 8.1 Add external image examples to images.yaml (postgres, redis, etc.)
@@ -88,6 +92,28 @@
   - [ ] 10.5 Add override mechanism for critical CVEs
   - [ ] 10.6 Test delay enforcement
   - _Requirements: 1.4, 6.1_
+
+- [ ] 39. Emergency Rebuild System (Critical CVE Response)
+  - [ ] 39.1 Design emergency rebuild trigger mechanism that bypasses normal delays
+  - [ ] 39.2 Implement security justification logging for emergency rebuilds
+  - [ ] 39.3 Add authorization controls for emergency rebuild triggers
+  - [ ] 39.4 Create emergency rebuild API endpoint or CLI command
+  - [ ] 39.5 Implement notification system for emergency rebuild events
+  - [ ] 39.6 Add audit trail tracking for emergency rebuild usage
+  - [ ] 39.7 Test emergency rebuild with simulated critical CVE scenario
+  - [ ]* 39.8 Write property test for emergency rebuild bypass logic
+  - _Requirements: 15.1, 15.2_
+
+- [ ] 40. Intelligent Rebuild Coordination
+  - [ ] 40.1 Design coordination window for batching simultaneous base image updates
+  - [ ] 40.2 Implement logic to detect multiple base image updates for same managed image
+  - [ ] 40.3 Add batching mechanism to trigger single rebuild for multiple updates
+  - [ ] 40.4 Implement priority-based rebuild scheduling for resource-limited scenarios
+  - [ ] 40.5 Add coordination window configuration (default: 30 minutes)
+  - [ ] 40.6 Ensure individual rebuild delay policies are respected during coordination
+  - [ ] 40.7 Test coordination with multiple simultaneous base image updates
+  - [ ]* 40.8 Write property test for rebuild deduplication logic
+  - _Requirements: 16.1, 16.2_
 
 - [ ] 11. Enhanced Error Handling
   - [ ] 11.1 Add retry logic for transient failures
@@ -134,21 +160,24 @@
   - [ ] 15.7 Implement immediate rebuild for critical CVEs
   - _Requirements: NFR3_
 
-- [ ] 16. State File Cleanup
-  - [ ] 16.1 Detect images removed from images.yaml
-  - [ ] 16.2 Implement archival strategy for old state files
-  - [ ] 16.3 Add cleanup command to Analysis Tool
-  - [ ] 16.4 Preserve historical data for audit
-  - [ ] 16.5 Document cleanup procedures
-  - _Open Question: 4_
+- [ ] 16. Image Lifecycle Archiving and Restoration
+  - [ ] 16.1 Detect images removed from images.yaml enrollment
+  - [ ] 16.2 Implement archiving to _archive/ directory when images have no dependents
+  - [ ] 16.3 Preserve all historical information during archiving (digests, timestamps, update history)
+  - [ ] 16.4 Implement restoration logic when archived images are re-enrolled
+  - [ ] 16.5 Add validation to ensure restored state is compatible with current configuration
+  - [ ] 16.6 Add cleanup command to Analysis Tool for manual archiving operations
+  - [ ] 16.7 Document archiving and restoration procedures
+  - [ ]* 16.8 Write property test for archiving data preservation
+  - [ ]* 16.9 Write property test for restoration validation
+  - _Requirements: 7.4, 7.5, 7.6, 7.7_
 
-- [ ] 17. Rate Limiting and Caching
-  - [ ] 17.1 Implement pull-through cache for Docker Hub
-  - [ ] 17.2 Add rate limit handling in Kargo Warehouses
-  - [ ] 17.3 Cache Dockerfile parsing results
-  - [ ] 17.4 Implement exponential backoff for registry calls
-  - [ ] 17.5 Monitor rate limit usage
-  - _Open Question: 3_
+- [x] 17. Fix Docker Hub Rate Limiting (PRIORITY: Fixes current Kargo error)
+  - [x] 17.1 Update `create_warehouse_for_base_or_external_image` to set `spec.interval: "24h"`
+  - [x] 17.2 Apply updated warehouse configurations to fix current node:22-bookworm-slim rate limiting
+  - [x] 17.3 Verify Kargo stops hitting Docker Hub rate limits
+  - [ ]* 17.4 Add property test to ensure base images get 24h intervals
+  - _Requirements: 3.6, 3.7, 3.8_
 
 ## Phase 4: Backstage Self-Service Enrollment 🎯
 
@@ -372,7 +401,46 @@
   - [ ]* 36.7 Add automated testing for package dependencies
   - _Requirements: 14.8_
 
-## Phase 7: Optimization and Scaling 🚀
+## Phase 8: Property-Based Testing for New Requirements 🧪
+
+- [ ] 41. Rate Limiting and Coordination Property Tests
+  - [ ] 41.1 Write property test for base image refresh interval compliance
+    - **Property 10: Rate limiting compliance for base images**
+    - **Validates: Requirements 3.6, 3.7**
+  - [ ] 41.2 Write property test for registry request coordination
+    - **Property 11: Registry request coordination**
+    - **Validates: Requirements 3.8**
+  - [ ]* 41.3 Generate random warehouse configurations and verify rate limiting rules
+  - [ ]* 41.4 Test staggered scheduling with multiple warehouses per registry
+
+- [ ] 42. Multi-Stage Dockerfile Property Tests
+  - [ ] 42.1 Write property test for multi-stage FROM statement discovery
+    - **Property 12: Multi-stage Dockerfile parsing completeness**
+    - **Validates: Requirements 2.6**
+  - [ ] 42.2 Write property test for base image deduplication
+    - **Property 13: Base image deduplication**
+    - **Validates: Requirements 2.7**
+  - [ ]* 42.3 Generate random multi-stage Dockerfiles and verify parsing completeness
+  - [ ]* 42.4 Test deduplication with various duplicate FROM patterns
+
+- [ ] 43. Lifecycle Management Property Tests
+  - [ ] 43.1 Write property test for archiving data preservation
+    - **Property 14: Image lifecycle archiving**
+    - **Validates: Requirements 7.4, 7.5, 7.6, 7.7**
+  - [ ]* 43.2 Generate random image states and verify archiving preserves all data
+  - [ ]* 43.3 Test restoration validation with compatible and incompatible configurations
+
+- [ ] 44. Emergency and Coordination Property Tests
+  - [ ] 44.1 Write property test for emergency rebuild bypass logic
+    - **Property 15: Emergency rebuild capabilities**
+    - **Validates: Requirements 15.1, 15.2**
+  - [ ] 44.2 Write property test for rebuild coordination deduplication
+    - **Property 16: Intelligent rebuild coordination**
+    - **Validates: Requirements 16.1, 16.2**
+  - [ ]* 44.3 Generate random CVE scenarios and verify emergency bypass behavior
+  - [ ]* 44.4 Test coordination with various timing and dependency patterns
+
+## Phase 9: Optimization and Scaling 🚀
 
 - [ ] 22. Performance Optimization
   - [ ] 22.1 Implement parallel image processing in Analysis Tool

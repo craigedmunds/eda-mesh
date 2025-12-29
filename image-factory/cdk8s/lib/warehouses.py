@@ -71,12 +71,14 @@ def create_warehouse_for_base_or_external_image(chart: Construct, image: dict):
     
     logger.warning("Creating warehouse for base/external image %s (repo: %s, tags: %s)", name, repo_url, allow_tags)
     
+    # Use 24h interval for base images to avoid Docker Hub rate limiting
+    # Base images are unmanaged upstream images that should be checked infrequently
     kargo.Warehouse(
         chart,
         f"warehouse-{name}",
         metadata={"name": name},
         spec={
-            "interval": "5m",
+            "interval": "24h",
             "subscriptions": [
                 {
                     "image": {
