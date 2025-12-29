@@ -66,7 +66,7 @@ def build_analysis_job_spec() -> dict:
             "spec": {
                 "serviceAccountName": "image-factory",
                 "restartPolicy": "Never",
-                "imagePullSecrets": [{"name": "ghcr-pull-secret"}],
+                "imagePullSecrets": [{"name": "gh-docker-registry-creds"}],
                 "containers": [
                     {
                         "name": "analyzer",

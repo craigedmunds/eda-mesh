@@ -607,7 +607,7 @@ spec:
                 serviceAccountName: image-factory
                 restartPolicy: Never
                 imagePullSecrets:
-                  - name: ghcr-pull-secret
+                  - name: gh-docker-registry-creds
                 containers:
                   - name: analyzer
                     image: ghcr.io/craigedmunds/uv:0.1.16
