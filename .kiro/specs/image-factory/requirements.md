@@ -227,6 +227,20 @@ When public container base images are updated, our internal images that depend o
 6. WHEN batching rebuilds, THEN the System SHALL provide clear visibility into which base image updates triggered each rebuild
 7. WHEN rebuild coordination is active, THEN the System SHALL prevent duplicate rebuild triggers for the same managed image within the coordination window
 
+### Requirement 17: Verification Re-triggering
+
+**User Story:** As a developer, I want verification to be re-triggered when source code changes, so that I can validate configuration and analysis changes without waiting for new image builds.
+
+#### Acceptance Criteria
+
+1. WHEN a managed image warehouse is created, THEN the System SHALL add a git subscription to monitor the source repository for changes
+2. WHEN source code changes occur in monitored paths, THEN the System SHALL create new freight to trigger verification workflows
+3. WHEN monitoring managed image source repositories, THEN the System SHALL include the app folder path and image factory directory in the git subscription
+4. WHEN git subscriptions detect changes, THEN the System SHALL trigger analysis and verification stages without requiring new image builds
+5. WHEN configuring git subscriptions, THEN the System SHALL monitor the same branch specified in the managed image enrollment
+6. WHEN multiple changes occur in rapid succession, THEN the System SHALL batch freight creation to avoid excessive verification runs
+7. WHEN git subscription paths are configured, THEN the System SHALL include both the specific app directory and the shared image factory configuration directory
+
 **User Story:** As a platform engineer, I want GitHub Actions and Container Registry functionality organized as reusable components, so that these features can be maintained efficiently and potentially used by other teams.
 
 #### Acceptance Criteria
@@ -278,3 +292,20 @@ The System SHALL be designed for testability with unit tests for components and 
 
 ~~5. **Rebuild Coordination**: When multiple base images update simultaneously, how should we coordinate rebuilds to minimize redundant builds?~~
 **RESOLVED**: Batch rebuild decisions, prioritize by criticality, respect individual delays (see Requirement 16)
+
+### Requirement 18: Image User Updates
+
+**User Story:** As a platform engineer, I want any system component that references managed images to be automatically updated when those images are rebuilt, so that infrastructure stays current with managed dependencies without manual intervention.
+
+#### Acceptance Criteria
+
+1. WHEN any system component uses a managed image in its configuration files, THEN the System SHALL create Kargo promotion stages to update those references automatically
+2. WHEN a managed image referenced by system components is updated, THEN the System SHALL trigger the appropriate promotion stage to update the configuration files
+3. WHEN updating dependencies, THEN the System SHALL use Kargo's built-in promotion tasks (kustomize-set-image, yaml-update, helm-update-image) based on the file format
+4. WHEN updates are made, THEN the System SHALL use Kargo's git-commit and git-push tasks with descriptive commit messages
+5. WHEN multiple dependencies update simultaneously, THEN the System SHALL coordinate promotion stages to batch updates appropriately
+6. WHEN promotion stages fail, THEN the System SHALL log the error and continue normal operations without blocking other workflows
+7. WHEN configuring dependencies, THEN the System SHALL support both Kustomize-based updates (kustomize-set-image) and direct file updates (yaml-update)
+8. WHEN creating promotion stages for updates, THEN the System SHALL generate appropriate Kargo stage configurations in the CDK8s output
+9. WHEN a managed image has references in multiple file formats, THEN the System SHALL create separate promotion stages for each format type
+10. WHEN updating image references, THEN the System SHALL use Kargo's image templating syntax to reference the latest image versions

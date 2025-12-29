@@ -4,6 +4,7 @@ metadata:
   labels:
     kargo.akuity.io/project: "true"
     kargo.deps/ghcr: "true"
+    secrets/gh-docker-registry: "true"
   name: image-factory-kargo
   namespace: image-factory-kargo
 ---
@@ -38,17 +39,6 @@ kind: ServiceAccount
 metadata:
   name: image-factory
   namespace: image-factory-kargo
----
-apiVersion: v1
-kind: Secret
-metadata:
-  annotations:
-    eso.io/source: central-secret-store/github-docker-registry
-  name: ghcr-pull-secret
-  namespace: image-factory-kargo
-type: kubernetes.io/dockerconfigjson
-data:
-  .dockerconfigjson: e30K
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -528,6 +518,15 @@ spec:
         repoURL: ghcr.io/craigedmunds/backstage
         semverConstraint: ">=0.1.0"
         strictSemvers: false
+    - git:
+        branch: main
+        commitSelectionStrategy: NewestFromBranch
+        discoveryLimit: 5
+        includePaths:
+          - backstage/
+          - image-factory/
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        strictSemvers: false
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
@@ -541,6 +540,15 @@ spec:
         discoveryLimit: 10
         repoURL: ghcr.io/craigedmunds/uv
         semverConstraint: ">=0.1.0"
+        strictSemvers: false
+    - git:
+        branch: main
+        commitSelectionStrategy: NewestFromBranch
+        discoveryLimit: 5
+        includePaths:
+          - apps/uv/
+          - image-factory/
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
         strictSemvers: false
 ---
 apiVersion: kargo.akuity.io/v1alpha1
@@ -589,7 +597,7 @@ spec:
     - name: gitRepo
     - name: gitBranch
   metrics:
-    - name: analyze-dockerfile-metric
+    - name: analysis
       provider:
         job:
           spec:
@@ -602,39 +610,62 @@ spec:
                   - name: ghcr-pull-secret
                 containers:
                   - name: analyzer
-                    image: ghcr.io/craigedmunds/uv:0.1.0
+                    image: ghcr.io/craigedmunds/uv:0.1.16
                     imagePullPolicy: IfNotPresent
                     command:
-                      - /bin/sh
-                      - -c
-                      - "
-
-                        \                            set -e
-
-                        \                            echo \"Cloning repository...\"
-
-                        \                            git clone --depth 1 --branch {{args.gitBranch}} {{args.gitRepo}} /workspace/repo
-
-                        \                            cd /workspace/repo
-
-                        \                            echo \"Running analysis...\"
-
-                        \                            /scripts/run.sh app.py --image {{args.imageName}} --tag {{args.imageTag}} --digest {{args.imageDigest}} --dockerfile {{args.dockerfile}} --source-repo {{args.sourceRepo}} --source-provider {{args.sourceProvider}} --git-repo {{args.gitRepo}} --git-branch {{args.gitBranch}} --image-factory-dir /workspace/repo/image-factory
-
-                        \                            "
+                      - /integration/app.py
+                    args:
+                      - --image
+                      - "{{args.imageName}}"
+                      - --tag
+                      - "{{args.imageTag}}"
+                      - --digest
+                      - "{{args.imageDigest}}"
+                      - --dockerfile
+                      - "{{args.dockerfile}}"
+                      - --source-repo
+                      - "{{args.sourceRepo}}"
+                      - --source-provider
+                      - "{{args.sourceProvider}}"
+                      - --git-repo
+                      - "{{args.gitRepo}}"
+                      - --git-branch
+                      - "{{args.gitBranch}}"
+                      - --image-factory-dir
+                      - /workspace/repo/image-factory
                     volumeMounts:
                       - name: analyzer-script
                         mountPath: /integration
+                      - name: workspace
+                        mountPath: /workspace
                     env:
                       - name: GITHUB_TOKEN
                         valueFrom:
                           secretKeyRef:
-                            name: ghcr-credentials
+                            name: github-credentials
+                            key: password
+                initContainers:
+                  - name: git-clone
+                    image: alpine/git:latest
+                    command:
+                      - sh
+                      - -c
+                      - git clone --depth 1 --branch {{args.gitBranch}} {{args.gitRepo}} /workspace/repo
+                    volumeMounts:
+                      - name: workspace
+                        mountPath: /workspace
+                    env:
+                      - name: GITHUB_TOKEN
+                        valueFrom:
+                          secretKeyRef:
+                            name: github-credentials
                             key: password
                 volumes:
                   - name: analyzer-script
                     configMap:
                       name: image-factory-analysis
+                  - name: workspace
+                    emptyDir: {}
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage

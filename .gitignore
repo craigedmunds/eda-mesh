@@ -3,6 +3,8 @@
 .backstage-acceptance-artifacts/*/
 .backstage-acceptance-artifacts/verification.log
 __pycache__
+.pytest_cache
+.hypothesis/
 node_modules
 
 # Ignore the charts folder when we use helmCharts in kustomize

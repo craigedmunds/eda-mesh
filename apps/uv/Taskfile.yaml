@@ -62,10 +62,8 @@ tasks:
       - echo 'print("Hello from UV image!")' > ~/uv-test/test.py
       - echo ""
       - echo "Testing with volume mount to /integration and UV_PYTHON override:"
-      - docker run --rm --entrypoint="/usr/bin/python3" -v $(pwd):/workspace -w /workspace -e UV_PYTHON=/usr/bin/python3 -v ~/uv-test:/uv-test ghcr.io/craigedmunds/uv:0.1.13 /workspace/entrypoint.py /uv-test/test.py
-      - echo ""
-      - echo "Cleaning up..."
-      - rm -rf ~/uv-test
+      - docker run --rm -v $(pwd):/workspace -w /workspace -v ~/uv-test:/uv-test ghcr.io/craigedmunds/uv:0.1.16 /uv-test/test.py
+      
 
   test:paths:
     desc: Test what Python paths are available in the image

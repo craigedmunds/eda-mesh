@@ -6,9 +6,11 @@ on:
       - main
       - feature/backstage-events
     paths:
-      - 'backstage/app/**'
+      - 'backstage/**'
       - '.github/workflows/backstage.yml'
       - '.github/workflows/reusable-docker-build.yml'
+      - '!backstage/*.md'
+      - '!backstage/Taskfile.yaml'
   
   workflow_dispatch:
     inputs:

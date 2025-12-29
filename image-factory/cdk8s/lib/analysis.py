@@ -3,6 +3,35 @@ AnalysisTemplate and job spec builders for Dockerfile analysis.
 """
 from constructs import Construct
 from cdk8s import ApiObject, JsonPatch
+import yaml
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def load_image_config():
+    """Load image configuration from images.yaml file."""
+    try:
+        images_yaml_path = os.path.join(os.path.dirname(__file__), '..', 'images.yaml')
+        with open(images_yaml_path, 'r') as f:
+            config = yaml.safe_load(f)
+            return config.get('images', {})
+    except Exception as e:
+        logger.warning(f"Could not load images.yaml: {e}, using defaults")
+        return {}
+
+
+def get_uv_image_reference():
+    """Get the UV image reference from configuration."""
+    images = load_image_config()
+    uv_config = images.get('uv', {})
+    
+    registry = uv_config.get('registry', 'ghcr.io')
+    repository = uv_config.get('repository', 'craigedmunds/uv')
+    tag = uv_config.get('tag')
+    
+    return f"{registry}/{repository}:{tag}"
 
 
 def setup_analysis_template(chart: Construct):
@@ -41,24 +70,30 @@ def build_analysis_job_spec() -> dict:
                 "containers": [
                     {
                         "name": "analyzer",
-                        "image": "ghcr.io/craigedmunds/uv:0.1.0",
+                        "image": get_uv_image_reference(),
                         "imagePullPolicy": "IfNotPresent",
                         "command": [
-                            "/bin/sh",
-                            "-c",
-                            """
-                            set -e
-                            echo "Cloning repository..."
-                            git clone --depth 1 --branch {{args.gitBranch}} {{args.gitRepo}} /workspace/repo
-                            cd /workspace/repo
-                            echo "Running analysis..."
-                            /scripts/run.sh app.py --image {{args.imageName}} --tag {{args.imageTag}} --digest {{args.imageDigest}} --dockerfile {{args.dockerfile}} --source-repo {{args.sourceRepo}} --source-provider {{args.sourceProvider}} --git-repo {{args.gitRepo}} --git-branch {{args.gitBranch}} --image-factory-dir /workspace/repo/image-factory
-                            """
+                            "/integration/app.py"
+                        ],
+                        "args": [
+                            "--image", "{{args.imageName}}",
+                            "--tag", "{{args.imageTag}}",
+                            "--digest", "{{args.imageDigest}}",
+                            "--dockerfile", "{{args.dockerfile}}",
+                            "--source-repo", "{{args.sourceRepo}}",
+                            "--source-provider", "{{args.sourceProvider}}",
+                            "--git-repo", "{{args.gitRepo}}",
+                            "--git-branch", "{{args.gitBranch}}",
+                            "--image-factory-dir", "/workspace/repo/image-factory"
                         ],
                         "volumeMounts": [
                             {
                                 "name": "analyzer-script",
                                 "mountPath": "/integration"
+                            },
+                            {
+                                "name": "workspace",
+                                "mountPath": "/workspace"
                             }
                         ],
                         "env": [
@@ -66,7 +101,35 @@ def build_analysis_job_spec() -> dict:
                                 "name": "GITHUB_TOKEN",
                                 "valueFrom": {
                                     "secretKeyRef": {
-                                        "name": "ghcr-credentials",
+                                        "name": "github-credentials",
+                                        "key": "password"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "initContainers": [
+                    {
+                        "name": "git-clone",
+                        "image": "alpine/git:latest",
+                        "command": [
+                            "sh",
+                            "-c",
+                            "git clone --depth 1 --branch {{args.gitBranch}} {{args.gitRepo}} /workspace/repo"
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "workspace",
+                                "mountPath": "/workspace"
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "GITHUB_TOKEN",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "github-credentials",
                                         "key": "password"
                                     }
                                 }
@@ -80,6 +143,10 @@ def build_analysis_job_spec() -> dict:
                         "configMap": {
                             "name": "image-factory-analysis"
                         }
+                    },
+                    {
+                        "name": "workspace",
+                        "emptyDir": {}
                     }
                 ]
             }
@@ -117,7 +184,7 @@ def create_analysis_template(
         "args": args,
         "metrics": [
             {
-                "name": f"{name}-metric",
+                "name": "analysis",  # Shortened from "analyze-dockerfile-metric" to fit 63-char limit
                 "provider": {
                     "job": {
                         "spec": job_spec

@@ -400,11 +400,29 @@ This contract ensures:
 
 **Validates: Requirements 16.1, 16.2**
 
-### Property 17: Error isolation
+### Property 17: Git subscription configuration for verification re-triggering
+
+*For any* managed image warehouse with source repository information, the System SHALL configure git subscriptions that monitor both the specific app directory and the shared image factory directory to trigger verification when source code changes.
+
+**Validates: Requirements 17.1, 17.2, 17.3, 17.7**
+
+### Property 18: Error isolation
 
 *For any* image that fails Dockerfile parsing, the Analysis Tool SHALL continue processing other images without failing the entire batch.
 
 **Validates: Requirements 8.1**
+
+### Property 19: Dependency detection accuracy
+
+*For any* system configuration file that references a managed image, the System SHALL correctly identify and track that reference as a dependency during analysis.
+
+**Validates: Requirements 18.1, 18.7, 18.8**
+
+### Property 20: Version string replacement correctness
+
+*For any* managed image version update, when dependencies exist, the System SHALL update all references to that image with the new version while preserving the original format and file structure.
+
+**Validates: Requirements 18.3, 18.9, 18.10**
 
 ## Integration Points
 

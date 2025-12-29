@@ -116,6 +116,39 @@ kubectl get images -n image-factory
 - **Metrics**: Build success/failure rates
 - **Health Checks**: Service health endpoints
 
+## Testing
+
+### Unit Tests
+```bash
+# Run Python unit tests
+task test:unit
+# or
+cd app && python -m pytest test_integration.py -v
+```
+
+### Integration Tests
+The Kargo integration test validates the complete image factory pipeline:
+
+```bash
+# Run Kargo integration test
+task test:integration
+# or
+npm install && npm run test:kargo
+```
+
+The integration test covers:
+1. **Freight Creation**: Validates base image and managed image freight
+2. **Analysis Stage**: Tests Dockerfile analysis job execution
+3. **Git Commits**: Verifies state file updates are committed to git
+4. **Rebuild Triggers**: Tests GitHub Actions workflow dispatch
+5. **End-to-End Flow**: Complete pipeline from base image update to rebuild
+
+### All Tests
+```bash
+# Run both unit and integration tests
+task test:all
+```
+
 ## Development
 
 ### Adding New Images

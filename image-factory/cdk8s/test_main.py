@@ -8,6 +8,8 @@ from constructs import Construct
 from cdk8s import App, Testing
 from main import ImageFactoryChart
 from lib.data import load_yaml_dir
+from lib.warehouses import _build_git_subscription_config
+from hypothesis import given, strategies as st, settings, HealthCheck
 
 
 class TestLoadYamlDir:
@@ -240,6 +242,105 @@ class TestImageFactoryChart:
         # Verify all images present
         warehouse_names = {w['metadata']['name'] for w in warehouses}
         assert warehouse_names == {'image-0', 'image-1', 'image-2'}
+
+
+class TestGitSubscriptionConfiguration:
+    """Property-based tests for git subscription configuration."""
+    
+    @settings(suppress_health_check=[HealthCheck.filter_too_much])
+    @given(
+        provider=st.sampled_from(['github', 'gitlab']),
+        repo=st.text(min_size=5, max_size=30, alphabet=st.characters(whitelist_categories=('Lu', 'Ll', 'Nd'), whitelist_characters='-_/')).filter(lambda x: '/' in x and x.count('/') == 1 and not x.startswith('/') and not x.endswith('/')),
+        branch=st.sampled_from(['main', 'master', 'develop', 'feature-branch', 'test']),
+        dockerfile=st.sampled_from([
+            'apps/backstage/Dockerfile',
+            'apps/uv/Dockerfile', 
+            'backstage/app/packages/backend/Dockerfile',
+            'services/api/Dockerfile',
+            'Dockerfile'
+        ]),
+        image_name=st.text(min_size=3, max_size=15, alphabet=st.characters(whitelist_categories=('Lu', 'Ll', 'Nd'), whitelist_characters='-_'))
+    )
+    def test_git_subscription_configuration_property(self, provider, repo, branch, dockerfile, image_name):
+        """
+        Property test for git subscription configuration.
+        
+        **Feature: image-factory, Property 17: Git subscription configuration for verification re-triggering**
+        **Validates: Requirements 17.1, 17.2, 17.3, 17.7**
+        
+        For any valid source configuration with provider, repo, branch, and dockerfile,
+        the git subscription configuration should include the correct repository URL,
+        branch, include paths for both app directory and image-factory directory,
+        and proper batching configuration.
+        """
+        source = {
+            'provider': provider,
+            'repo': repo,
+            'branch': branch,
+            'dockerfile': dockerfile
+        }
+        
+        config = _build_git_subscription_config(source, image_name)
+        
+        # Property 1: Configuration should be generated for valid inputs
+        assert config is not None
+        assert isinstance(config, dict)
+        assert len(config) > 0
+        
+        # Property 2: Repository URL should match provider and repo
+        expected_url = f"https://{provider}.com/{repo}.git"
+        assert config['repoUrl'] == expected_url
+        
+        # Property 3: Branch should match input
+        assert config['branch'] == branch
+        
+        # Property 4: Should always include image-factory directory
+        assert 'includePaths' in config
+        assert 'image-factory/' in config['includePaths']
+        
+        # Property 5: Should include app-specific directory based on dockerfile
+        if dockerfile.startswith('apps/'):
+            # For apps/xxx/Dockerfile pattern, should include apps/xxx/
+            parts = dockerfile.split('/')
+            if len(parts) >= 2:
+                expected_app_dir = f"apps/{parts[1]}/"
+                assert expected_app_dir in config['includePaths']
+        elif '/' in dockerfile:
+            # For other patterns, should include first directory
+            first_dir = dockerfile.split('/')[0] + '/'
+            assert first_dir in config['includePaths']
+        
+        # Property 6: Should have batching configuration
+        assert config['discoveryLimit'] == 5  # Batching limit
+        assert config['strictSemvers'] == False
+        
+        # Property 7: Should use correct commit selection strategy
+        from imports.warehouse.io.akuity.kargo import WarehouseSpecSubscriptionsGitCommitSelectionStrategy
+        assert config['commitSelectionStrategy'] == WarehouseSpecSubscriptionsGitCommitSelectionStrategy.NEWEST_FROM_BRANCH
+    
+    def test_git_subscription_empty_inputs(self):
+        """Test that empty or invalid inputs return empty configuration."""
+        # Empty repo should return empty config
+        config = _build_git_subscription_config({'provider': 'github', 'repo': '', 'branch': 'main'}, 'test')
+        assert config == {}
+        
+        # Empty branch should return empty config
+        config = _build_git_subscription_config({'provider': 'github', 'repo': 'owner/repo', 'branch': ''}, 'test')
+        assert config == {}
+        
+        # Missing repo should return empty config
+        config = _build_git_subscription_config({'provider': 'github', 'branch': 'main'}, 'test')
+        assert config == {}
+        
+        # Missing branch should return empty config
+        config = _build_git_subscription_config({'provider': 'github', 'repo': 'owner/repo'}, 'test')
+        assert config == {}
+        
+        # Valid inputs should return non-empty config
+        config = _build_git_subscription_config({'provider': 'github', 'repo': 'owner/repo', 'branch': 'main'}, 'test')
+        assert config != {}
+        assert 'repoUrl' in config
+        assert 'branch' in config
 
 
 if __name__ == '__main__':

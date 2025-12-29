@@ -9,6 +9,8 @@ on:
       - 'apps/e2e-test-runner/**'
       - '.github/workflows/e2e-runner.yml'
       - '.github/workflows/reusable-docker-build.yml'
+      - '!apps/e2e-test-runner/*.md'
+      - '!apps/e2e-test-runner/Taskfile.yaml'
   
   workflow_dispatch:
     inputs:

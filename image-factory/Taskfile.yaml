@@ -1,0 +1,140 @@
+version: '3'
+
+tasks:
+  test:integration:
+    desc: Run Kargo integration test for Image Factory
+    dir: .
+    cmds:
+      - npm install
+      - npm run test:kargo
+    
+  test:unit:
+    desc: Run unit tests for Image Factory
+    dir: .
+    cmds:
+      - python -m pytest test_integration.py -v
+      
+  test:all:
+    desc: Run all tests (unit + integration)
+    deps:
+      - test:unit
+      - test:integration
+      
+  cdk8s:synth:
+    desc: Synthesize CDK8s manifests
+    dir: cdk8s
+    cmds:
+      - uv run cdk8s synth
+      
+  cdk8s:deploy:
+    desc: Deploy CDK8s manifests to cluster
+    dir: cdk8s
+    deps:
+      - cdk8s:synth
+    cmds:
+      - kubectl apply -f dist/image-factory.k8s.yaml
+      
+  tool:run:
+    desc: Run the image factory analysis tool
+    dir: app
+    cmds:
+      - uv run python app.py --image-factory-dir ../
+
+  # Diagnostic and Status Tasks
+  status:
+    desc: Show comprehensive status of Image Factory components
+    cmds:
+      - echo "=== Image Factory Status Overview ==="
+      - echo ""
+      - echo "📋 Kargo Project Status:"
+      - kubectl get project image-factory-kargo -n image-factory-kargo -o wide || echo "❌ Project not found"
+      - echo ""
+      - echo "🏭 Warehouses Status:"
+      - kubectl get warehouses -n image-factory-kargo -o wide || echo "❌ No warehouses found"
+      - echo ""
+      - echo "🎭 Stages Status:"
+      - kubectl get stages -n image-factory-kargo -o wide || echo "❌ No stages found"
+      - echo ""
+      - echo "📦 Freight Status:"
+      - kubectl get freight -n image-factory-kargo -o wide || echo "❌ No freight found"
+      - echo ""
+      - echo "🚀 Promotions Status (last 10):"
+      - kubectl get promotions -n image-factory-kargo --sort-by=.metadata.creationTimestamp -o wide | tail -11 || echo "❌ No promotions found"
+      - echo ""
+      - echo "🔬 AnalysisRuns Status:"
+      - kubectl get analysisruns -n image-factory-kargo -o wide || echo "❌ No analysis runs found"
+      - echo ""
+      - echo "⚙️ Jobs Status:"
+      - kubectl get jobs -n image-factory-kargo -o wide || echo "❌ No jobs found"
+      - echo ""
+      - echo "🐳 Pods Status:"
+      - kubectl get pods -n image-factory-kargo -o wide || echo "❌ No pods found"
+
+  logs:
+    desc: Show logs from all running Image Factory components
+    cmds:
+      - echo "=== Image Factory Logs ==="
+      - echo ""
+      - echo "📋 Recent Events:"
+      - kubectl get events -n image-factory-kargo --sort-by='.lastTimestamp' | tail -20 || echo "❌ No events found"
+      - echo ""
+      - echo "⚙️ Job Logs (if any running):"
+      - kubectl get jobs -n image-factory-kargo -o name | xargs -I {} kubectl logs -n image-factory-kargo {} --tail=50 || echo "❌ No jobs found"
+      - echo ""
+      - echo "� Pod Ltogs (if any running):"
+      - kubectl get pods -n image-factory-kargo --field-selector=status.phase=Running -o name | xargs -I {} kubectl logs -n image-factory-kargo {} --tail=50 || echo "❌ No running pods found"
+
+  logs:analysis:
+    desc: Show logs from the most recent AnalysisRun
+    cmds:
+      - echo "=== Most Recent AnalysisRun Logs ==="
+      - kubectl get analysisruns -n image-factory-kargo --sort-by=.metadata.creationTimestamp -o name | tail -1 | xargs -I {} kubectl describe -n image-factory-kargo {} || echo "❌ No AnalysisRuns found"
+
+  logs:promotion:
+    desc: Show logs from the most recent promotion
+    cmds:
+      - echo "=== Most Recent Promotion Logs ==="
+      - kubectl get promotions -n image-factory-kargo --sort-by=.metadata.creationTimestamp -o name | tail -1 | xargs -I {} kubectl describe -n image-factory-kargo {} || echo "❌ No promotions found"
+
+  debug:stage:
+    desc: Debug a specific stage
+    cmds:
+      - echo "=== Stage Debug ==="
+      - echo ""
+      - echo "📋 Stage Configuration:"
+      - kubectl get stage {{.STAGE | default "analyze-dockerfile-uv"}} -n image-factory-kargo -o yaml || echo "❌ Stage not found"
+      - echo ""
+      - echo "� Recenot Promotions for this Stage:"
+      - kubectl get promotions -n image-factory-kargo --sort-by=.metadata.creationTimestamp | grep {{.STAGE | default "analyze-dockerfile-uv"}} | tail -5 || echo "❌ No promotions found"
+      - echo ""
+      - echo "🔬 Recent AnalysisRuns for this Stage:"
+      - kubectl get analysisruns -n image-factory-kargo --sort-by=.metadata.creationTimestamp | grep {{.STAGE | default "analyze-dockerfile-uv"}} | tail -5 || echo "❌ No analysis runs found"
+
+  debug:secrets:
+    desc: Debug secret configuration and availability
+    cmds:
+      - echo "=== Secrets Debug ==="
+      - echo ""
+      - echo "🔐 Available Secrets:"
+      - kubectl get secrets -n image-factory-kargo || echo "❌ No secrets found"
+      - echo ""
+      - echo "🔍 ServiceAccount Configuration:"
+      - kubectl get serviceaccount image-factory -n image-factory-kargo -o yaml || echo "❌ ServiceAccount not found"
+
+  clean:failed:
+    desc: Clean up failed jobs and pods
+    cmds:
+      - echo "=== Cleaning Failed Resources ==="
+      - echo ""
+      - echo "🧹 Deleting failed jobs:"
+      - kubectl delete jobs -n image-factory-kargo --field-selector status.successful=0 || echo "❌ No failed jobs to delete"
+      - echo ""
+      - echo "🧹 Deleting failed pods:"
+      - kubectl delete pods -n image-factory-kargo --field-selector status.phase=Failed || echo "❌ No failed pods to delete"
+
+  watch:
+    desc: Watch Image Factory resources in real-time
+    cmds:
+      - echo "=== Watching Image Factory Resources ==="
+      - echo "Press Ctrl+C to stop watching"
+      - kubectl get promotions,analysisruns,jobs,pods -n image-factory-kargo -w

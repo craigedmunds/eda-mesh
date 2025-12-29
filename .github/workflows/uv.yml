@@ -9,6 +9,9 @@ on:
       - 'apps/uv/**'
       - '.github/workflows/uv.yml'
       - '.github/workflows/reusable-docker-build.yml'
+      - '!apps/uv/*.md'
+      - '!apps/uv/Taskfile.yaml'
+
   
   workflow_dispatch:
     inputs:

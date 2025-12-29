@@ -20,7 +20,8 @@ def setup_infrastructure(chart: Construct, namespace: str, script_dir: Path):
         name=namespace,
         labels={
             "kargo.akuity.io/project": "true",
-            "kargo.deps/ghcr": "true"
+            "kargo.deps/ghcr": "true",
+            "secrets/gh-docker-registry": "true"
         }
     )
     
@@ -43,13 +44,13 @@ def setup_infrastructure(chart: Construct, namespace: str, script_dir: Path):
     create_service_account(chart, name="image-factory")
     
     # Docker pull secret (managed by ESO)
-    create_secret(
-        chart,
-        name="ghcr-pull-secret",
-        secret_type="kubernetes.io/dockerconfigjson",
-        data={".dockerconfigjson": "e30K"},  # Empty JSON - replaced by ESO
-        annotations={"eso.io/source": "central-secret-store/github-docker-registry"}
-    )
+    # create_secret(
+    #     chart,
+    #     name="ghcr-pull-secret",
+    #     secret_type="kubernetes.io/dockerconfigjson",
+    #     data={".dockerconfigjson": "e30K"},  # Empty JSON - replaced by ESO
+    #     annotations={"eso.io/source": "central-secret-store/github-docker-registry"}
+    # )
     
     # Analysis ConfigMap
     app_py_path = script_dir / "../app/app.py"

@@ -51,9 +51,19 @@
   - [x] 5.5 Verify automatic rebuild on base image update
   - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
+- [x] 6. Fix Kargo Job Naming Issue (CRITICAL BUG FIX)
+  - [x] 6.1 Investigate AnalysisTemplate job name generation causing 63-character limit violations
+  - [x] 6.2 Identify source of long job names in Kargo AnalysisRun (e.g., "b490ab77-e9b9-47ab-b846-e23bda00003e.analyze-dockerfile-metric.5")
+  - [x] 6.3 Update AnalysisTemplate configuration to use shorter, compliant job names
+  - [x] 6.4 Ensure job names stay under 63 characters while maintaining uniqueness
+  - [x] 6.5 Test fix with UV image analysis to verify job creation succeeds
+  - [x] 6.6 Apply updated AnalysisTemplate to cluster and verify existing failing jobs resolve
+  - _Requirements: 8.1, 8.2 (Error Handling)_
+
 ## Phase 2: Enhanced Functionality 📋
 
-**PRIORITY: Task 17 (Rate Limiting) - Fixes current Docker Hub error**
+**PRIORITY: Task 6 (Kargo Job Naming) - Fixes current AnalysisRun failures**
+**SECONDARY: Task 17 (Rate Limiting) - Fixes current Docker Hub error**
 
 - [ ] 7. Multi-Stage Dockerfile Support
   - [ ] 7.1 Update Dockerfile parser to extract all FROM statements from multi-stage builds
@@ -172,12 +182,69 @@
   - [ ]* 16.9 Write property test for restoration validation
   - _Requirements: 7.4, 7.5, 7.6, 7.7_
 
-- [x] 17. Fix Docker Hub Rate Limiting (PRIORITY: Fixes current Kargo error)
+- [ ] 17. Fix Docker Hub Rate Limiting (PRIORITY: Fixes current Kargo error)
   - [x] 17.1 Update `create_warehouse_for_base_or_external_image` to set `spec.interval: "24h"`
   - [x] 17.2 Apply updated warehouse configurations to fix current node:22-bookworm-slim rate limiting
   - [x] 17.3 Verify Kargo stops hitting Docker Hub rate limits
   - [ ]* 17.4 Add property test to ensure base images get 24h intervals
   - _Requirements: 3.6, 3.7, 3.8_
+
+- [x] 18. Verification Re-triggering via Git Subscriptions
+  - [x] 18.1 Update `create_warehouse_for_managed_image` function to add git subscription alongside image subscription
+  - [x] 18.2 Configure git subscription to monitor source repository branch specified in enrollment
+  - [x] 18.3 Add includePaths for app folder (e.g., `apps/backstage/`, `apps/uv/`) based on managed image source
+  - [x] 18.4 Add includePaths for shared image factory directory (`image-factory/`)
+  - [x] 18.5 Test git subscription triggers new freight when source code changes
+  - [x] 18.6 Verify verification stages run when git changes occur (not just image builds)
+  - [x] 18.7 Add batching logic to prevent excessive verification runs from rapid git changes
+  - [x]* 18.8 Write property test for git subscription configuration
+  - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7_
+
+- [ ] 19. Image User Updates via Kargo Promotion Stages
+  - [ ] 19.1 Design images.yaml structure for dependency updates
+    - Add `updates` section to managed image entries in images.yaml
+    - Define schema: repo, path, type (kustomize-set-image, yaml-update, helm-update-image)
+    - Support multiple update targets per managed image
+  - [ ] 19.2 Implement CDK8s generation of update promotion stages
+    - Generate Kargo Stage resources for dependency updates
+    - Create appropriate promotion task configurations based on update type
+    - Use Kargo's image templating syntax for dynamic version references
+  - [ ] 19.3 Add configuration parsing for dependency updates
+    - Parse `updates` section from images.yaml in CDK8s app
+    - Validate update configuration (repo, path, type fields)
+    - Support different update strategies per file type (Kustomize, YAML, Helm)
+  - [ ] 19.4 Implement promotion stage triggering logic
+    - Create stages that subscribe to managed image warehouses
+    - Configure promotion conditions and freight requirements
+    - Ensure stages trigger when managed images are updated
+  - [ ] 19.5 Add git operations to promotion stages
+    - Use Kargo's git-commit task with descriptive commit messages
+    - Use git-push task to update remote repository
+    - Include information about which image triggered the update
+  - [ ] 19.6 Add error handling and monitoring for promotion stages
+    - Configure stage failure handling and retry policies
+    - Add logging and observability for dependency updates
+    - Ensure failures don't block other image factory workflows
+  - [ ] 19.7 Configure real UV image dependency updates
+    - Add updates configuration to UV image in images.yaml
+    - Configure helm/uv-service/templates/deployment.yaml as update target (hardcoded image reference)
+    - Identify any other files that reference UV image (CDK8s, Kargo configs, etc.)
+    - Test configuration parsing and validation
+  - [ ] 19.8 Test dependency updates with UV image version changes
+    - Verify promotion stage triggers when UV image is rebuilt
+    - Confirm target YAML files get updated with new UV image version
+    - Test end-to-end flow: UV rebuild → promotion stage → files updated → committed
+  - [ ] 19.9 Add support for multiple file format updates
+    - Test kustomize-set-image for Kustomization files
+    - Test yaml-update for direct YAML deployment files
+    - Test helm-update-image for Helm values files
+  - [ ]* 19.10 Write property test for promotion stage generation
+    - **Property 19: Dependency update promotion stage correctness**
+    - **Validates: Requirements 18.1, 18.7, 18.8**
+  - [ ]* 19.11 Write property test for Kargo task configuration accuracy
+    - **Property 20: Kargo promotion task configuration**
+    - **Validates: Requirements 18.3, 18.9, 18.10**
+  - _Requirements: 18.1, 18.2, 18.3, 18.4, 18.5, 18.6, 18.7, 18.8, 18.9, 18.10_
 
 ## Phase 4: Backstage Self-Service Enrollment 🎯
 
@@ -439,6 +506,17 @@
     - **Validates: Requirements 16.1, 16.2**
   - [ ]* 44.3 Generate random CVE scenarios and verify emergency bypass behavior
   - [ ]* 44.4 Test coordination with various timing and dependency patterns
+
+- [ ] 45. Add Diagnostic and Status Tasks
+  - [ ] 45.1 Create comprehensive status task showing all Image Factory components
+  - [ ] 45.2 Add detailed logging tasks for troubleshooting failed promotions and analysis runs
+  - [ ] 45.3 Implement stage-specific debugging with promotion and analysis run history
+  - [ ] 45.4 Add freight and warehouse debugging capabilities
+  - [ ] 45.5 Create secret configuration debugging to verify authentication setup
+  - [ ] 45.6 Add cleanup tasks for failed jobs and pods
+  - [ ] 45.7 Implement real-time watching of Image Factory resources
+  - [ ] 45.8 Document diagnostic workflow for common troubleshooting scenarios
+  - _Requirements: Operations, Debugging, Maintenance_
 
 ## Phase 9: Optimization and Scaling 🚀
 
