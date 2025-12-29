@@ -1,25 +1,49 @@
-FROM python:3.12-slim
+# Build stage: Install uv and prepare dependencies
+FROM python:3.12-slim AS builder
 
-# Install curl + build dependencies (slim images are very minimal)
+# Install curl for downloading uv
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Install uv (standalone binary)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Ensure uv is on PATH
+# Ensure uv is on PATH for this stage
 ENV PATH="/root/.local/bin:${PATH}"
+
+# Create a minimal Python environment with common dependencies
+WORKDIR /build
+COPY example/pyproject.toml .
+
+# Pre-install common dependencies to a virtual environment
+RUN uv venv /opt/venv && \
+    uv pip install --python /opt/venv/bin/python \
+    fastapi uvicorn pyyaml kubernetes
+
+# Copy uv binary to a known location
+RUN mkdir -p /opt/uv/bin && cp /root/.local/bin/uv /opt/uv/bin/
+
+# Runtime stage: Use distroless Python image
+FROM gcr.io/distroless/python3-debian12:latest
+
+# Copy Python virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy uv binary from builder
+COPY --from=builder /opt/uv/bin/uv /usr/local/bin/uv
+
+# Copy Python entrypoint script
+COPY entrypoint.py /usr/local/bin/entrypoint.py
+
+# Set up environment
+ENV PATH="/opt/venv/bin:/usr/local/bin:${PATH}"
+ENV PYTHONPATH="/opt/venv/lib/python3.12/site-packages"
+ENV PYTHONUNBUFFERED=1
+ENV UV_PROJECT_ENVIRONMENT=/app/.cache
+ENV UV_SYSTEM_PYTHON=1
 
 WORKDIR /app
 
-# Optional project environment directory  
-ENV UV_PROJECT_ENVIRONMENT=/app/.cache
-ENV PYTHONUNBUFFERED=1
-ENV UV_SYSTEM_PYTHON=1
-
 EXPOSE 8080
 
-RUN mkdir /scripts
-COPY run.sh /scripts
-
-# CMD ["uv", "run", "uvicorn", "--app-dir", "/integration", "app:app", "--host", "0.0.0.0", "--port", "8080"]
-CMD ["/bin/sh", "/scripts/run.sh"]
+# Use the Python interpreter from the virtual environment
+ENTRYPOINT ["/opt/venv/bin/python", "/usr/local/bin/entrypoint.py"]
