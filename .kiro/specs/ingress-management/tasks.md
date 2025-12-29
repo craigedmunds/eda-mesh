@@ -6,70 +6,76 @@ This implementation plan transforms the current hardcoded ingress management app
 
 ## Tasks
 
-- [x] 1. Create ingress management kustomize component
-  - Create kustomize component with replacement rules for domain transformation
-  - Set up label-based selection for managed ingress resources
-  - Configure environment-specific ConfigMap integration
-  - _Requirements: 3.1, 3.2_
+- [x] 1. Create ingress management kustomize components
+  - Create private ingress kustomize component with replacement rules for internal domain transformation
+  - Create public ingress kustomize component with replacement rules for dual domain transformation
+  - Set up label-based selection for private (`ingress.ctoaas.co/managed: "true"`) and public (`ingress.ctoaas.co/managed-public: "true"`) ingress resources
+  - Configure environment-specific ConfigMap integration for both components
+  - _Requirements: 3.1, 7.1, 7.2_
 
-- [ ] 2. Set up environment-specific overlay configurations
-  - Configure local development overlay with component and ConfigMap
-  - Configure lab cluster overlay with component and ConfigMap  
-  - Set up domain suffixes, TLS settings, and annotations per environment
-  - Test component integration with existing overlays
-  - _Requirements: 5.3, 1.2, 2.1_
+- [-] 2. Set up environment-specific overlay configurations
+  - Configure local development overlay with both components and ConfigMap
+  - Configure lab cluster overlay with both components and ConfigMap  
+  - Set up internal and external domain suffixes, TLS settings, and annotations per environment
+  - Test both component integrations with existing overlays
+  - _Requirements: 5.3, 1.2, 2.1, 7.3, 7.4_
 
 - [ ] 3. Test and validate component transformations
   - [ ] 3.1 Create test ingress resources with management labels
-    - Define test ingress resources with placeholder domains
-    - Add appropriate management labels for component selection
+    - Define test ingress resources with placeholder domains for both private and public access
+    - Add appropriate management labels for component selection (both private and public)
     - Include both single and multi-domain test cases
-    - _Requirements: 1.1, 2.1_
+    - _Requirements: 1.1, 2.1, 7.1, 7.2_
 
-  - [ ]* 3.2 Write property test for service identifier validation
-    - **Property 5: Service identifier validation**
-    - **Validates: Requirements 1.5, 2.10**
+  - [ ]* 3.2 Write property test for private ingress domain restriction
+    - **Property 13: Private ingress domain restriction**
+    - **Validates: Requirements 7.1, 7.3**
 
-  - [ ] 3.3 Validate component transformations in both environments
-    - Test local development transformations with nip.io domains
-    - Test lab cluster transformations with cert-manager and TLS
-    - Verify domain generation and annotation application
-    - _Requirements: 1.2, 2.1, 2.2, 2.6, 2.9_
+  - [ ]* 3.3 Write property test for public ingress dual domain access
+    - **Property 14: Public ingress dual domain access**
+    - **Validates: Requirements 7.2, 7.4**
 
-  - [ ]* 3.4 Write property test for environment-specific transformation
-    - **Property 2: Environment-specific transformation**
-    - **Validates: Requirements 1.2, 2.1, 2.2, 2.3, 2.4, 2.9**
+  - [ ] 3.4 Validate component transformations in both environments
+    - Test local development transformations with nip.io domains for both private and public ingresses
+    - Test lab cluster transformations with cert-manager and TLS for both private and public ingresses
+    - Verify domain generation and annotation application for both component types
+    - _Requirements: 1.2, 2.1, 2.2, 2.6, 2.9, 7.3, 7.4_
+
+  - [ ]* 3.5 Write property test for public ingress TLS certificate coverage
+    - **Property 15: Public ingress TLS certificate coverage**
+    - **Validates: Requirements 7.5**
 
 - [ ] 4. Migrate existing applications to use ingress management
   - [ ] 4.1 Update backstage ingress configuration
-    - Modify backstage ingress to use management labels and placeholder domains
+    - Modify backstage ingress to use private management label (`ingress.ctoaas.co/managed: "true"`) and placeholder domains
     - Remove hardcoded domain-specific configuration from overlays
-    - Test backstage ingress transformation in both environments
-    - _Requirements: 4.1, 4.2_
+    - Test backstage ingress transformation in both environments (should only get internal domain)
+    - _Requirements: 4.1, 4.2, 7.1, 7.3_
 
-  - [ ]* 4.2 Write property test for management label trigger
-    - **Property 7: Management label trigger**
-    - **Validates: Requirements 3.1, 3.2**
+  - [ ]* 4.2 Write property test for conflicting label handling
+    - **Property 16: Conflicting label handling**
+    - **Validates: Requirements 7.6**
 
   - [ ] 4.3 Update ArgoCD ingress configuration
-    - Modify ArgoCD ingress to use management labels and placeholder domains
+    - Modify ArgoCD ingress to use public management label (`ingress.ctoaas.co/managed-public: "true"`) and placeholder domains
     - Replace hardcoded domain with placeholder pattern
     - Remove environment-specific patches from overlays
-    - _Requirements: 4.1, 4.2_
+    - Test ArgoCD ingress transformation (should get both internal and external domains)
+    - _Requirements: 4.1, 4.2, 7.2, 7.4_
 
-  - [ ]* 4.4 Write property test for domain generation consistency
-    - **Property 1: Domain generation consistency**
-    - **Validates: Requirements 1.1, 1.3, 3.3**
+  - [ ]* 4.4 Write property test for unlabeled ingress preservation
+    - **Property 17: Unlabeled ingress preservation**
+    - **Validates: Requirements 7.7**
 
   - [ ] 4.5 Update uv-service ingress template
-    - Modify Helm template to use management labels and placeholder domains
+    - Modify Helm template to use appropriate management label (private or public based on use case) and placeholder domains
     - Replace hardcoded domain with placeholder pattern
     - Remove environment-specific annotations from template
     - _Requirements: 4.1, 4.2_
 
-  - [ ]* 4.6 Write property test for creation method independence
-    - **Property 8: Creation method independence**
-    - **Validates: Requirements 4.1, 4.2**
+  - [ ]* 4.6 Write property test for domain generation consistency
+    - **Property 1: Domain generation consistency**
+    - **Validates: Requirements 1.1, 1.3, 3.3**
 - [ ] 5. Implement advanced component features
   - [ ] 5.1 Add support for multiple domain patterns
     - Configure component to handle multi-domain environments

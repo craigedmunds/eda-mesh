@@ -1,5 +1,6 @@
-# Ingress Management Component
+# Ingress Management Component (Local Domain Only)
 # Transforms generic ingress resources into environment-specific configurations
+# Only handles local domain transformation
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
@@ -18,14 +19,13 @@ replacements:
     targets:
       - select:
           kind: Ingress
-          labelSelector: "ingress.ctoaas.co/managed=true"
         fieldPaths:
           - spec.rules.0.host
         options:
           delimiter: "."
           index: 1
 
-  # Add ingress class
+  # Update ingress class for all ingresses
   - source:
       kind: ConfigMap
       name: ingress-environment-config
@@ -33,9 +33,10 @@ replacements:
     targets:
       - select:
           kind: Ingress
-          labelSelector: "ingress.ctoaas.co/managed=true"
         fieldPaths:
           - spec.ingressClassName
+        options:
+          create: true
 
   # Add TLS configuration for environments that support it
   - source:
@@ -45,7 +46,6 @@ replacements:
     targets:
       - select:
           kind: Ingress
-          labelSelector: "ingress.ctoaas.co/managed=true"
         fieldPaths:
           - metadata.annotations.[cert-manager.io/cluster-issuer]
         options:

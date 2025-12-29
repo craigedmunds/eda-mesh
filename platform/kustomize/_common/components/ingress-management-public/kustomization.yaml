@@ -1,0 +1,98 @@
+# Ingress Management Public Component
+# Adds public domain rules to specific ingresses
+# Use alongside ingress-management component for dual-domain access
+# 
+# This component applies to ingresses that exist and are listed below.
+# To add more ingresses needing public domain:
+# 1. Add the ingress name to the ConfigMap in the overlay
+# 2. Add replacement blocks for that ingress name below
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+replacements:
+  # ArgoCD Server Ingress (if present)
+  - source:
+      kind: Ingress
+      name: argocd-server-ingress
+      fieldPath: spec.rules.0.host
+    targets:
+      - select:
+          kind: Ingress
+          name: argocd-server-ingress
+        fieldPaths:
+          - spec.rules.1.host
+        options:
+          create: true
+
+  - source:
+      kind: Ingress
+      name: argocd-server-ingress
+      fieldPath: spec.rules.0.http
+    targets:
+      - select:
+          kind: Ingress
+          name: argocd-server-ingress
+        fieldPaths:
+          - spec.rules.1.http
+        options:
+          create: true
+
+  - source:
+      kind: ConfigMap
+      name: ingress-environment-config
+      fieldPath: data.publicDomainSuffix
+    targets:
+      - select:
+          kind: Ingress
+          name: argocd-server-ingress
+        fieldPaths:
+          - spec.rules.1.host
+        options:
+          delimiter: "."
+          index: 1
+
+  # Add more ingresses here following the same pattern:
+  # 
+  # # Grafana Ingress (if present)
+  # - source:
+  #     kind: Ingress
+  #     name: grafana-ingress
+  #     fieldPath: spec.rules.0.host
+  #   targets:
+  #     - select:
+  #         kind: Ingress
+  #         name: grafana-ingress
+  #       fieldPaths:
+  #         - spec.rules.1.host
+  #       options:
+  #         create: true
+  # 
+  # - source:
+  #     kind: Ingress
+  #     name: grafana-ingress
+  #     fieldPath: spec.rules.0.http
+  #   targets:
+  #     - select:
+  #         kind: Ingress
+  #         name: grafana-ingress
+  #       fieldPaths:
+  #         - spec.rules.1.http
+  #       options:
+  #         create: true
+  # 
+  # - source:
+  #     kind: ConfigMap
+  #     name: ingress-environment-config
+  #     fieldPath: data.publicDomainSuffix
+  #   targets:
+  #     - select:
+  #         kind: Ingress
+  #         name: grafana-ingress
+  #       fieldPaths:
+  #         - spec.rules.1.host
+  #       options:
+  #         delimiter: "."
+  #         index: 1
