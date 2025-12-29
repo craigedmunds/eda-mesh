@@ -1,12 +1,29 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: backstage
+
 resources:
 - ../../base
+
+# Add management label and transform domain for backstage ingress
+# Weirdly the helm chart doesn't support adding a label via values.yaml
+# https://github.com/backstage/charts/issues/305
+patches:
+- target:
+    kind: Ingress
+    name: backstage
+  patch: |-
+    - op: add
+      path: /metadata/labels/ingress.ctoaas.co~1managed
+      value: "true"
+    - op: replace
+      path: /spec/rules/0/host
+      value: "backstage.lab.local.ctoaas.co"
+    - op: add
+      path: /metadata/annotations/cert-manager.io~1cluster-issuer
+      value: "letsencrypt-prod"
+
 # Image will be updated by Kargo
 images:
 - name: ghcr.io/craigedmunds/backstage
   newTag: 0.7.3 # Kargo will update this
-
-patchesStrategicMerge:
-- ingress-patch.yaml
