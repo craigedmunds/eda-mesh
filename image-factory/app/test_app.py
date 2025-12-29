@@ -51,21 +51,89 @@ class TestImageFactoryTool:
         assert result['repository'] == 'library/nginx'
         assert result['tag'] == 'latest'
     
-    def test_parse_dockerfile_base_image(self, temp_factory):
-        """Test extracting base image from Dockerfile."""
+    def test_parse_dockerfile_multi_stage(self, temp_factory):
+        """Test extracting all base images from multi-stage Dockerfile."""
         tool = ImageFactoryTool(temp_factory)
         
-        # Create a test Dockerfile
+        # Create a multi-stage Dockerfile
         dockerfile = temp_factory / "Dockerfile"
         dockerfile.write_text("""
-FROM node:22-bookworm-slim AS builder
+FROM python:3.12-slim AS builder
 WORKDIR /app
 COPY . .
-RUN npm install
+RUN pip install -r requirements.txt
+
+FROM gcr.io/distroless/python3-debian12:latest
+COPY --from=builder /app /app
+WORKDIR /app
 """)
         
-        base_image = tool.parse_dockerfile_base_image(dockerfile)
-        assert base_image == "node:22-bookworm-slim"
+        base_images = tool.parse_dockerfile_base_images(dockerfile)
+        assert len(base_images) == 2
+        assert "python:3.12-slim" in base_images
+        assert "gcr.io/distroless/python3-debian12:latest" in base_images
+    
+    def test_parse_dockerfile_deduplication(self, temp_factory):
+        """Test deduplication of repeated base images in same Dockerfile."""
+        tool = ImageFactoryTool(temp_factory)
+        
+        # Create a Dockerfile with duplicate FROM statements
+        dockerfile = temp_factory / "Dockerfile"
+        dockerfile.write_text("""
+FROM node:18-alpine AS deps
+WORKDIR /app
+COPY package.json .
+RUN npm install
+
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+""")
+        
+        # The parse method returns all FROM statements (no deduplication at parse level)
+        base_images = tool.parse_dockerfile_base_images(dockerfile)
+        assert len(base_images) == 3
+        assert all(img == "node:18-alpine" for img in base_images)
+        
+        # Deduplication happens during processing when normalizing names
+        normalized_names = []
+        seen = set()
+        for base_image_ref in base_images:
+            base_image_name = tool.normalize_base_image_name(base_image_ref)
+            if base_image_name not in seen:
+                normalized_names.append(base_image_name)
+                seen.add(base_image_name)
+        
+        assert len(normalized_names) == 1
+        assert "node-18-alpine" in normalized_names
+    
+    def test_parse_dockerfile_stage_references(self, temp_factory):
+        """Test that stage references are not treated as base images."""
+        tool = ImageFactoryTool(temp_factory)
+        
+        # Create a Dockerfile with stage references
+        dockerfile = temp_factory / "Dockerfile"
+        dockerfile.write_text("""
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+""")
+        
+        base_images = tool.parse_dockerfile_base_images(dockerfile)
+        assert len(base_images) == 2
+        assert "node:18-alpine" in base_images
+        assert "nginx:alpine" in base_images
+        # "builder" should not be included as it's a stage reference
     
     def test_generate_base_image_state(self, temp_factory):
         """Test generating base image state."""

@@ -40,6 +40,36 @@ tasks:
     cmds:
       - uv run python app.py --image-factory-dir ../
 
+  tool:run:uv:
+    desc: Run analysis tool for UV image (local testing)
+    dir: app
+    cmds:
+      - uv run python app.py 
+        --image uv 
+        --tag "local-test" 
+        --digest "sha256:local-test" 
+        --dockerfile "apps/uv/Dockerfile" 
+        --source-repo "craigedmunds/argocd-eda" 
+        --source-provider "github" 
+        --git-repo "https://github.com/craigedmunds/argocd-eda.git" 
+        --git-branch "main" 
+        --image-factory-dir ../
+
+  tool:run:backstage:
+    desc: Run analysis tool for Backstage image (local testing)
+    dir: app
+    cmds:
+      - uv run python app.py 
+        --image backstage 
+        --tag "local-test" 
+        --digest "sha256:local-test" 
+        --dockerfile "backstage/app/packages/backend/Dockerfile" 
+        --source-repo "craigedmunds/argocd-eda" 
+        --source-provider "github" 
+        --git-repo "https://github.com/craigedmunds/argocd-eda.git" 
+        --git-branch "main" 
+        --image-factory-dir ../
+
   # Diagnostic and Status Tasks
   status:
     desc: Show comprehensive status of Image Factory components

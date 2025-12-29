@@ -65,12 +65,12 @@
 **PRIORITY: Task 6 (Kargo Job Naming) - Fixes current AnalysisRun failures**
 **SECONDARY: Task 17 (Rate Limiting) - Fixes current Docker Hub error**
 
-- [ ] 7. Multi-Stage Dockerfile Support
-  - [ ] 7.1 Update Dockerfile parser to extract all FROM statements from multi-stage builds
-  - [ ] 7.2 Implement deduplication logic for repeated base images in same Dockerfile
-  - [ ] 7.3 Update state file format to support multiple base images per managed image
-  - [ ] 7.4 Update CDK8s to create rebuild-triggers for all discovered base images
-  - [ ] 7.5 Test with multi-stage Dockerfile examples (Node.js build + runtime stages)
+- [x] 7. Multi-Stage Dockerfile Support
+  - [x] 7.1 Update Dockerfile parser to extract all FROM statements from multi-stage builds
+  - [x] 7.2 Implement deduplication logic for repeated base images in same Dockerfile
+  - [x] 7.3 Update state file format to support multiple base images per managed image
+  - [x] 7.4 Update CDK8s to create rebuild-triggers for all discovered base images
+  - [x] 7.5 Test with multi-stage Dockerfile examples (Node.js build + runtime stages)
   - [ ]* 7.6 Write property test for multi-stage FROM statement parsing
   - [ ]* 7.7 Write property test for base image deduplication
   - _Requirements: 2.6, 2.7_

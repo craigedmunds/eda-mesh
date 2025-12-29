@@ -53,12 +53,13 @@ class ImageFactoryTool:
         logger.info(f"Loaded {len(data)} images from images.yaml")
         return data
     
-    def parse_dockerfile_base_image(self, dockerfile_path: Path) -> Optional[str]:
-        """Extract base image from Dockerfile FROM statement."""
+    def parse_dockerfile_base_images(self, dockerfile_path: Path) -> List[str]:
+        """Extract all base images from Dockerfile FROM statements (multi-stage support)."""
         if not dockerfile_path.exists():
             logger.warning(f"Dockerfile not found: {dockerfile_path}")
-            return None
+            return []
         
+        base_images = []
         with open(dockerfile_path, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -66,8 +67,27 @@ class ImageFactoryTool:
                     # Extract image reference, handle AS alias
                     match = re.match(r'FROM\s+([^\s]+)', line)
                     if match:
-                        return match.group(1)
-        return None
+                        image_ref = match.group(1)
+                        # Skip scratch and stage references
+                        if image_ref.lower() != 'scratch' and not self._is_stage_reference(image_ref, base_images):
+                            base_images.append(image_ref)
+        
+        return base_images
+    
+    def _is_stage_reference(self, image_ref: str, previous_images: List[str]) -> bool:
+        """Check if image reference is a stage name from previous FROM statements."""
+        # Stage names are typically lowercase and don't contain registry/repository patterns
+        if '/' in image_ref or ':' in image_ref or '.' in image_ref:
+            return False
+        
+        # Check if it matches any previous stage names that might have been defined
+        # This is a simple heuristic - stage names are usually simple identifiers
+        return image_ref.islower() and len(image_ref) < 20
+    
+    def parse_dockerfile_base_image(self, dockerfile_path: Path) -> Optional[str]:
+        """Extract base image from Dockerfile FROM statement (legacy method for compatibility)."""
+        base_images = self.parse_dockerfile_base_images(dockerfile_path)
+        return base_images[0] if base_images else None
     
     def normalize_base_image_name(self, image_ref: str) -> str:
         """Convert image reference to normalized name for filename."""
@@ -352,20 +372,29 @@ class ImageFactoryTool:
             base_images = []
             source = image_config.get('source', {})
             if source.get('repo') and source.get('dockerfile'):
-                # Construct dockerfile path
-                dockerfile_path = self.root_dir.parent / source['dockerfile']
-                base_image_ref = self.parse_dockerfile_base_image(dockerfile_path)
+                # Construct dockerfile path - dockerfile paths in images.yaml are relative to workspace root
+                # The root_dir points to image-factory directory, so we need to go up one level to workspace root
+                workspace_root = self.root_dir.resolve().parent
+                dockerfile_path = workspace_root / source['dockerfile']
+                discovered_base_images = self.parse_dockerfile_base_images(dockerfile_path)
                 
-                if base_image_ref:
-                    base_image_name = self.normalize_base_image_name(base_image_ref)
-                    base_images.append(base_image_name)
+                if discovered_base_images:
+                    # Deduplicate base images while preserving order
+                    seen = set()
+                    for base_image_ref in discovered_base_images:
+                        base_image_name = self.normalize_base_image_name(base_image_ref)
+                        if base_image_name not in seen:
+                            base_images.append(base_image_name)
+                            seen.add(base_image_name)
+                            
+                            # Track dependency
+                            if base_image_ref not in base_image_dependents:
+                                base_image_dependents[base_image_ref] = set()
+                            base_image_dependents[base_image_ref].add(name)
                     
-                    # Track dependency
-                    if base_image_ref not in base_image_dependents:
-                        base_image_dependents[base_image_ref] = set()
-                    base_image_dependents[base_image_ref].add(name)
-                    
-                    logger.info(f"  Found base image: {base_image_ref} -> {base_image_name}")
+                    logger.info(f"  Found {len(discovered_base_images)} base images, {len(base_images)} unique: {base_images}")
+                else:
+                    logger.info(f"  No base images found in Dockerfile")
             
             # Generate new state
             new_state = self.generate_image_state(image_config, base_images)

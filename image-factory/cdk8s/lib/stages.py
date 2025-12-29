@@ -73,7 +73,9 @@ def setup_rebuild_trigger_stage(chart: Construct, base_image: dict, dependent_im
         logger.warning("Skipping rebuild-trigger for %s - no repo configured", dep_name)
         return
     
-    logger.warning("Creating rebuild-trigger-%s stage (watches %s)", dep_name, base_name)
+    # Create unique stage name that includes both base and dependent image names
+    stage_name = f"rebuild-trigger-{dep_name}-from-{base_name}"
+    logger.warning("Creating %s stage (watches %s)", stage_name, base_name)
     
     # Build freight request
     requested_freight = [freight_from_warehouse(base_name, direct=True)]
@@ -91,7 +93,7 @@ def setup_rebuild_trigger_stage(chart: Construct, base_image: dict, dependent_im
     
     create_kargo_stage(
         chart,
-        name=f"rebuild-trigger-{dep_name}",
+        name=stage_name,
         requested_freight=requested_freight,
         promotion_steps=promotion_steps
     )

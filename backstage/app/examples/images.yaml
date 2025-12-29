@@ -73,6 +73,8 @@ spec:
   dependsOn:
     - resource: python-3-12-slim
       type: base-image
+    - resource: distroless-python3-debian12-latest
+      type: base-image
 
 ---
 # Example BaseImage entities for the Image Factory
@@ -125,6 +127,32 @@ spec:
     registry: docker.io
     repository: library/python
     tag: 3.12-slim
+  dependents:
+    - resource: uv
+      type: managed-image
+
+---
+apiVersion: image-factory.io/v1alpha1
+kind: BaseImage
+metadata:
+  name: distroless-python3-debian12-latest
+  title: Distroless Python3 Debian 12
+  description: Google Distroless Python3 runtime image based on Debian 12
+  annotations:
+    image-factory.io/registry: gcr.io
+    image-factory.io/repository: distroless/python3-debian12
+    image-factory.io/tag: latest
+    image-factory.io/digest: sha256:456789abcdef
+    image-factory.io/last-updated: "2024-12-08T14:00:00Z"
+spec:
+  type: base-image
+  lifecycle: production
+  owner: upstream
+  system: image-factory
+  upstream:
+    registry: gcr.io
+    repository: distroless/python3-debian12
+    tag: latest
   dependents:
     - resource: uv
       type: managed-image
