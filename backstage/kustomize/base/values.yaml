@@ -3,7 +3,8 @@ postgresql:
 
 ingress:
   enabled: true
-  host: backstage.lab.ctoaas.co
+  host: backstage
+  className: traefik
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -60,11 +61,11 @@ backstage:
   appConfig:
     app:
       title: Backstage
-      baseUrl: https://backstage.lab.ctoaas.co
+      baseUrl: https://backstage.lab.local.ctoaas.co
     backend:
-      baseUrl: https://backstage.lab.ctoaas.co
+      baseUrl: https://backstage.lab.local.ctoaas.co
       cors:
-        origin: https://backstage.lab.ctoaas.co
+        origin: https://backstage.lab.local.ctoaas.co
         credentials: true
         methods: [GET, POST, PUT, DELETE, PATCH]
         allowedHeaders: [Authorization, Content-Type, Cookie]
@@ -104,14 +105,14 @@ backstage:
           production:
             clientId: ${GITHUB_CLIENT_ID}
             clientSecret: ${GITHUB_CLIENT_SECRET}
-            callbackUrl: https://backstage.lab.ctoaas.co/api/auth/github/handler/frame
+            callbackUrl: https://backstage.lab.local.ctoaas.co/api/auth/github/handler/frame
             signIn:
               resolvers:
                 - resolver: emailMatchingUserEntityProfileEmail
           development:
             clientId: ${GITHUB_CLIENT_ID}
             clientSecret: ${GITHUB_CLIENT_SECRET}
-            callbackUrl: https://backstage.lab.ctoaas.co/api/auth/github/handler/frame
+            callbackUrl: https://backstage.lab.local.ctoaas.co/api/auth/github/handler/frame
             signIn:
               resolvers:
                 - resolver: emailMatchingUserEntityProfileEmail

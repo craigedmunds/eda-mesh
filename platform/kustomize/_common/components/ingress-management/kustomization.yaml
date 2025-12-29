@@ -14,7 +14,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: ingress-environment-config
-      namespace: argocd
       fieldPath: data.localDomainSuffix
     targets:
       - select:
@@ -30,7 +29,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: ingress-environment-config
-      namespace: argocd
       fieldPath: data.ingressClass
     targets:
       - select:
@@ -43,7 +41,6 @@ replacements:
   - source:
       kind: ConfigMap
       name: ingress-environment-config
-      namespace: argocd
       fieldPath: data.tlsEnabled
     targets:
       - select:
