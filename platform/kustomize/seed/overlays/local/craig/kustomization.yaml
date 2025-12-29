@@ -4,7 +4,6 @@ kind: Kustomization
 # Craig environment overlay - excludes Image Factory capability
 resources:
   - ../../../argocd
-  - ../../../talos
   - ../../../eda
   - ../../../backstage
   - ../../../supporting-applications
@@ -12,6 +11,7 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
+  - ../../../../_common/components/ingress-management
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
@@ -19,6 +19,14 @@ configMapGenerator:
     behavior: add
     literals:
       - targetRevision=feature/backstage-events
+
+  - name: ingress-environment-config
+    namespace: argocd
+    literals:
+      - localDomainSuffix=127.0.0.1.nip.io
+      - ingressClass=traefik
+      - tlsEnabled=""
+      - annotations=traefik.ingress.kubernetes.io/router.tls=true
 
 generatorOptions:
   disableNameSuffixHash: true

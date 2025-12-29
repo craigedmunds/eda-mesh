@@ -1,23 +1,23 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: argocd-server-ingress
-  namespace: argocd
+  name: backstage-ingress
+  namespace: backstage
   labels:
-    ingress.ctoaas.co/managed-public: "true"
+    ingress.ctoaas.co/managed: "true"
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
   rules:
-  - host: argocd
+  - host: backstage
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: argocd-server
+            name: backstage
             port:
-              name: http
+              name: http-backend

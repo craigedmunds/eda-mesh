@@ -22,6 +22,7 @@ images:
 - name: ghcr.io/craigedmunds/backstage
   newTag: 0.7.3 # Kargo will update this
 
-# Component transforms ingress based on environment config
+# Components transform ingress based on environment config
+# Only private component for backstage (internal access only)
 components:
 - ../../../../platform/kustomize/_common/components/ingress-management
