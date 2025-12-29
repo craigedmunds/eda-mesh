@@ -20,6 +20,12 @@ includes:
     dir: platform/kustomize/seed/supporting-applications/kargo
   ingress:
     taskfile: platform/ingress/Taskfile.yaml
+  images:
+    taskfile: image-factory/Taskfile.yaml
+    dir: image-factory
+  uv:
+    taskfile: apps/uv/Taskfile.yaml
+    dir: apps/uv
 
 tasks:
   status:

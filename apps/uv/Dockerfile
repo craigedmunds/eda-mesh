@@ -25,8 +25,8 @@ RUN mkdir -p /opt/uv/bin && cp /root/.local/bin/uv /opt/uv/bin/
 # Runtime stage: Use distroless Python image
 FROM gcr.io/distroless/python3-debian12:latest
 
-# Copy Python virtual environment from builder
-COPY --from=builder /opt/venv /opt/venv
+# Copy Python virtual environment from builder (site-packages only)
+COPY --from=builder /opt/venv/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
 # Copy uv binary from builder
 COPY --from=builder /opt/uv/bin/uv /usr/local/bin/uv
@@ -34,16 +34,17 @@ COPY --from=builder /opt/uv/bin/uv /usr/local/bin/uv
 # Copy Python entrypoint script
 COPY entrypoint.py /usr/local/bin/entrypoint.py
 
-# Set up environment
-ENV PATH="/opt/venv/bin:/usr/local/bin:${PATH}"
-ENV PYTHONPATH="/opt/venv/lib/python3.12/site-packages"
+# Set up environment - use system Python from distroless image
+# ENV PATH="/usr/local/bin:${PATH}"
+ENV PYTHONPATH="/usr/local/lib/python3.12/site-packages"
 ENV PYTHONUNBUFFERED=1
 ENV UV_PROJECT_ENVIRONMENT=/app/.cache
 ENV UV_SYSTEM_PYTHON=1
+ENV UV_PYTHON=/usr/bin/python3
 
 WORKDIR /app
 
 EXPOSE 8080
 
-# Use the Python interpreter from the virtual environment
-ENTRYPOINT ["/opt/venv/bin/python", "/usr/local/bin/entrypoint.py"]
+# Use the system Python interpreter from distroless image
+ENTRYPOINT ["/usr/bin/python3", "/usr/local/bin/entrypoint.py"]

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """
 Python entrypoint script to replace run.sh for distroless compatibility.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 def main():
     # Configuration
     project_dir = Path("/app")
-    src_dir = Path("/integration")
+    # src_dir = Path("/integration")
     
     # Ensure project directory exists
     project_dir.mkdir(exist_ok=True)
@@ -19,14 +19,22 @@ def main():
     
     if len(sys.argv) > 1:
         # Script execution mode
-        script_name = sys.argv[1]
+        src_script = sys.argv[1]
         script_args = sys.argv[2:]
+
         
         # Copy the script
-        src_script = src_dir / script_name
-        if not src_script.exists():
-            print(f"Error: Script {script_name} not found in {src_dir}")
+        script_name = os.path.basename(src_script)
+        src_dir = Path(os.path.dirname(src_script))
+
+        # src_script = script_name
+        if not os.path.exists(src_script):
+            print(f"Error: Script {script_name} not found")
             sys.exit(1)
+        
+        print('Copying', src_script)
+        print('From', src_dir)
+        print('To', project_dir, script_name)
         
         shutil.copy2(src_script, project_dir / script_name)
         
@@ -40,7 +48,7 @@ def main():
             subprocess.run(["uv", "sync"], check=True)
         
         # Run the script
-        cmd = ["uv", "run", "python", str(project_dir / script_name)] + script_args
+        cmd = ["uv", "run", "--python", "/usr/bin/python3", "python", str(project_dir / script_name)] + script_args
         os.execvp("uv", cmd)
     
     else:
@@ -55,13 +63,13 @@ def main():
         if not (project_dir / "pyproject.toml").exists():
             print("No pyproject.toml found — installing deps inline")
             subprocess.run([
-                "uv", "pip", "install", 
+                "uv", "pip", "install", "--python", "/usr/bin/python3",
                 "fastapi", "uvicorn", "kubernetes", "pyyaml"
             ], check=True)
         
         # Run uvicorn
         cmd = [
-            "uv", "run", "uvicorn",
+            "uv", "run", "--python", "/usr/bin/python3", "uvicorn",
             "--app-dir", str(src_dir),
             "app:app",
             "--host", "0.0.0.0",
