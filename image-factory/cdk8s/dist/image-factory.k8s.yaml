@@ -519,7 +519,7 @@ spec:
         semverConstraint: ">=0.1.0"
         strictSemvers: false
     - git:
-        branch: main
+        branch: feature/backstage-events
         commitSelectionStrategy: NewestFromBranch
         discoveryLimit: 5
         includePaths:
@@ -542,7 +542,7 @@ spec:
         semverConstraint: ">=0.1.0"
         strictSemvers: false
     - git:
-        branch: main
+        branch: feature/backstage-events
         commitSelectionStrategy: NewestFromBranch
         discoveryLimit: 5
         includePaths:
@@ -693,7 +693,7 @@ spec:
                 value: Bearer ${{ secret('github-workflow-token').token }}
               - name: Content-Type
                 value: application/json
-            body: '{"ref": "main", "inputs": {"version_bump": "patch"}}'
+            body: '{"ref": "feature/backstage-events", "inputs": {"version_bump": "patch"}}'
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
@@ -722,7 +722,7 @@ spec:
                 value: Bearer ${{ secret('github-workflow-token').token }}
               - name: Content-Type
                 value: application/json
-            body: '{"ref": "main", "inputs": {"version_bump": "patch"}}'
+            body: '{"ref": "feature/backstage-events", "inputs": {"version_bump": "patch"}}'
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
@@ -743,7 +743,7 @@ spec:
           config:
             repoURL: https://github.com/craigedmunds/argocd-eda.git
             checkout:
-              - branch: main
+              - branch: feature/backstage-events
                 path: ./repo
   verification:
     analysisTemplates:
@@ -764,7 +764,7 @@ spec:
       - name: gitRepo
         value: https://github.com/craigedmunds/argocd-eda.git
       - name: gitBranch
-        value: main
+        value: feature/backstage-events
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
@@ -785,7 +785,7 @@ spec:
           config:
             repoURL: https://github.com/craigedmunds/argocd-eda.git
             checkout:
-              - branch: main
+              - branch: feature/backstage-events
                 path: ./repo
   verification:
     analysisTemplates:
@@ -806,4 +806,4 @@ spec:
       - name: gitRepo
         value: https://github.com/craigedmunds/argocd-eda.git
       - name: gitBranch
-        value: main
+        value: feature/backstage-events
