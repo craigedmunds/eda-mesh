@@ -12,6 +12,8 @@ The current ingress configuration system requires hardcoded domain names and env
 - **Environment_Component**: A kustomize component that applies environment-specific transformations to ingress resources
 - **Domain_Template**: A pattern for generating environment-specific domain names from service identifiers
 - **Network_Annotation**: Environment-specific ingress annotations for load balancers, TLS, and routing
+- **Private_Ingress**: An ingress resource that is only accessible via internal domain patterns (e.g., *.lab.local.ctoaas.co)
+- **Public_Ingress**: An ingress resource that is accessible via both internal and external domain patterns (e.g., *.lab.local.ctoaas.co and *.lab.ctoaas.co)
 
 ## Requirements
 
@@ -50,8 +52,8 @@ The current ingress configuration system requires hardcoded domain names and env
 
 #### Acceptance Criteria
 
-1. WHEN an ingress resource includes the management label, THE Ingress_Management_System SHALL process it for environment-specific transformation
-2. WHEN an ingress resource lacks the management label, THE Ingress_Management_System SHALL leave it unchanged
+1. WHEN an ingress resource includes a management label (`ingress.ctoaas.co/managed: "true"` or `ingress.ctoaas.co/managed-public: "true"`), THE Ingress_Management_System SHALL process it for environment-specific transformation
+2. WHEN an ingress resource lacks any management label, THE Ingress_Management_System SHALL leave it unchanged
 3. WHEN generating domains, THE Ingress_Management_System SHALL derive the service name from the ingress metadata name
 4. WHEN custom subdomains are specified in placeholder hosts, THE Ingress_Management_System SHALL preserve them in the generated domain
 5. WHEN label values are invalid, THE Ingress_Management_System SHALL log errors and skip processing
@@ -80,7 +82,21 @@ The current ingress configuration system requires hardcoded domain names and env
 4. WHEN configurations are deployed, THE Ingress_Management_System SHALL validate domain templates and annotation patterns
 5. WHEN storing configurations, THE Ingress_Management_System SHALL encode them using YAML format for version control compatibility
 
-### Requirement 6
+### Requirement 7
+
+**User Story:** As a platform engineer, I want to distinguish between private and public ingress resources, so that only designated services are exposed externally while maintaining internal accessibility for all managed services.
+
+#### Acceptance Criteria
+
+1. WHEN an ingress resource has the label `ingress.ctoaas.co/managed: "true"`, THE Ingress_Management_System SHALL configure it as a Private_Ingress with only internal domain access
+2. WHEN an ingress resource has the label `ingress.ctoaas.co/managed-public: "true"`, THE Ingress_Management_System SHALL configure it as a Public_Ingress with both internal and external domain access
+3. WHEN a Private_Ingress is processed, THE Ingress_Management_System SHALL create host rules only for internal domain patterns (e.g., *.lab.local.ctoaas.co)
+4. WHEN a Public_Ingress is processed, THE Ingress_Management_System SHALL create host rules for both internal and external domain patterns (e.g., *.lab.local.ctoaas.co and *.lab.ctoaas.co)
+5. WHEN TLS is configured for a Public_Ingress, THE Ingress_Management_System SHALL include both internal and external domains in the certificate configuration
+6. WHEN an ingress resource has both management labels, THE Ingress_Management_System SHALL treat it as a Public_Ingress and log a warning about conflicting labels
+7. WHEN an ingress resource has neither management label, THE Ingress_Management_System SHALL leave it unchanged
+
+### Requirement 8
 
 **User Story:** As a developer, I want automatic TLS certificate management for production environments, so that services are secure by default without manual certificate configuration.
 

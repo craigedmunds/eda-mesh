@@ -16,6 +16,7 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
+  - ../../../../_common/components/ingress-management-public
   - ../../../../_common/components/ingress-management
 
 configMapGenerator:
@@ -39,33 +40,6 @@ generatorOptions:
 
 # Lab-specific patches
 patches:
-  # Mark services that need public domain access in lab environment
-  - target:
-      kind: Ingress
-      name: argocd-server-ingress
-    patch: |-
-      - op: add
-        path: /metadata/labels/ingress.ctoaas.co~1public-domain
-        value: "true"
-
-  # Add public domain rule for ArgoCD
-  - target:
-      kind: Ingress
-      name: argocd-server-ingress
-    patch: |-
-      - op: add
-        path: /spec/rules/-
-        value:
-          host: argocd.lab.ctoaas.co
-          http:
-            paths:
-            - path: /
-              pathType: Prefix
-              backend:
-                service:
-                  name: argocd-server
-                  port:
-                    name: http
 
   - target:
       kind: Application

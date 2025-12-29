@@ -2,9 +2,9 @@
 
 ## Overview
 
-The Environment-Aware Ingress Management System uses a kustomize component to automatically transform generic ingress resources into environment-specific configurations. This eliminates hardcoded domain names and environment-specific annotations from application manifests, enabling the same ingress definitions to work across local development and lab cluster environments.
+The Environment-Aware Ingress Management System uses kustomize components to automatically transform generic ingress resources into environment-specific configurations. This eliminates hardcoded domain names and environment-specific annotations from application manifests, enabling the same ingress definitions to work across local development and lab cluster environments.
 
-The system works by detecting ingress resources with a special label (`ingress.ctoaas.co/managed: "true"`) and applying environment-specific transformations through kustomize's built-in replacement mechanism. Each environment overlay includes the component and provides environment-specific configuration through a ConfigMap.
+The system works by detecting ingress resources with management labels (`ingress.ctoaas.co/managed: "true"` for private access or `ingress.ctoaas.co/managed-public: "true"` for public access) and applying environment-specific transformations through kustomize's built-in replacement mechanism. Each environment overlay includes the appropriate components and provides environment-specific configuration through ConfigMaps.
 
 ## Architecture
 
@@ -17,37 +17,47 @@ graph TB
     
     subgraph "Kustomize Component System"
         C[Environment Detection via ConfigMap]
-        D[Kustomize Replacements]
-        E[Label-based Selection]
+        D[Private Ingress Component<br/>ingress.ctoaas.co/managed: true]
+        E[Public Ingress Component<br/>ingress.ctoaas.co/managed-public: true]
+        F[Label-based Selection]
     end
     
     subgraph "Environment-Specific Outputs"
-        F[Local: *.127.0.0.1.nip.io<br/>Traefik annotations]
-        G[Lab: *.lab.ctoaas.co + *.lab.local.ctoaas.co<br/>cert-manager + TLS]
+        G[Private: *.lab.local.ctoaas.co only<br/>Internal access]
+        H[Public: *.lab.local.ctoaas.co + *.lab.ctoaas.co<br/>Internal + External access]
     end
     
-    A --> E
-    B --> E
-    E --> C
+    A --> F
+    B --> F
+    F --> C
     C --> D
-    D --> F
+    C --> E
     D --> G
+    E --> H
 ```
 
-The system follows a component-per-environment pattern where each environment overlay includes the ingress management component and provides environment-specific configuration through a ConfigMap.
+The system follows a dual-component pattern where each environment overlay includes both private and public ingress management components, with environment-specific configuration provided through ConfigMaps.
 
 ## Components and Interfaces
 
-### 1. Generic Ingress Label System
+### 1. Dual Ingress Label System
 
-Applications mark ingress resources for management using a label:
+Applications mark ingress resources for management using one of two labels:
 
+**Private Ingress (Internal Access Only):**
 ```yaml
 metadata:
   name: backstage  # Used as service name for domain generation
   labels:
-    ingress.ctoaas.co/managed: "true"
-    ingress.ctoaas.co/multi-domain: "true"  # Optional: for multi-domain environments
+    ingress.ctoaas.co/managed: "true"  # Private access only
+```
+
+**Public Ingress (Internal + External Access):**
+```yaml
+metadata:
+  name: argocd  # Used as service name for domain generation
+  labels:
+    ingress.ctoaas.co/managed-public: "true"  # Public access
 ```
 
 The system derives the service name from the ingress metadata name and uses kustomize replacements to transform placeholder domains into environment-specific domains.
@@ -66,31 +76,47 @@ configMapGenerator:
       - tlsEnabled=letsencrypt-prod
 ```
 
-### 3. Kustomize Component System
+### 3. Dual Kustomize Component System
 
-A single kustomize component that uses built-in replacement functionality to transform ingress resources based on environment configuration from ConfigMaps.
+The system uses two separate kustomize components to handle private and public ingress resources:
+
+**Private Ingress Component (`ingress-management`):**
+- Processes ingresses with `ingress.ctoaas.co/managed: "true"`
+- Creates host rules only for internal domains (e.g., `*.lab.local.ctoaas.co`)
+- Suitable for internal services, databases, monitoring tools
+
+**Public Ingress Component (`ingress-management-public`):**
+- Processes ingresses with `ingress.ctoaas.co/managed-public: "true"`
+- Creates host rules for both internal and external domains (e.g., `*.lab.local.ctoaas.co` and `*.lab.ctoaas.co`)
+- Suitable for user-facing applications, APIs, web interfaces
 
 ### 4. Environment-Specific Overlays
 
-Each environment uses kustomize overlays to include the component and provide environment-specific configuration:
+Each environment uses kustomize overlays to include both components and provide environment-specific configuration:
 
 **Local Development Overlay:**
-- Domain pattern: `{service-name}.127.0.0.1.nip.io`
+- Private domain pattern: `{service-name}.127.0.0.1.nip.io`
+- Public domain pattern: Same as private (no external access in local dev)
 - Traefik annotations for local routing
 - TLS disabled for simplified development
 
 **Lab Cluster Overlay:**
-- Domain patterns: `{service-name}.lab.ctoaas.co` and `{service-name}.lab.local.ctoaas.co`
+- Private domain pattern: `{service-name}.lab.local.ctoaas.co` (internal only)
+- Public domain patterns: `{service-name}.lab.local.ctoaas.co` and `{service-name}.lab.ctoaas.co` (internal + external)
 - cert-manager annotations for Let's Encrypt
 - Cloudflare DNS-01 challenge configuration
 - Automatic TLS secret generation with multiple domain support
 
 ### 5. Component Configuration Management
 
-The system uses a single component with environment-specific configuration through kustomize overlays:
+The system uses two components with environment-specific configuration through kustomize overlays:
 ```
 kustomize/_common/components/ingress-management/
-├── kustomization.yaml          # Component with replacements
+├── kustomization.yaml          # Private ingress component
+└── README.md                   # Documentation
+
+kustomize/_common/components/ingress-management-public/
+├── kustomization.yaml          # Public ingress component
 └── README.md                   # Documentation
 ```
 
@@ -114,14 +140,14 @@ configMapGenerator:
 configMapGenerator:
   - name: ingress-environment-config
     literals:
-      - primaryDomainSuffix=lab.ctoaas.co
-      - secondaryDomainSuffix=lab.local.ctoaas.co
+      - localDomainSuffix=lab.local.ctoaas.co
+      - publicDomainSuffix=lab.ctoaas.co
       - ingressClass=traefik
       - tlsEnabled=letsencrypt-prod
       - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
 ```
 
-### Generic Ingress Template
+### Private Ingress Template
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -129,10 +155,10 @@ kind: Ingress
 metadata:
   name: backstage  # Used for domain generation
   labels:
-    ingress.ctoaas.co/managed: "true"
+    ingress.ctoaas.co/managed: "true"  # Private access only
 spec:
   rules:
-  - host: "backstage"  # Will be suffixed with environment-specific domain
+  - host: "backstage"  # Will be suffixed with internal domain only
     http:
       paths:
       - path: /
@@ -144,14 +170,30 @@ spec:
               name: http
 ```
 
-For custom subdomains, developers can specify them in the placeholder host:
+### Public Ingress Template
+
 ```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd  # Used for domain generation
+  labels:
+    ingress.ctoaas.co/managed-public: "true"  # Public access
 spec:
   rules:
-  - host: "api.backstage.placeholder.local"  # Results in api.backstage.lab.ctoaas.co
+  - host: "argocd"  # Will be suffixed with both internal and external domains
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              name: http
 ```
 
-### Transformed Ingress (Lab Cluster)
+### Transformed Private Ingress (Lab Cluster)
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -167,11 +209,42 @@ spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - backstage.lab.ctoaas.co
     - backstage.lab.local.ctoaas.co
-    secretName: backstage-lab-ctoaas-tls
+    secretName: backstage-lab-local-ctoaas-tls
   rules:
-  - host: backstage.lab.ctoaas.co  # Generated from metadata.name + environment domain suffixes
+  - host: backstage.lab.local.ctoaas.co  # Internal access only
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backstage
+            port:
+              name: http
+```
+
+### Transformed Public Ingress (Lab Cluster)
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd
+  labels:
+    ingress.ctoaas.co/managed-public: "true"
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    managed-by: kustomize-ingress-component
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - argocd.lab.local.ctoaas.co
+    - argocd.lab.ctoaas.co
+    secretName: argocd-lab-ctoaas-tls
+  rules:
+  - host: argocd.lab.local.ctoaas.co  # Internal access
     http:
       paths:
       - path: /
@@ -243,6 +316,27 @@ Property 11: TLS configuration management
 
 Property 12: Development environment TLS flexibility
 *For any* development environment, the system should support optional TLS disabling for simplified local testing
+**Validates: Requirements 8.5**
+
+Property 13: Private ingress domain restriction
+*For any* ingress resource with the private management label, the system should create host rules only for internal domain patterns and exclude external domains
+**Validates: Requirements 7.1, 7.3**
+
+Property 14: Public ingress dual domain access
+*For any* ingress resource with the public management label, the system should create host rules for both internal and external domain patterns
+**Validates: Requirements 7.2, 7.4**
+
+Property 15: Public ingress TLS certificate coverage
+*For any* public ingress with TLS enabled, the system should include both internal and external domains in the certificate configuration
+**Validates: Requirements 7.5**
+
+Property 16: Conflicting label handling
+*For any* ingress resource with both private and public management labels, the system should treat it as public and log a warning about conflicting labels
+**Validates: Requirements 7.6**
+
+Property 17: Unlabeled ingress preservation
+*For any* ingress resource without management labels, the system should leave it completely unchanged
+**Validates: Requirements 7.7**
 ## Error Handling
 
 ### Invalid Label Values
@@ -325,3 +419,30 @@ Each property-based test will be tagged with comments explicitly referencing the
 - Monitor kustomize build success rates for ingress transformations
 - Log transformation events for debugging and audit purposes
 - Provide dashboards for monitoring ingress management system health
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              name: http
+  - host: argocd.lab.ctoaas.co  # External access
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              name: http
+```
+
+For custom subdomains, developers can specify them in the placeholder host:
+```yaml
+spec:
+  rules:
+  - host: "api.backstage.placeholder.local"  # Results in api.backstage.lab.local.ctoaas.co (private) or both domains (public)
+```
