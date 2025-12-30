@@ -33,7 +33,8 @@ spec:
         data:
           username: "{{ .username }}"
           password: "{{ .token }}"
-          repoURL: "ghcr.io/craigedmunds"
+          repoURL: "ghcr.io/craigedmunds/*"
+          repoURLIsRegex: "true"
     
     data:
     - secretKey: username
