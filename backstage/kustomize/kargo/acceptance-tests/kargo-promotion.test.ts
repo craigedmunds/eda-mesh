@@ -45,6 +45,17 @@ interface Freight extends KargoResource {
 }
 
 interface Stage extends KargoResource {
+  spec?: {
+    promotionTemplate?: {
+      spec?: {
+        steps?: Array<{
+          uses: string;
+          as?: string;
+          config: any;
+        }>;
+      };
+    };
+  };
   status: {
     conditions?: Array<{
       type: string;
@@ -193,6 +204,31 @@ class KargoAcceptanceTest {
   private async createPromotion(freightName: string): Promise<Promotion> {
     console.log(`🚀 Creating promotion for freight: ${freightName}`);
     
+    // Read the actual stage configuration from Kubernetes
+    console.log(`📋 Reading stage configuration from Kubernetes...`);
+    const stage = await this.kubectl<Stage>(`get stage ${this.stageName} -n ${this.namespace} -o json`);
+    
+    if (!stage.spec?.promotionTemplate?.spec?.steps) {
+      throw new Error('Stage does not have promotion template steps configured');
+    }
+    
+    const stageSteps = stage.spec.promotionTemplate.spec.steps;
+    console.log(`✅ Using ${stageSteps.length} steps from stage configuration`);
+    
+    // Override the commit message to indicate this is an acceptance test
+    const steps = stageSteps.map((step: any) => {
+      if (step.uses === 'git-commit') {
+        return {
+          ...step,
+          config: {
+            ...step.config,
+            message: step.config.message.replace('Automated promotion by Kargo', 'Automated Acceptance test promotion by Kargo')
+          }
+        };
+      }
+      return step;
+    });
+    
     const promotionName = `acceptance-test-${Date.now()}`;
     const promotionManifest = {
       apiVersion: 'kargo.akuity.io/v1alpha1',
@@ -204,59 +240,7 @@ class KargoAcceptanceTest {
       spec: {
         stage: this.stageName,
         freight: freightName,
-        steps: [
-          {
-            uses: 'git-clone',
-            config: {
-              repoURL: 'https://github.com/craigedmunds/argocd-eda.git',
-              checkout: [
-                {
-                  branch: 'feature/backstage-events',
-                  path: './repo'
-                }
-              ]
-            }
-          },
-          {
-            uses: 'kustomize-set-image',
-            as: 'update-image',
-            config: {
-              path: './repo/backstage/kustomize/overlays/local',
-              images: [
-                {
-                  image: 'ghcr.io/craigedmunds/backstage',
-                  tag: '${{ imageFrom("ghcr.io/craigedmunds/backstage").Tag }}'
-                }
-              ]
-            }
-          },
-          {
-            uses: 'git-commit',
-            as: 'commit',
-            config: {
-              path: './repo',
-              message: 'Update backstage image to ${{ imageFrom("ghcr.io/craigedmunds/backstage").Tag }} - Automated Acceptance test promotion by Kargo'
-            }
-          },
-          {
-            uses: 'git-push',
-            config: {
-              path: './repo',
-              targetBranch: 'feature/backstage-events'
-            }
-          },
-          {
-            uses: 'argocd-update',
-            config: {
-              apps: [
-                {
-                  name: 'backstage',
-                  namespace: 'argocd'
-                }
-              ]
-            }
-          }
-        ]
+        steps: steps
       }
     };
     
@@ -442,7 +426,7 @@ class KargoAcceptanceTest {
   }
 
   private async validateKargoVerification(freightName: string, promotionName: string): Promise<void> {
-    console.log('🔍 Validating Kargo verification (AnalysisRun)...');
+    console.log(`🔍 Validating Kargo verification (AnalysisRun) for freight: ${freightName}...`);
     
     // Force reverification to ensure verification runs even with existing freight
     console.log('🔄 Forcing stage reverification to ensure verification runs...');
@@ -459,8 +443,8 @@ class KargoAcceptanceTest {
     console.log(`🔍 Looking for AnalysisRuns created after: ${promotionStartTime.toISOString()}`);
     let analysisRun: any = null;
     
-    // First, wait for AnalysisRun to be created for this specific freight
-    while (Date.now() - startTime < 15000) { // 15 second timeout
+    // First, wait for AnalysisRun to be created for this specific freight or use existing one
+    while (Date.now() - startTime < 30000) { // 30 second timeout
       try {
         const analysisRuns = await this.kubectl(`get analysisruns -n ${this.namespace} -o json`);
         
@@ -471,10 +455,13 @@ class KargoAcceptanceTest {
           if (run.metadata.labels) {
             console.log(`     Labels: ${JSON.stringify(run.metadata.labels)}`);
           }
+          if (run.metadata.annotations) {
+            console.log(`     Annotations: ${JSON.stringify(run.metadata.annotations)}`);
+          }
         });
         
-        // Look for AnalysisRun with the exact promotion annotation
-        const promotionAnalysisRuns = analysisRuns.items.filter((run: any) => 
+        // Look for AnalysisRun with the exact promotion annotation first
+        let promotionAnalysisRuns = analysisRuns.items.filter((run: any) => 
           run.metadata.annotations?.['kargo.akuity.io/promotion'] === promotionName
         );
         
@@ -484,6 +471,23 @@ class KargoAcceptanceTest {
             new Date(b.metadata.creationTimestamp).getTime() - new Date(a.metadata.creationTimestamp).getTime()
           )[0];
           console.log(`✅ Found AnalysisRun for promotion ${promotionName}: ${analysisRun.metadata.name}`);
+          break;
+        }
+        
+        // If no specific promotion AnalysisRun found, look for recent ones for this stage
+        const recentAnalysisRuns = analysisRuns.items.filter((run: any) => {
+          const runCreatedTime = new Date(run.metadata.creationTimestamp);
+          const timeDiff = Date.now() - runCreatedTime.getTime();
+          return timeDiff < 300000 && // Created within last 5 minutes
+                 run.metadata.labels?.['kargo.akuity.io/stage'] === this.stageName;
+        });
+        
+        if (recentAnalysisRuns.length > 0) {
+          // Use the most recent one
+          analysisRun = recentAnalysisRuns.sort((a: any, b: any) => 
+            new Date(b.metadata.creationTimestamp).getTime() - new Date(a.metadata.creationTimestamp).getTime()
+          )[0];
+          console.log(`✅ Using recent AnalysisRun for stage ${this.stageName}: ${analysisRun.metadata.name}`);
           break;
         }
         

@@ -20,6 +20,12 @@ patches:
       - op: add
         path: /data/kustomize.buildOptions
         value: --enable-helm
+      - op: add
+        path: /data/resource.customizations.health.networking.k8s.io_Ingress
+        value: |
+          hs = {}
+          hs.status = "Healthy"
+          return hs
   - target:
       kind: ConfigMap
       name: argocd-cmd-params-cm

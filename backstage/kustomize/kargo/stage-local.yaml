@@ -51,7 +51,7 @@ spec:
       - name: backstage-acceptance-verification
     args:
       - name: backstage-url
-        value: https://backstage.127.0.0.1.nip.io
+        value: https://backstage.lab.local.ctoaas.co
     # Declare log file as artifact for Kargo UI
     # artifacts:
     #   - name: verification-logs

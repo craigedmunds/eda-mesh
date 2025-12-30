@@ -32,7 +32,7 @@ spec:
                         
                         # Execute verification tests directly with Python script
                         python3 /scripts/post_deployment_e2e.py \
-                          --url "https://backstage.127.0.0.1.nip.io" \
+                          --url "{{args.backstage-url}}" \
                           --max-wait-time 300 \
                           --verbose
                         
@@ -45,7 +45,7 @@ spec:
                         exit $EXIT_CODE
                     env:
                       - name: BACKSTAGE_URL
-                        value: "https://backstage.127.0.0.1.nip.io"
+                        value: "{{args.backstage-url}}"
                       - name: PLAYWRIGHT_BROWSERS_PATH
                         value: "/ms-playwright"
                       - name: KARGO_PROMOTION_ID
@@ -97,7 +97,7 @@ spec:
                       defaultMode: 0755
                   - name: acceptance-artifacts
                     hostPath:
-                      path: /Users/craig/src/hmrc-eis/eda/argocd-eda/.backstage-acceptance-artifacts
+                      path: /var/lib/backstage-acceptance-artifacts
                       type: DirectoryOrCreate
       successCondition: "result.phase == Succeeded"
       failureCondition: "result.phase == Failed"
