@@ -1,0 +1,159 @@
+name: Platform Ingress Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'platform/kustomize/**'
+      - 'platform/ingress/tests/**'
+      - '.github/workflows/platform-ingress.yml'
+  
+  pull_request:
+    paths:
+      - 'platform/kustomize/**'
+      - 'platform/ingress/tests/**'
+      - '.github/workflows/platform-ingress.yml'
+  
+  workflow_dispatch:
+
+jobs:
+  kustomize-tests:
+    name: Platform Ingress Kustomize Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        test-suite:
+          - name: "ArgoCD Ingress"
+            task: "test:kustomize:argocd"
+            artifact: "argocd-test-results"
+          - name: "Kargo Ingress"
+            task: "test:kustomize:kargo"
+            artifact: "kargo-test-results"
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
+      
+      - name: Install test dependencies
+        run: task ingress:test:kustomize:install
+      
+      - name: Run ${{ matrix.test-suite.name }} tests
+        run: task ingress:${{ matrix.test-suite.task }}
+        continue-on-error: false
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.test-suite.artifact }}
+          path: platform/ingress/tests/kustomize/test-results.xml
+      
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.test-suite.artifact }}-report
+          path: platform/ingress/tests/kustomize/test-report.html
+
+  all-tests:
+    name: All Platform Ingress Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          kustomize version
+      
+      - name: Install test dependencies
+        run: task ingress:test:kustomize:install
+      
+      - name: Run all platform ingress tests
+        run: task ingress:test:kustomize
+      
+      - name: Upload comprehensive test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-platform-ingress-test-results
+          path: platform/ingress/tests/kustomize/test-results.xml
+      
+      - name: Upload comprehensive test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-platform-ingress-test-report
+          path: platform/ingress/tests/kustomize/test-report.html
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [kustomize-tests, all-tests]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Platform Ingress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.kustomize-tests.result }}" == "success" && "${{ needs.all-tests.result }}" == "success" ]]; then
+            echo "✅ All platform ingress kustomize tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The ingress management system is working correctly across all tested overlays." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**What was tested:**" >> $GITHUB_STEP_SUMMARY
+            echo "- ArgoCD ingress transformation in lab overlay" >> $GITHUB_STEP_SUMMARY
+            echo "- Kargo ingress preservation (unmanaged)" >> $GITHUB_STEP_SUMMARY
+            echo "- Domain generation and TLS configuration" >> $GITHUB_STEP_SUMMARY
+            echo "- Kustomize component integration" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Run tests locally:** \`task test:ingress:kustomize\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some platform ingress tests failed." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Individual Test Results:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Matrix Tests: ${{ needs.kustomize-tests.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "- All Tests: ${{ needs.all-tests.result }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Check the test artifacts for detailed failure information" >> $GITHUB_STEP_SUMMARY
+            echo "2. Run tests locally: \`task test:ingress:kustomize\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Check kustomize build output: \`kustomize build platform/kustomize/seed/overlays/local/lab\`" >> $GITHUB_STEP_SUMMARY
+            echo "4. Verify ingress management component configuration" >> $GITHUB_STEP_SUMMARY
+            echo "5. Review test documentation: \`platform/ingress/tests/kustomize/README.md\`" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

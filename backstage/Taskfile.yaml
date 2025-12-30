@@ -175,13 +175,3 @@ tasks:
         silent: true
       - npm install
       - npm test
-
-  test:ingress:kustomize:
-    desc: Run Backstage ingress kustomize build tests
-    dir: ../tests/kustomize
-    cmds:
-      - cmd: echo "🧪 Running Backstage ingress kustomize tests..."
-        silent: true
-      - source venv/bin/activate && python3 -m pytest test_backstage_ingress.py -v --tb=short -m backstage
-      - cmd: echo "✅ Backstage ingress tests passed"
-        silent: true

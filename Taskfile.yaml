@@ -41,6 +41,27 @@ tasks:
       - cmd: echo "Done"
         # silent: true
 
+  # Testing tasks
+  test:ingress:kustomize:
+    desc: Run all kustomize ingress build tests
+    cmds:
+      - task: ingress:test:kustomize
+
+  test:ingress:kustomize:argocd:
+    desc: Run ArgoCD ingress build tests
+    cmds:
+      - task: ingress:test:kustomize:argocd
+
+  test:ingress:kustomize:backstage:
+    desc: Run Backstage ingress build tests
+    cmds:
+      - task: backstage:test:kustomize
+
+  test:ingress:kustomize:kargo:
+    desc: Run Kargo ingress build tests
+    cmds:
+      - task: ingress:test:kustomize:kargo
+
   # Development workflow - most commonly used
   dev:apply:
     desc: Apply kustomize directly (bypassing ArgoCD) for development

@@ -4,9 +4,18 @@ on:
   push:
     branches:
       - main
-      - feature/backstage-events
     paths:
       - 'backstage/**'
+      - 'platform/kustomize/_common/components/ingress-management/**'
+      - '.github/workflows/backstage.yml'
+      - '.github/workflows/reusable-docker-build.yml'
+      - '!backstage/*.md'
+      - '!backstage/Taskfile.yaml'
+  
+  pull_request:
+    paths:
+      - 'backstage/**'
+      - 'platform/kustomize/_common/components/ingress-management/**'
       - '.github/workflows/backstage.yml'
       - '.github/workflows/reusable-docker-build.yml'
       - '!backstage/*.md'
@@ -25,7 +34,54 @@ on:
           - major
 
 jobs:
+  kustomize-tests:
+    name: Kustomize Build Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+      
+      - name: Install test dependencies
+        run: task ingress:test:kustomize:install
+      
+      - name: Run Backstage ingress kustomize tests
+        run: task ingress:test:kustomize:backstage
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backstage-kustomize-test-results
+          path: platform/ingress/tests/kustomize/backstage-test-results.xml
+      
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backstage-kustomize-test-report
+          path: platform/ingress/tests/kustomize/backstage-test-report.html
+
   build-and-push:
+    name: Build and Push Docker Image
+    # Only run on main branch pushes and manual workflow dispatch
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    needs: kustomize-tests
     uses: ./.github/workflows/reusable-docker-build.yml
     with:
       app_name: 'Backstage'
@@ -40,3 +96,61 @@ jobs:
       # Pass through version_bump input if present
       version_bump: ${{ inputs.version_bump || 'patch' }}
     secrets: inherit
+
+  summary:
+    name: Workflow Summary
+    runs-on: ubuntu-latest
+    needs: [kustomize-tests, build-and-push]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Backstage Workflow Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Kustomize tests (always run)
+          if [[ "${{ needs.kustomize-tests.result }}" == "success" ]]; then
+            echo "✅ **Kustomize Tests**: Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Kustomize Tests**: Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Build and push (conditional)
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+              echo "✅ **Build and Push**: Completed successfully" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ needs.build-and-push.result }}" == "skipped" ]]; then
+              echo "⏭️ **Build and Push**: Skipped (kustomize tests failed)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Build and Push**: Failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⏭️ **Build and Push**: Skipped (PR validation only)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [[ "${{ needs.kustomize-tests.result }}" == "success" ]]; then
+            if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              if [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+                echo "🎉 **Overall**: All steps completed successfully!" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "⚠️ **Overall**: Tests passed but build failed" >> $GITHUB_STEP_SUMMARY
+                exit 1
+              fi
+            else
+              echo "🎉 **Overall**: PR validation passed!" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "ℹ️ This is a pull request - only kustomize tests were run for validation." >> $GITHUB_STEP_SUMMARY
+              echo "Docker build will run when merged to main branch." >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ **Overall**: Kustomize tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Check test artifacts for detailed failure information" >> $GITHUB_STEP_SUMMARY
+            echo "2. Run tests locally: \`task test:ingress:kustomize:backstage\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Fix issues and push changes" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

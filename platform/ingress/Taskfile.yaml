@@ -178,7 +178,12 @@ tasks:
     cmds:
       - cmd: echo "🧪 Running kustomize ingress build tests..."
         silent: true
-      - source .venv/bin/activate && python3 -m pytest -v --tb=short
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest -v --tb=short --junit-xml=test-results.xml --html=test-report.html --self-contained-html
+          else
+            .venv/bin/python -m pytest -v --tb=short --junit-xml=test-results.xml --html=test-report.html --self-contained-html
+          fi
       - cmd: echo "✅ All kustomize ingress tests passed"
         silent: true
 
@@ -188,7 +193,12 @@ tasks:
     cmds:
       - cmd: echo "🧪 Running ArgoCD ingress tests..."
         silent: true
-      - source .venv/bin/activate && python3 -m pytest test_argocd_ingress.py -v --tb=short
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest test_argocd_ingress.py -v --tb=short -m argocd --junit-xml=test-results.xml --html=test-report.html --self-contained-html
+          else
+            .venv/bin/python -m pytest test_argocd_ingress.py -v --tb=short -m argocd --junit-xml=test-results.xml --html=test-report.html --self-contained-html
+          fi
       - cmd: echo "✅ ArgoCD ingress tests passed"
         silent: true
 
@@ -198,7 +208,12 @@ tasks:
     cmds:
       - cmd: echo "🧪 Running Backstage ingress tests..."
         silent: true
-      - source .venv/bin/activate && python3 -m pytest test_backstage_ingress.py -v --tb=short
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest test_backstage_ingress.py -v --tb=short -m backstage --junit-xml=backstage-test-results.xml --html=backstage-test-report.html --self-contained-html
+          else
+            .venv/bin/python -m pytest test_backstage_ingress.py -v --tb=short -m backstage --junit-xml=backstage-test-results.xml --html=backstage-test-report.html --self-contained-html
+          fi
       - cmd: echo "✅ Backstage ingress tests passed"
         silent: true
 
@@ -208,7 +223,12 @@ tasks:
     cmds:
       - cmd: echo "🧪 Running Kargo ingress tests..."
         silent: true
-      - source .venv/bin/activate && python3 -m pytest test_kargo_ingress.py -v --tb=short
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest test_kargo_ingress.py -v --tb=short -m kargo --junit-xml=test-results.xml --html=test-report.html --self-contained-html
+          else
+            .venv/bin/python -m pytest test_kargo_ingress.py -v --tb=short -m kargo --junit-xml=test-results.xml --html=test-report.html --self-contained-html
+          fi
       - cmd: echo "✅ Kargo ingress tests passed"
         silent: true
 
@@ -218,8 +238,14 @@ tasks:
     cmds:
       - cmd: echo "📦 Installing kustomize test dependencies..."
         silent: true
-      - python3 -m venv .venv
-      - ls -la
-      - source .venv/bin/activate && pip3 install -r requirements.txt
+      - cmd: |
+          if [ -n "$CI" ]; then
+            # In CI, install directly
+            pip install -r requirements.txt
+          else
+            # Locally, use venv
+            python3 -m venv .venv
+            .venv/bin/pip install -r requirements.txt
+          fi
       - cmd: echo "✅ Dependencies installed"
         silent: true
