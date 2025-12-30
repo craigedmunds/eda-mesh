@@ -8,7 +8,8 @@ resources:
   - ../../../eda
   - ../../../backstage
   - ../../../image-factory
-  - ../../../local-storage
+  - ../../../supporting-applications
+  - ../../../../local-storage
   - mobile-ai-dev-seed.yaml
   # - ../../../seed-app
   # - patch-seed-application.yaml
@@ -16,7 +17,6 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
-  - ../../../../_common/components/ingress-management-public
   - ../../../../_common/components/ingress-management
 
 configMapGenerator:
@@ -28,6 +28,7 @@ configMapGenerator:
 
   - name: ingress-environment-config
     namespace: argocd
+    behavior: add
     literals:
       - localDomainSuffix=lab.local.ctoaas.co
       - publicDomainSuffix=lab.ctoaas.co

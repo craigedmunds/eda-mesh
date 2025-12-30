@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: camel-karavan
-  namespace: camel-karavan
+  name: sample-ingress-private
+  namespace: argocd
   labels:
     ingress.ctoaas.co/managed: "true"
   annotations:
@@ -11,13 +11,13 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: camel-karavan
+  - host: sample
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: karavan
+            name: sample-server
             port:
-              name: https
+              name: http

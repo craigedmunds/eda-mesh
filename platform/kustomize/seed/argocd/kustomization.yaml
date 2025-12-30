@@ -9,6 +9,9 @@ resources:
   - argocd-ingress.yaml
   - argocd-projects.yaml
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 patchesStrategicMerge:
   - namespace-patch.yaml
 

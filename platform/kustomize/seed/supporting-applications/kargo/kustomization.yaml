@@ -9,6 +9,9 @@ resources:
   # Kyverno policies removed - now using ESO for secret management
   - ingress.yaml
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 # Create namespace with required labels using labels field
 labels:
   - pairs:
