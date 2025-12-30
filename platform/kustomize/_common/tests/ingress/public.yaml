@@ -4,7 +4,7 @@ metadata:
   name: sample-ingress-public
   namespace: argocd
   labels:
-    ingress.ctoaas.co/managed-public: "true"
+    ingress.ctoaas.co/managed: "true"
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"

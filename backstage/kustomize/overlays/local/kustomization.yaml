@@ -3,21 +3,32 @@ kind: Kustomization
 namespace: backstage
 resources:
 - ../../base
-configMapGenerator:
-- name: ingress-environment-config
-  literals:
-  - localDomainSuffix=lab.local.ctoaas.co
-  - publicDomainSuffix=lab.ctoaas.co
-  - ingressClass=traefik
-  - tlsEnabled=letsencrypt-prod
-  - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
-generatorOptions:
-  disableNameSuffixHash: true
 # Image will be updated by Kargo
 images:
 - name: ghcr.io/craigedmunds/backstage
   newTag: 0.7.7 # Kargo will update this
-# Components transform ingress based on environment config
-# Only private component for backstage (internal access only)
-components:
-- ../../../../platform/kustomize/_common/components/ingress-management
+# Add Traefik annotations to the service
+patches:
+- target:
+    kind: Service
+    name: backstage
+  patch: |-
+    - op: add
+      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.expose
+      value: "true"
+    - op: add
+      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.rule
+      value: Host(`backstage.lab.local.ctoaas.co`)
+    - op: add
+      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.entrypoints
+      value: websecure
+    - op: add
+      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls
+      value: "true"
+    - op: add
+      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls.certresolver
+      value: letsencrypt-prod
+    - op: add
+      path: /metadata/annotations/traefik.ingress.kubernetes.io~1service.port
+      value: "7007"
+

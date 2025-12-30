@@ -96,7 +96,7 @@ This implementation plan transforms the current hardcoded ingress management app
     - **Property 4: Custom subdomain preservation**
     - **Validates: Requirements 1.4, 3.4**
 
-  - [ ] 5.5 Add TLS configuration management
+  - [x] 5.5 Add TLS configuration management
     - Configure automatic TLS secret name generation
     - Add cert-manager issuer annotation handling
     - Support TLS disable option for local development

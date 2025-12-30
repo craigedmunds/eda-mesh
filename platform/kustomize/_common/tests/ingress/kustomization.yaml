@@ -4,7 +4,7 @@ kind: Kustomization
 # Lab environment overlay - includes all capabilities and supporting applications
 resources:
   - private.yaml
-  # - public.yaml
+  - public.yaml
   
 components:
   - ../../../_common/components/ingress-management
