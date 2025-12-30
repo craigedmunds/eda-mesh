@@ -8,13 +8,13 @@ Tests the platform/kustomize/seed/supporting-applications/kargo/ to ensure:
 - Unlabeled ingress resources are not transformed
 """
 import pytest
-from base_test import PrivateIngressTest
+from base_test import UnmanagedIngressTest
 
 
 @pytest.mark.ingress
 @pytest.mark.unmanaged
 @pytest.mark.kargo
-class TestKargoIngressUnmanaged(PrivateIngressTest):
+class TestKargoIngressUnmanaged(UnmanagedIngressTest):
     """Test Kargo ingress remains unmanaged and unchanged."""
     
     @staticmethod
