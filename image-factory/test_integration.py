@@ -13,8 +13,8 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-# Add the apps/image-factory directory to the path to import the tool
-sys.path.insert(0, str(Path(__file__).parent.parent / "apps" / "image-factory"))
+# Add the image-factory/app directory to the path to import the tool
+sys.path.insert(0, str(Path(__file__).parent / "app"))
 from app import ImageFactoryTool
 
 
@@ -60,7 +60,7 @@ class TestIntegration:
                     'provider': 'github',
                     'repo': 'owner/repo',
                     'branch': 'main',
-                    'dockerfile': 'apps/backstage/Dockerfile',
+                    'dockerfile': 'backstage/app/Dockerfile',
                     'workflow': 'build.yml'
                 },
                 'rebuildDelay': '7d',
@@ -185,7 +185,7 @@ RUN npm install
                 'source': {
                     'provider': 'github',
                     'repo': 'owner/repo',
-                    'dockerfile': 'apps/backstage/Dockerfile'
+                    'dockerfile': 'backstage/app/Dockerfile'
                 }
             }
         ]))

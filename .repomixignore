@@ -1,0 +1,8 @@
+node_modules
+.yarn
+.eslinttcache
+
+.backstage-acceptance-artifacts/*/
+image-factory/cdk8s/imports/
+
+seed

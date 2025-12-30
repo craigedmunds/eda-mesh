@@ -16,8 +16,8 @@ imageSelectionStrategy: Lexical
 repoURL: docker.io/library/node
 
 # Discovery
-firstDiscovered: '2025-12-05T03:40:49.810815+00:00'
-lastChecked: '2025-12-05T03:40:49.810815+00:00'
+firstDiscovered: '2025-12-29T19:25:06.846844+00:00'
+lastChecked: '2025-12-29T19:25:06.846844+00:00'
 
 # Current state
 currentDigest: None

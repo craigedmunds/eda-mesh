@@ -1,0 +1,187 @@
+version: '3'
+
+tasks:
+  logs:
+    desc: Follow Backstage logs
+    cmds:
+      - kubectl logs deployment/backstage -n backstage -f
+
+  status:
+    desc: Show Backstage application and pod status
+    cmds:
+      - cmd: echo "=== Backstage Application Status ==="
+        silent: true
+      - kubectl get application backstage -n argocd -o wide
+      - cmd: echo -e "\n=== Backstage Pods ==="
+        silent: true
+      - kubectl get pods -n backstage
+      - cmd: echo -e "\n=== Backstage Services ==="
+        silent: true
+      - kubectl get services -n backstage
+
+  ui:
+    desc: Open Backstage UI (requires port-forward)
+    cmds:
+      - cmd: echo "Backstage UI will be available at - http://localhost:3000"
+        silent: true
+      - kubectl port-forward svc/backstage -n backstage 3000:7007
+
+  apply:
+    desc: Apply Backstage kustomize configuration directly
+    cmds:
+      - kubectl apply -k kustomize/
+      - cmd: echo "Applied Backstage configuration"
+        silent: true
+
+  diff:
+    desc: Show diff between local changes and cluster state
+    cmds:
+      - kubectl diff -k kustomize/
+
+  # Kargo monitoring tasks
+  kargo:status:
+    desc: Show Kargo stage and verification status
+    cmds:
+      - cmd: echo "=== Kargo Stage Status ==="
+        silent: true
+      - kubectl get stage local -n backstage-kargo -o wide
+      - cmd: echo -e "\n=== Stage Health Details ==="
+        silent: true
+      - kubectl get stage local -n backstage-kargo -o jsonpath='{.status.health.status}' && echo
+      - kubectl get stage local -n backstage-kargo -o jsonpath='{.status.conditions[?(@.type=="Verified")].status}' && echo " (Verified)"
+      - cmd: echo -e "\n=== Current Freight ==="
+        silent: true
+      - kubectl get stage local -n backstage-kargo -o jsonpath='{.status.freightSummary}' && echo
+      - cmd: echo -e "\n=== ArgoCD Application Health ==="
+        silent: true
+      - kubectl get application backstage -n argocd -o jsonpath='{.status.health.status}' && echo
+
+  kargo:verification:
+    desc: Show current verification runs and status
+    cmds:
+      - cmd: echo "=== Analysis Runs ==="
+        silent: true
+      - kubectl get analysisruns -n backstage-kargo -o wide
+      - cmd: echo -e "\n=== Verification Jobs ==="
+        silent: true
+      - kubectl get jobs -n backstage-kargo -o wide
+      - cmd: echo -e "\n=== Verification Pods ==="
+        silent: true
+      - kubectl get pods -n backstage-kargo -o wide
+
+  kargo:logs:
+    desc: Show logs from the latest verification run
+    cmds:
+      - cmd: |
+          LATEST_JOB=$(kubectl get jobs -n backstage-kargo --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null)
+          if [ -n "$LATEST_JOB" ]; then
+            echo "=== Logs from job: $LATEST_JOB ==="
+            kubectl logs job/$LATEST_JOB -n backstage-kargo
+          else
+            echo "No verification jobs found"
+          fi
+
+  kargo:logs:follow:
+    desc: Follow logs from the currently running verification
+    cmds:
+      - cmd: |
+          RUNNING_JOB=$(kubectl get jobs -n backstage-kargo -o jsonpath='{.items[?(@.status.active==1)].metadata.name}' 2>/dev/null)
+          if [ -n "$RUNNING_JOB" ]; then
+            echo "Following logs from running job: $RUNNING_JOB"
+            kubectl logs job/$RUNNING_JOB -n backstage-kargo -f
+          else
+            echo "No running verification jobs found"
+            echo "Available jobs:"
+            kubectl get jobs -n backstage-kargo
+          fi
+
+  kargo:artifacts:
+    desc: Show verification artifacts (logs from host path)
+    cmds:
+      - cmd: echo "=== Verification Artifacts ==="
+        silent: true
+      - cmd: |
+          if [ -f ".backstage-acceptance-artifacts/verification.log" ]; then
+            echo "Latest verification log:"
+            tail -50 .backstage-acceptance-artifacts/verification.log
+          else
+            echo "No verification.log found in .backstage-acceptance-artifacts/"
+            echo "Available files:"
+            ls -la .backstage-acceptance-artifacts/ 2>/dev/null || echo "Directory not found"
+          fi
+
+  kargo:history:
+    desc: Show promotion and verification history
+    cmds:
+      - cmd: echo "=== Promotion History ==="
+        silent: true
+      - kubectl get promotions -n backstage-kargo --sort-by=.metadata.creationTimestamp -o wide
+      - cmd: echo -e "\n=== Freight History ==="
+        silent: true
+      - kubectl get freight -n backstage-kargo --sort-by=.metadata.creationTimestamp -o wide
+
+  kargo:refresh:
+    desc: Force refresh of Kargo stage and ArgoCD application
+    cmds:
+      - cmd: echo "Refreshing ArgoCD application..."
+        silent: true
+      - kubectl patch application backstage -n argocd --type='merge' -p='{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}'
+      - cmd: echo "Refreshing Kargo stage..."
+        silent: true
+      - kubectl patch stage local -n backstage-kargo --type='merge' -p='{"metadata":{"annotations":{"kargo.akuity.io/refresh":"'$(date +%s)'"}}}'
+      - cmd: echo "Refresh triggered. Check status with 'task kargo:status'"
+        silent: true
+
+  kargo:cleanup:
+    desc: Clean up failed verification runs
+    cmds:
+      - cmd: echo "Cleaning up failed analysis runs..."
+        silent: true
+      - kubectl delete analysisruns -n backstage-kargo --field-selector=status.phase=Failed
+      - cmd: echo "Cleaning up failed jobs..."
+        silent: true
+      - kubectl delete jobs -n backstage-kargo --field-selector=status.conditions[0].type=Failed
+      - cmd: echo "Cleanup complete"
+        silent: true
+
+  kargo:watch:
+    desc: Watch Kargo resources in real-time
+    cmds:
+      - cmd: echo "Watching Kargo resources (Ctrl+C to stop)..."
+        silent: true
+      - kubectl get stage,analysisruns,jobs,pods -n backstage-kargo -w
+
+  test:kargo:acceptance:
+    desc: Run Kargo acceptance test for Backstage promotion pipeline
+    dir: kustomize/kargo/acceptance-tests
+    cmds:
+      - cmd: echo "🚀 Running Backstage Kargo Acceptance Test..."
+        silent: true
+      - cmd: echo "This test validates the complete promotion flow:"
+        silent: true
+      - cmd: echo "  1. Freight creation from new images"
+        silent: true
+      - cmd: echo "  2. Promotion execution (git operations + ArgoCD updates)"
+        silent: true
+      - cmd: echo "  3. ArgoCD deployment of updated image"
+        silent: true
+      - cmd: echo "  4. Backstage application validation"
+        silent: true
+      - cmd: echo "  5. Kargo verification (AnalysisRun) execution"
+        silent: true
+      - cmd: echo "  6. Acceptance test artifacts generation"
+        silent: true
+      - cmd: echo ""
+        silent: true
+      - npm install
+      - npm test
+
+  test:ingress:kustomize:
+    desc: Run Backstage ingress kustomize build tests
+    dir: ../tests/kustomize
+    cmds:
+      - cmd: echo "🧪 Running Backstage ingress kustomize tests..."
+        silent: true
+      - source venv/bin/activate && python3 -m pytest test_backstage_ingress.py -v --tb=short -m backstage
+      - cmd: echo "✅ Backstage ingress tests passed"
+        silent: true

@@ -3,13 +3,15 @@ kind: Ingress
 metadata:
   name:  {{ .Values.name }}-uv
   namespace: {{ .Values.namespace }}
+  labels:
+    ingress.ctoaas.co/managed: "true"
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
   rules:
-  - host: {{ .Values.name }}-uv.127.0.0.1.nip.io
+  - host: {{ .Values.name }}-uv
     http:
       paths:
       - path: /

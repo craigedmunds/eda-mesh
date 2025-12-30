@@ -1,0 +1,38 @@
+# # kustomize/_common/components/argocd-branch-targetrevision/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: argocd-branch-targetrevision
+      fieldPath: data.targetRevision
+    targets:
+      - select:
+          kind: Application
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy notin (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.source.targetRevision
+      - select:
+          kind: Application
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy in (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.sources.*.targetRevision
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy notin (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.generators.0.git.revision
+          - spec.template.spec.source.targetRevision
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy in (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.generators.*.git.revision
+          - spec.template.spec.sources.*.targetRevision

@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+  test:ingress:kustomize:
+    desc: Run platform ingress kustomize build tests
+    dir: ../tests/kustomize
+    cmds:
+      - cmd: echo "🧪 Running platform ingress kustomize tests..."
+        silent: true
+      - source venv/bin/activate && python3 -m pytest test_argocd_ingress.py test_kargo_ingress.py -v --tb=short
+      - cmd: echo "✅ Platform ingress tests passed"
+        silent: true
+
+  test:ingress:kustomize:argocd:
+    desc: Run ArgoCD ingress build tests
+    dir: ../tests/kustomize
+    cmds:
+      - cmd: echo "🧪 Running ArgoCD ingress tests..."
+        silent: true
+      - source venv/bin/activate && python3 -m pytest test_argocd_ingress.py -v --tb=short -m argocd
+      - cmd: echo "✅ ArgoCD ingress tests passed"
+        silent: true
+
+  test:ingress:kustomize:kargo:
+    desc: Run Kargo ingress build tests
+    dir: ../tests/kustomize
+    cmds:
+      - cmd: echo "🧪 Running Kargo ingress tests..."
+        silent: true
+      - source venv/bin/activate && python3 -m pytest test_kargo_ingress.py -v --tb=short -m kargo
+      - cmd: echo "✅ Kargo ingress tests passed"
+        silent: true

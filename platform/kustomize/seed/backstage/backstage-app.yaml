@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: backstage
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    capability: backstage
+    argocd-branch-targetrevision: "true"
+  annotations:
+    kargo.akuity.io/authorized-stage: backstage-kargo:local
+spec:
+  project: eventing
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    targetRevision: feature/backstage-events
+    path: backstage/kustomize/overlays/local
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: backstage
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

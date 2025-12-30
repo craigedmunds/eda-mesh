@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: eda-mesh-{{.Values.lob}}-{{.Values.name}}
+    backstage.io/kubernetes-id: eda-mesh-{{.Values.lob}}-{{.Values.name}}
+  name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-deployment
+  namespace: eda-mesh-{{.Values.lob}}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
+  template:
+    metadata:
+      labels:
+        backstage.io/kubernetes-id: eda-mesh-{{.Values.lob}}-{{.Values.name}}
+        app.kubernetes.io/name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang
+    spec:
+      containers:
+      - name: integration
+        image: apache/camel-jbang:4.16.0
+        args: ["run", "/integrations/integration.yaml"]
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /integrations
+          name: camel-conf
+      volumes:
+      - name: camel-conf
+        configMap: 
+          name: eda-mesh-{{.Values.lob}}-{{.Values.name}}-jbang-config
+          items:
+            - key: integration.yaml
+              path: integration.yaml

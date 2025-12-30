@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-root-location
+  namespace: backstage
+data:
+  rootlocation.yaml: |
+    apiVersion: backstage.io/v1alpha1
+    kind: Location
+    metadata:
+      name: mesh-catalog
+      description: "Resources for the mesh"
+    spec:
+      type: file
+      targets:
+        - /etc/backstage/catalog/catalog-items/*.yaml
+      rules:
+        - allow: [Location, User, Group, Domain, Component, System, Resource, API, Event, ManagedImage, BaseImage]
+

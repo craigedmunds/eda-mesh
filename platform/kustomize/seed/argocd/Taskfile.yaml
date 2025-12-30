@@ -1,0 +1,82 @@
+version: '3'
+
+tasks:
+  logs:
+    desc: Get the logs from argocd
+    cmds:
+      - kubectl logs deployment/argocd-server -n argocd -f
+
+  status:
+    desc: Print status for ArgoCD
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "ArgoCD Status"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - kubectl get applications --all-namespaces
+      # - kubectl get applications seed -n argocd -o yaml
+      - kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
+      - kubectl get pods -n argocd
+      - kubectl get ingress -n argocd
+
+  password:
+    desc: Get ArgoCD admin password
+    cmds:
+      - kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
+
+  apps:status:
+    desc: Show all ArgoCD applications with detailed status
+    cmds:
+      - kubectl get applications -A -o wide
+
+  apps:sync:
+    desc: Sync a specific application (usage - task argocd:apps:sync APP=<app-name>)
+    vars:
+      APP: '{{.APP | default "seed"}}'
+      NAMESPACE: '{{.NAMESPACE | default "argocd"}}'
+    cmds:
+      - kubectl patch application {{.APP}} -n {{.NAMESPACE}} --type='merge' -p='{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}'
+      - cmd: echo "Triggered sync for {{.APP}} in {{.NAMESPACE}}"
+        silent: true
+
+  apps:pause:
+    desc: Pause ArgoCD sync for an application (usage - task argocd:apps:pause APP=<app-name>)
+    vars:
+      APP: '{{.APP | default "seed"}}'
+      NAMESPACE: '{{.NAMESPACE | default "argocd"}}'
+    cmds:
+      - kubectl patch application {{.APP}} -n {{.NAMESPACE}} --type='merge' -p='{"spec":{"syncPolicy":{"automated":null}}}'
+      - cmd: echo "Paused automated sync for {{.APP}} in {{.NAMESPACE}}"
+        silent: true
+
+  apps:resume:
+    desc: Resume ArgoCD sync for an application (usage - task argocd:apps:resume APP=<app-name>)
+    vars:
+      APP: '{{.APP | default "seed"}}'
+      NAMESPACE: '{{.NAMESPACE | default "argocd"}}'
+    cmds:
+      - kubectl patch application {{.APP}} -n {{.NAMESPACE}} --type='merge' -p='{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}'
+      - cmd: echo "Resumed automated sync for {{.APP}} in {{.NAMESPACE}}"
+        silent: true
+
+  ui:
+    desc: Open ArgoCD UI (requires port-forward)
+    cmds:
+      - cmd: echo "ArgoCD UI will be available at - http://localhost:8080"
+        silent: true
+      - cmd: echo "Username - admin"
+        silent: true
+      - cmd: echo -n "Password - "
+        silent: true
+      - kubectl get secret argocd-initial-admin-secret -n argocd -o json | jq '.data.password' -r | base64 -D
+      - kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+  troubleshoot:
+    desc: Show detailed status for all applications with issues
+    cmds:
+      - cmd: echo "=== Applications with Issues ==="
+        silent: true
+      - kubectl get applications -A -o json | jq -r '.items[] | select(.status.sync.status != "Synced" or .status.health.status != "Healthy") | "\(.metadata.namespace)/\(.metadata.name) - Sync=\(.status.sync.status // "Unknown") Health=\(.status.health.status // "Unknown")"'
+      

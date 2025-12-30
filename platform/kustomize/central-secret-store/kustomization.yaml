@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: central-secret-store
+
+resources:
+  - namespace.yaml
+  # External Secrets Operator approach
+  - cluster-secret-store.yaml
+  - eso-rbac.yaml
+  - external-secrets/kargo-admin-credentials.yaml
+  - external-secrets/github-oauth.yaml
+  # - external-secrets/github-git-credentials.yaml
+  - external-secrets/cloudflare-api-token.yaml
+  # Application-specific secrets (simplified labels)
+  - external-secrets/application-docker-registry.yaml
+  # Kargo-specific secrets (with kargo.akuity.io labels)
+  - external-secrets/kargo-docker-registry.yaml
+  - external-secrets/kargo-git-credentials.yaml
+
+# Secrets are created manually - never committed to Git
+# See README.md for secret creation instructions

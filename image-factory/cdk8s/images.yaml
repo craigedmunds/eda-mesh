@@ -1,0 +1,10 @@
+# CDK8s Image Configuration
+# This file contains image references used by CDK8s applications
+# It will be automatically updated by Image Factory when managed images are rebuilt
+
+images:
+  uv:
+    registry: ghcr.io
+    repository: craigedmunds/uv
+    tag: "0.1.16"  # This will be updated automatically by Image Factory
+    # Full reference: ghcr.io/craigedmunds/uv:0.1.16

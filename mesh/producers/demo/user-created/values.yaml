@@ -1,3 +1,0 @@
-name: camel-k-mesh-producer
-namespace: camel-k-mesh-producer-demo-user-created
-configmap: camel-k-mesh-producer-jbang-config

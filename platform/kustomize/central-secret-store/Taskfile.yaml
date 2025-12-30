@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+  status:
+    desc: Check ESO and secret status across all namespaces
+    cmds:
+      - cmd: echo "=== Central Secret Store ==="
+        silent: true
+      - kubectl get secrets -n central-secret-store
+      - cmd: echo -e "\n=== ClusterExternalSecrets ==="
+        silent: true
+      - kubectl get clusterexternalsecrets
+      - cmd: echo -e "\n=== ExternalSecrets (All Namespaces) ==="
+        silent: true
+      - kubectl get externalsecrets -A
+      - cmd: echo -e "\n=== ESO Controller Status ==="
+        silent: true
+      - kubectl get pods -n external-secrets-system
+
+  logs:
+    desc: Show ESO controller logs
+    cmds:
+      - kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets -f
+
+  apply:
+    desc: Apply central secret store configuration
+    cmds:
+      - kubectl apply -k .
+      - cmd: echo "Applied central secret store configuration"
+        silent: true
+
+  diff:
+    desc: Show diff between local changes and cluster state
+    cmds:
+      - kubectl diff -k .

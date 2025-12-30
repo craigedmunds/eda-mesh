@@ -1,0 +1,25 @@
+# Camel K Integration YAML (rendered by Helm)
+{{- $domain := .Values.domain }}
+{{- $subdomain := .Values.subdomain }}
+
+{{- $lob := .Values.lob }}
+{{- $service := .Values.name }}
+{{- $asyncapispec := fromYaml .Values.asyncapispec }}
+{{- range $k, $v := $asyncapispec.channels }}
+{{- $event := lower $k }}
+
+- route:
+    from:
+      uri: "kafka:{{ $v.bindings.kafka.topic }}?brokers=kafka.confluent.svc.cluster.local:9092"
+      steps:
+      - log: ${body}
+      - to:
+          uri: "kamelet:spring-rabbitmq-sink"
+          parameters:
+            host: "eda-mesh.eda-mesh.svc.cluster.local"
+            port: 5672
+            exchangeName: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
+            username: "{{`{{secret:eda-mesh-rabbit-user/username}}`}}"
+            password: "{{`{{secret:eda-mesh-rabbit-user/password}}`}}"
+{{- end }}
+            

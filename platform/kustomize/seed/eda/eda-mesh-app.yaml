@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eda-mesh
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    capability: eda
+    argocd-branch-targetrevision: "true"
+spec:
+  project: eventing
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    path: eda/kustomize/mesh
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: eda-mesh
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

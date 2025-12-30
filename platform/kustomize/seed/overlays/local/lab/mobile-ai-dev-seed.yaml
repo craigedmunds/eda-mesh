@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mobile-ai-dev-seed
+  namespace: argocd
+  labels:
+    app: mobile-ai-dev
+    type: seed
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: ai-dev
+  source:
+    repoURL: https://github.com/craigedmunds/ai-dev.git
+    targetRevision: HEAD
+    path: infrastructure/seed
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+  revisionHistoryLimit: 10

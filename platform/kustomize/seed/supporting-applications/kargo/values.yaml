@@ -1,0 +1,10 @@
+api:
+  host: kargo.lab.ctoaas.co
+  secret:
+    name: kargo-admin-credentials
+  adminAccount:
+    enabled: true
+  tls:
+    enabled: false
+  ingress:
+    enabled: false

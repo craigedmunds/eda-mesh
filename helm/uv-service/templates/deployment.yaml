@@ -44,4 +44,4 @@ spec:
       - name: uv-app
         emptyDir: {}
       imagePullSecrets:
-      - name: ghcr-creds
+      - name: gh-docker-registry-creds

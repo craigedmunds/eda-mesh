@@ -1,0 +1,65 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Lab environment overlay - includes all capabilities and supporting applications
+resources:
+  - ../../../traefik
+  - ../../../argocd
+  - ../../../eda
+  - ../../../backstage
+  - ../../../image-factory
+  - ../../../supporting-applications
+  - ../../../../local-storage
+  - mobile-ai-dev-seed.yaml
+  # - ../../../seed-app
+  # - patch-seed-application.yaml
+  - letsencrypt-issuer.yaml
+
+components:
+  - ../../../../_common/components/argocd-branch-targetrevision
+  - ../../../../_common/components/ingress-management
+
+configMapGenerator:
+  - name: argocd-branch-targetrevision
+    namespace: argocd
+    behavior: add
+    literals:
+      - targetRevision=feature/backstage-events
+
+  - name: ingress-environment-config
+    namespace: argocd
+    behavior: add
+    literals:
+      - localDomainSuffix=lab.local.ctoaas.co
+      - publicDomainSuffix=lab.ctoaas.co
+      - ingressClass=traefik
+      - tlsEnabled=letsencrypt-prod
+      - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Lab-specific patches
+patches:
+
+  - target:
+      kind: Application
+      name: seed
+    patch: |-
+      - op: replace
+        path: /spec/source/targetRevision
+        value: feature/backstage-events
+      - op: replace
+        path: /spec/source/path
+        value: platform/kustomize/seed/overlays/local/lab
+
+  - target:
+      kind: Application
+      name: eda-mesh
+    patch: |-
+      - op: replace
+        path: /spec/source/targetRevision
+        value: feature/backstage-events
+      - op: replace
+        path: /spec/source/path
+        value: eda/kustomize/mesh/overlays/lab

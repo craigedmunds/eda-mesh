@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+  logs:rabbitmq:
+    desc: Follow RabbitMQ logs
+    cmds:
+      - kubectl logs deployment/eda-mesh -n eda-mesh -f
+
+  passwords:rabbitmq:
+    desc: Get RabbitMQ admin credentials
+    cmds:
+      - cmd: echo "RabbitMQ Username:"
+        silent: true
+      - kubectl get secret eda-mesh-default-user -n eda-mesh -o json | jq '.data.username' -r | base64 -D 2>/dev/null || echo "RabbitMQ secret not found"
+      - cmd: echo "RabbitMQ Password:"
+        silent: true
+      - kubectl get secret eda-mesh-default-user -n eda-mesh -o json | jq '.data.password' -r | base64 -D 2>/dev/null || echo "RabbitMQ secret not found"
+
+  status:
+    desc: Show EDA mesh application and component status
+    cmds:
+      - cmd: echo "=== EDA Mesh Application Status ==="
+        silent: true
+      - kubectl get application eda-mesh -n argocd -o wide
+      - cmd: echo -e "\n=== EDA Mesh Pods ==="
+        silent: true
+      - kubectl get pods -n eda-mesh
+      - cmd: echo -e "\n=== RabbitMQ Status ==="
+        silent: true
+      - kubectl get pods -n eda-mesh -l app.kubernetes.io/name=rabbitmq
+
+  apply:
+    desc: Apply EDA mesh kustomize configuration directly
+    cmds:
+      - kubectl apply -k kustomize/mesh/base/
+      - cmd: echo "Applied EDA mesh configuration"
+        silent: true
+
+  diff:
+    desc: Show diff between local changes and cluster state
+    cmds:
+      - kubectl diff -k kustomize/mesh/base/

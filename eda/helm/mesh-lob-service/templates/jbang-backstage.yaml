@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-component-eda-mesh-{{.Values.lob}}-{{.Values.name}}
+  namespace: backstage 
+  
+  labels:
+    eda.io/backstage-catalog: "true"
+data:
+
+{{- $lob := .Values.lob }}
+{{- $service := .Values.name }}
+
+{{- $domain := .Values.domain }}
+{{- $subdomain := .Values.subdomain }}
+{{- $owner := .Values.owner }}
+
+{{- $asyncapispec := fromYaml .Values.asyncapispec }}
+
+  catalog: |
+    apiVersion: backstage.io/v1alpha1
+    kind: System
+    metadata:
+      name: {{ $lob }}-{{ $service }}
+      description: The {{ $lob }} {{ $service }} service
+    spec:
+      owner: {{ $owner }}
+      domain: {{ $subdomain }}
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: {{ $domain }}-{{ $subdomain }}
+      annotations:
+        backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}
+    spec:
+      type: service
+      lifecycle: production
+      owner: {{ $owner }}
+      domain: {{ $subdomain }}
+      system: {{ $lob }}-{{ $service }}
+      providesApis:
+        - {{ $domain }}-{{ $subdomain }}
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: API
+    metadata:
+      name: {{ $domain }}-{{ $subdomain }}
+      description: Does stuff
+    spec:
+      type: asyncapi
+      lifecycle: production
+      owner: {{ $owner }}
+      domain: {{ $subdomain }}
+      system: {{ $lob }}-{{ $service }}
+      definition: |
+{{ .Values.asyncapispec | indent 8 }}
+    ---
+{{- range $k, $v := $asyncapispec.channels }}
+{{- $event := lower $k }}
+    
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: {{ $domain }}-{{ $subdomain }}-{{ $event }}
+      annotations:
+        backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}
+    spec:
+      type: event
+      lifecycle: production
+      owner: {{ $owner }}
+      system: {{ $lob }}-{{ $service }}
+      subcomponentOf: {{ $domain }}-{{ $subdomain }}
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: {{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
+      annotations:
+        backstage.io/kubernetes-id: eda-mesh-{{ $domain }}-{{ $subdomain }}-{{ $event }}-topic
+    spec:
+      type: topic
+      lifecycle: production
+      owner: apim
+      system: eda-mesh
+      subcomponentOf: {{ $domain }}-{{ $subdomain }}-{{ $event }}
+    ---
+{{- end }}
+

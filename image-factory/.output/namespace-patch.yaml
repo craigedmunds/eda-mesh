@@ -4,4 +4,5 @@ metadata:
   name: image-factory-kargo
   labels:
     kargo.akuity.io/project: "true"
-    kargo.deps/ghcr: "true"
+    secrets/gh-docker-registry: "true"
+    secrets/gh-git-credentials: "true"

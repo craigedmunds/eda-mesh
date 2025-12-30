@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    secrets/gh-docker-registry: "true"
+  # Kustomize generates the namespace...
+  name: "--dynamic--"

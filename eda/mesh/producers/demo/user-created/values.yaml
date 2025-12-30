@@ -1,0 +1,3 @@
+name: eda-mesh-producer
+namespace: eda-mesh-producer-demo-user-created
+configmap: eda-mesh-producer-jbang-config

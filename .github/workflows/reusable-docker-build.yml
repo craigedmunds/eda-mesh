@@ -1,0 +1,273 @@
+name: Reusable Docker Build
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        required: true
+        type: string
+        description: "Name of the app (e.g. backstage, uv, e2e-runner)"
+      image_name:
+        required: true
+        type: string
+        description: "Full image name (e.g. craigedmunds/backstage)"
+      dockerfile:
+        required: true
+        type: string
+        description: "Path to Dockerfile"
+      context:
+        required: true
+        type: string
+        description: "Docker build context"
+      version_file:
+        required: true
+        type: string
+        description: "Path to version file"
+      version_type:
+        required: false
+        type: string
+        default: 'file'
+        description: "Type of version file: 'file' (raw string) or 'package-json'"
+      pre_build_script:
+        required: false
+        type: string
+        default: ''
+        description: "Script to run before docker build (e.g. config setup)"
+      registry:
+        required: false
+        type: string
+        default: 'ghcr.io'
+
+      # We duplicate version_bump input here so it can be passed from the caller workflow_dispatch
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: string
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run pre-build script
+        if: inputs.pre_build_script != ''
+        run: ${{ inputs.pre_build_script }}
+
+      - name: Set up Node.js (for package.json versioning)
+        if: inputs.version_type == 'package-json'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Get current version
+        id: current_version
+        run: |
+          if [ "${{ inputs.version_type }}" = "package-json" ]; then
+            CURRENT_VERSION=$(node -p "require('./${{ inputs.version_file }}').version")
+          else
+            CURRENT_VERSION=$(cat ${{ inputs.version_file }})
+          fi
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Determine version bump type
+        id: bump_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ inputs.version_bump }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-detect from commit message
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            if echo "$COMMIT_MSG" | grep -qiE '\[major\]|breaking change'; then
+              echo "type=major" >> $GITHUB_OUTPUT
+            elif echo "$COMMIT_MSG" | grep -qiE '\[minor\]|feat:'; then
+              echo "type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Bump version
+        id: new_version
+        run: |
+          BUMP_TYPE="${{ steps.bump_type.outputs.type }}"
+          CURRENT="${{ steps.current_version.outputs.version }}"
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          case $BUMP_TYPE in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+          
+          # Update version file locally
+          if [ "${{ inputs.version_type }}" = "package-json" ]; then
+            # We use npm version to update package.json without git tag
+            cd ${{ inputs.context }}
+            npm version $NEW_VERSION --no-git-tag-version
+          else
+            echo "$NEW_VERSION" > ${{ inputs.version_file }}
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ inputs.registry }}/${{ inputs.image_name }}:${{ steps.new_version.outputs.version }}
+            ${{ inputs.registry }}/${{ inputs.image_name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Trivy will now pull the image from the registry since it's not loaded locally
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ inputs.registry }}/${{ inputs.image_name }}:${{ steps.new_version.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: ${{ inputs.app_name }}
+
+      - name: Commit version bump
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          
+          if [ "${{ inputs.version_type }}" = "package-json" ]; then
+             # For package.json, path is relative to context, but git add needs repo relative
+             # We assume context is a folder, so joining is roughly right but easier to just add the file by path
+             # Actually, let's just add the file we know changed.
+             # If context is ., then file is package.json
+             # If context is apps/backstage, then file is apps/backstage/package.json
+             # Wait, in the version bump step for package-json I did cd context.
+             # But here I am in root.
+             # The file path is context/version_file if version_file is relative to context?
+             # Actually, the input `version_file` for package-json usually is just "package.json" but in my plan, I said "path to version file".
+             # In `backstage.yml` the file is `apps/backstage/package.json`.
+             # So if I pass that as version_file, I don't need to join with context.
+             # BUT, in the `Get current version` step for package-json, I did `cd ${{ inputs.context }}` then require `./${{ inputs.version_file}}`.
+             # If inputs.version_file is full path `apps/backstage/package.json`, then `./apps/backstage/package.json` inside `apps/backstage` will fail.
+             # CORRECTION: For package-json, I should pass just "package.json" if I cd into directory, or passed full path and don't cd.
+             # Let's clean this up. I will standardise to: `version_file` is ALWAYS repo-relative path.
+             git add ${{ inputs.version_file }}
+          else
+             git add ${{ inputs.version_file }}
+          fi
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(${{ inputs.app_name }}): bump version to $NEW_VERSION [skip ci]"
+          fi
+
+          # Clean up any untracked/unstaged files (like package-lock.json or build artifacts) that might block rebase
+          git reset --hard HEAD
+          
+          # Retry loop to handle race conditions with parallel builds
+          MAX_RETRIES=5
+          count=0
+          success=false
+          
+          while [ $count -lt $MAX_RETRIES ]; do
+            echo "Attempt $((count+1)) to push changes..."
+            
+            # Pull latest changes with rebase
+            if git pull --rebase origin ${{ github.ref_name }}; then
+              # Push changes
+              if git push; then
+                success=true
+                echo "Successfully pushed changes"
+                break
+              else
+                echo "Push failed, remote probably moved. Retrying..."
+              fi
+            else
+              echo "Rebase failed. Conflicting changes? Retrying cleanup..."
+              git rebase --abort || true
+              git reset --hard HEAD
+            fi
+            
+            count=$((count + 1))
+            sleep $(($count * 2)) # Exponential backoff
+          done
+          
+          if [ "$success" = "false" ]; then
+            echo "Failed to push after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+
+
+      - name: Notify Kargo
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          echo "New image available: ${{ inputs.registry }}/${{ inputs.image_name }}:$NEW_VERSION"
+
+      - name: Generate Release Tag
+        id: release_tag
+        run: |
+          # Sanitize app_name for use in git tag (lowercase, replace spaces/special chars with hyphens)
+          SAFE_NAME=$(echo "${{ inputs.app_name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
+          TAG="${SAFE_NAME}-v${{ steps.new_version.outputs.version }}"
+          echo "tag_name=$TAG" >> $GITHUB_OUTPUT
+          echo "Generated tag: $TAG"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true # Don't fail if release already exists (race condition or re-run)
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag_name }}
+          release_name: ${{ inputs.app_name }} v${{ steps.new_version.outputs.version }}
+          body: |
+             ## ${{ inputs.app_name }} v${{ steps.new_version.outputs.version }}
+             Image: `${{ inputs.registry }}/${{ inputs.image_name }}:${{ steps.new_version.outputs.version }}`
+             Changes: ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false

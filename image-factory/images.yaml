@@ -9,8 +9,8 @@
   source:
     provider: github  # github or gitlab
     repo: craigedmunds/argocd-eda  # Source repo (happens to be this repo)
-    branch: main
-    dockerfile: apps/backstage/packages/backend/Dockerfile
+    branch: feature/backstage-events
+    dockerfile: backstage/app/packages/backend/Dockerfile
     # For GitHub:
     workflow: backstage.yml
     # For GitLab:
@@ -25,8 +25,30 @@
   source:
     provider: github
     repo: craigedmunds/argocd-eda
-    branch: main
+    branch: feature/backstage-events
     dockerfile: apps/uv/Dockerfile
     workflow: uv.yml
+  rebuildDelay: 7d
+  autoRebuild: true
+  # Real-world updates configuration for Requirement 18
+  # updates:
+  #   - repo: craigedmunds/argocd-eda
+  #     path: image-factory/cdk8s/images.yaml
+  #     type: yaml-update
+  #     # Will update the hardcoded image: ghcr.io/craigedmunds/uv line
+  #   - repo: craigedmunds/argocd-eda
+  #     path: eda/kustomize/mesh/backstage-catalog-api/kustomization.yaml
+  #     type: kustomize-set-image
+  #     # Will update kustomize image references
+
+- name: e2e-test-runner
+  registry: ghcr.io
+  repository: craigedmunds/e2e-test-runner
+  source:
+    provider: github
+    repo: craigedmunds/argocd-eda
+    branch: feature/backstage-events
+    dockerfile: apps/e2e-test-runner/Dockerfile
+    workflow: e2e-runner.yml
   rebuildDelay: 7d
   autoRebuild: true

@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: kargo
+
+resources:
+  # Remove manual namespace.yaml to avoid conflict with Helm chart
+  # - namespace.yaml
+  # Kyverno policies removed - now using ESO for secret management
+  - ingress.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Create namespace with required labels using labels field
+labels:
+  - pairs:
+      secrets/kargo-admin-credentials: "true"
+
+helmCharts:
+  - name: kargo
+    repo: oci://ghcr.io/akuity/kargo-charts
+    version: 1.8.4
+    namespace: kargo
+    valuesFile: values.yaml

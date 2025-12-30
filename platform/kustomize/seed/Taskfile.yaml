@@ -1,0 +1,140 @@
+version: '3'
+
+tasks:
+  status:
+    desc: Print status for the seed component
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Seed Component Status"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - kubectl get secrets -n central-secret-store
+      
+  app:
+    desc: Print status for the seed app
+    cmds:
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Seed Application Status"
+        silent: true
+      - cmd: echo "###############################################"
+        silent: true
+      - cmd: echo "Application Overview:"
+        silent: true
+      - kubectl get applications seed -n argocd
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Last Sync:"
+        silent: true
+      - kubectl get applications seed -n argocd -o jsonpath='{.status.operationState.finishedAt}' && echo
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Resources with Issues:"
+        silent: true
+      - silent: true
+        cmd: |
+          kubectl get applications seed -n argocd -o json | jq -r '
+            .status.resources[] | 
+            select(.status == "OutOfSync" or (.health.status != null and .health.status != "Healthy" and .health.status != "Unknown")) | 
+            "\(.kind)/\(.name) - Status: \(.status // "Unknown"), Health: \(.health.status // "Unknown")"
+          ' | head -20 || echo "All resources are synced and healthy"
+      - cmd: echo ""
+        silent: true
+      - cmd: echo "Summary:"
+        silent: true
+      - silent: true
+        cmd: |
+          ISSUES=$(kubectl get applications seed -n argocd -o json | jq '[.status.resources[] | select(.status == "OutOfSync" or (.health.status != null and .health.status != "Healthy" and .health.status != "Unknown"))] | length')
+          if [ "$ISSUES" -gt 0 ]; then
+            echo "⚠️  Found $ISSUES resources with issues"
+          else
+            echo "✅ All resources are synced and healthy"
+          fi
+  
+  app:refresh:
+    desc: Trigger a refresh
+    cmds:
+      - kubectl annotate app/seed -n argocd argocd.argoproj.io/refresh="hard"
+
+  app:sync:
+    desc: Force sync of the ArgoCD application
+    cmds:
+      - kubectl patch application seed -n argocd --type='merge' -p='{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}}}}}'
+
+  passwords:
+    desc: Ensure initial passwords exist and create them
+    cmds:
+      - |
+        while read var; do
+          [ -z "${!var}" ] && { echo "$var is empty or not set. Exiting.."; exit 1; }
+        done << EOF
+        GITHUB_PAT_BUILDTOOLING
+        GITHUB_BUILD_USERNAME
+        GITHUB_BUILD_CLIENTID
+        GITHUB_BUILD_CLIENTSECRET
+        CLOUDFLARE_API_TOKEN
+        EOF
+
+      - ignore_error: true
+        cmd: kubectl create namespace central-secret-store
+        
+      - ignore_error: true
+        cmd: |
+          kubectl create secret generic github-pat \
+          --from-literal=token="$GITHUB_PAT_BUILDTOOLING" \
+          --from-literal=username="$GITHUB_BUILD_USERNAME" \
+          -n central-secret-store
+        
+      - ignore_error: true
+        cmd: |
+          kubectl create secret generic github-oauth \
+          --from-literal=client-id="$GITHUB_BUILD_CLIENTID" \
+          --from-literal=client-secret="$GITHUB_BUILD_CLIENTSECRET" \
+          -n central-secret-store
+
+      - ignore_error: true
+        cmd: |
+          kubectl create secret generic cloudflare-api-token \
+          --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
+          -n central-secret-store
+
+      - ignore_error: true
+        cmd: |
+          pass=K4rg0!
+          echo "Password: $pass"
+          hashed_pass=$(htpasswd -bnBC 10 "" $pass | tr -d ':\n')
+          signing_key=$(openssl rand -base64 48 | tr -d "=+/" | head -c 32)
+
+          kubectl create secret generic kargo-admin-credentials \
+            --from-literal=passwordHash="$hashed_pass" \
+            --from-literal=tokenSigningKey="$signing_key" \
+            -n central-secret-store
+
+  build:
+    desc: Build seed
+    vars:
+      OVERLAY: overlays/local/lab
+    cmds:
+      - kustomize build {{.OVERLAY}} --enable-helm
+      # - kustomize build kustomize/seed/{{.OVERLAY}} --enable-helm | kubectl apply -f -
+
+
+  apply:
+    desc: Apply seed
+    vars:
+      OVERLAY: overlays/local/lab
+    cmds:
+      - kustomize build {{.OVERLAY}} --enable-helm | kubectl apply --server-side=true -f -
+      # - kustomize build kustomize/seed/{{.OVERLAY}} --enable-helm | kubectl apply -f -
+
+
+
+  _init:
+    desc: Apply _init seed
+    deps: [passwords]
+    cmds:
+      - kustomize build _init --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
+
+  

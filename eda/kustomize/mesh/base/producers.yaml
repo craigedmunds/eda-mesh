@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: eda-mesh-producers
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - git:
+      repoURL: https://github.com/craigedmunds/argocd-eda.git
+      revision: HEAD
+      directories:
+      - path: eda/mesh/producers/*/*
+      values:
+        producer: "{{index .path.segments 2}}"
+        service: "{{.path.basename}}"
+
+  template:
+    metadata:
+      
+      # this path is escaped for consumption by argocd rather than helm.
+      # name: '{{ "eda-mesh-producer-{{index .path.segments 0}}-{{index .path.segments 1}}" }}'
+
+      # this path is escaped for consumption by argocd rather than kustomize.
+      name: 'eda-mesh-producer-{{.values.producer}}-{{.values.service}}'
+
+      labels:
+        repo: argocd-eda
+
+    spec:
+      project: "eventing"
+      source:
+        repoURL: https://github.com/craigedmunds/argocd-eda.git
+        targetRevision: HEAD
+        path: 'eda/mesh/producers/{{.values.producer}}/{{.values.service}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "eda-mesh-producer-{{.values.producer}}-{{.values.service}}"
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true

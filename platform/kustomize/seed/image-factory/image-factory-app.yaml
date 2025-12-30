@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: image-factory
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    capability: image-factory
+    argocd-branch-targetrevision: "true"
+spec:
+  project: sdlc
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    path: image-factory/cdk8s/dist
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: image-factory
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

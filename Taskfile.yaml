@@ -1,0 +1,79 @@
+version: '3'
+
+includes:
+  argocd:
+    taskfile: platform/kustomize/seed/argocd/Taskfile.yaml
+  seed:
+    taskfile: platform/kustomize/seed/Taskfile.yaml
+    dir: platform/kustomize/seed
+  secrets:
+    taskfile: platform/kustomize/central-secret-store/Taskfile.yaml
+    dir: platform/kustomize/central-secret-store
+  backstage:
+    taskfile: backstage/Taskfile.yaml
+    dir: backstage
+  eda:
+    taskfile: eda/Taskfile.yaml
+    dir: eda
+  kargo:
+    taskfile: platform/kustomize/seed/supporting-applications/kargo/Taskfile.yaml
+    dir: platform/kustomize/seed/supporting-applications/kargo
+  ingress:
+    taskfile: platform/ingress/Taskfile.yaml
+    dir: platform/ingress
+  images:
+    taskfile: image-factory/Taskfile.yaml
+    dir: image-factory
+  uv:
+    taskfile: apps/uv/Taskfile.yaml
+    dir: apps/uv
+  platform:
+    taskfile: platform/Taskfile.yaml
+    dir: platform
+
+tasks:
+  status:
+    desc: Run all the status' methods
+    cmds:
+      - task: seed:status
+      - task: ingress:status
+      - task: argocd:status
+      - cmd: echo "Done"
+        # silent: true
+
+  # Development workflow - most commonly used
+  dev:apply:
+    desc: Apply kustomize directly (bypassing ArgoCD) for development
+    vars:
+      PATH: '{{.PATH | default "platform/kustomize/seed/overlays/local/lab"}}'
+    cmds:
+      - kustomize build {{.PATH}} --enable-helm | kubectl apply --server-side=true -f -
+      - cmd: echo "Applied {{.PATH}} directly to cluster"
+        silent: true
+
+  dev:diff:
+    desc: Show diff between local changes and cluster state
+    vars:
+      PATH: '{{.PATH | default "platform/kustomize/seed/overlays/local/lab"}}'
+    cmds:
+      - kustomize build {{.PATH}} --enable-helm | kubectl diff -f -
+
+  # Essential cluster information
+  cluster:info:
+    desc: Show cluster and context information
+    cmds:
+      - cmd: echo "=== Current Context ==="
+        silent: true
+      - kubectl config current-context
+      - cmd: echo -e "\n=== Cluster Info ==="
+        silent: true
+      - kubectl cluster-info
+      - cmd: echo -e "\n=== Node Status ==="
+        silent: true
+      - kubectl get nodes -o wide
+
+  # Quick troubleshooting
+  pods:
+    desc: Show pods that are not running
+    cmds:
+      - kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
