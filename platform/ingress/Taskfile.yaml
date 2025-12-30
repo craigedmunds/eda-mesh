@@ -172,7 +172,7 @@ tasks:
         fi
 
   # Kustomize ingress testing
-  test:kustomize:
+  test:
     desc: Run all kustomize ingress build tests
     dir: tests/kustomize
     cmds:
@@ -187,7 +187,7 @@ tasks:
       - cmd: echo "✅ All kustomize ingress tests passed"
         silent: true
 
-  test:kustomize:argocd:
+  test:argocd:
     desc: Run ArgoCD ingress build tests
     dir: tests/kustomize
     cmds:
@@ -202,7 +202,7 @@ tasks:
       - cmd: echo "✅ ArgoCD ingress tests passed"
         silent: true
 
-  test:kustomize:backstage:
+  test:backstage:
     desc: Run Backstage ingress build tests
     dir: tests/kustomize
     cmds:
@@ -217,7 +217,7 @@ tasks:
       - cmd: echo "✅ Backstage ingress tests passed"
         silent: true
 
-  test:kustomize:kargo:
+  test:kargo:
     desc: Run Kargo ingress build tests
     dir: tests/kustomize
     cmds:
@@ -232,7 +232,7 @@ tasks:
       - cmd: echo "✅ Kargo ingress tests passed"
         silent: true
 
-  test:kustomize:install:
+  test:install:
     desc: Install dependencies for kustomize ingress tests
     dir: tests/kustomize
     cmds:

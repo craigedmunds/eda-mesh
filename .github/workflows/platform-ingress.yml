@@ -26,10 +26,10 @@ jobs:
       matrix:
         test-suite:
           - name: "ArgoCD Ingress"
-            task: "test:kustomize:argocd"
+            task: "test:argocd"
             artifact: "argocd-test-results"
           - name: "Kargo Ingress"
-            task: "test:kustomize:kargo"
+            task: "test:kargo"
             artifact: "kargo-test-results"
       fail-fast: false
     
@@ -55,7 +55,7 @@ jobs:
           kustomize version
       
       - name: Install test dependencies
-        run: task ingress:test:kustomize:install
+        run: task ingress:test:install
       
       - name: Run ${{ matrix.test-suite.name }} tests
         run: task ingress:${{ matrix.test-suite.task }}

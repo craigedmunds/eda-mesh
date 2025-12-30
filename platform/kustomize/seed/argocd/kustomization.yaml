@@ -29,6 +29,17 @@ patches:
           hs = {}
           hs.status = "Healthy"
           return hs
+      - op: add
+        path: /data/resource.customizations.ignoreResourceUpdates.all
+        value: |
+          jsonPointers:
+            - /status
+            - /metadata/managedFields
+            - /metadata/resourceVersion
+            - /metadata/generation
+            - /metadata/creationTimestamp
+            - /metadata/uid
+            - /metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration
   - target:
       kind: ConfigMap
       name: argocd-cmd-params-cm
