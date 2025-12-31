@@ -98,6 +98,19 @@ helmCharts:
           tls:
             secretName: kargo-ctoaas-tls
 
+        # Headlamp - internal access only (based on test expectations)
+        - service:
+            name: cluster-headlamp
+            namespace: headlamp
+            port:
+              name: http
+          ingress:
+            name: headlamp
+            accessPattern: internal
+          domains:
+            name: headlamp
+          tls:
+            secretName: headlamp-ctoaas-tls
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
