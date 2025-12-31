@@ -21,6 +21,21 @@ tasks:
       - kubectl get pods -n argocd
       - kubectl get ingress -n argocd
 
+  
+  ingress:
+    desc: Print ingress for ArgoCD
+    cmds:
+      - cmd: kubectl get ingress argocd-server-ingress -n argocd -o yaml
+
+  restart:
+    desc: Restarts all argocd components
+    cmds:
+      # Restart server pods
+      - kubectl rollout restart deployment/argocd-server -n argocd
+
+      # Restart repo-server (often sequentially with Redis)
+      - kubectl rollout restart deployment/argocd-repo-server -n argocd
+
   password:
     desc: Get ArgoCD admin password
     cmds:

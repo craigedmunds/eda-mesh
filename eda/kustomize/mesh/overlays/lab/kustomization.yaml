@@ -10,13 +10,6 @@ configMapGenerator:
     behavior: add
     literals:
       - targetRevision=feature/backstage-events
-  - name: ingress-environment-config
-    literals:
-      - localDomainSuffix=lab.local.ctoaas.co
-      - publicDomainSuffix=lab.ctoaas.co
-      - ingressClass=traefik
-      - tlsEnabled=letsencrypt-prod
-      - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
 
 patches:
   - target:
@@ -29,6 +22,9 @@ patches:
 generatorOptions:
   disableNameSuffixHash: true
 
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    
 components:
   - ../../../../../platform/kustomize/_common/components/argocd-branch-targetrevision
-  - ../../../../../platform/kustomize/_common/components/ingress-management

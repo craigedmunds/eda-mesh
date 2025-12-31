@@ -10,3 +10,5 @@ node_modules
 # Ignore the charts folder when we use helmCharts in kustomize
 # if we run kustomize locally
 platform/kustomize/seed/supporting-applications/**/charts
+
+test-results.xml

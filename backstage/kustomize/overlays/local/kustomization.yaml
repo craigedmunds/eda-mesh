@@ -3,21 +3,32 @@ kind: Kustomization
 namespace: backstage
 resources:
 - ../../base
-configMapGenerator:
-- name: ingress-environment-config
-  literals:
-  - localDomainSuffix=lab.local.ctoaas.co
-  - publicDomainSuffix=lab.ctoaas.co
-  - ingressClass=traefik
-  - tlsEnabled=letsencrypt-prod
-  - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
-generatorOptions:
-  disableNameSuffixHash: true
+
 # Image will be updated by Kargo
 images:
 - name: ghcr.io/craigedmunds/backstage
   newTag: 0.7.7 # Kargo will update this
-# Components transform ingress based on environment config
-# Only private component for backstage (internal access only)
-components:
-- ../../../../platform/kustomize/_common/components/ingress-management
+
+
+helmGlobals:
+  chartHome: ../../../../helm
+
+helmCharts:
+  - name: traefik-ingress
+    releaseName: backstage-ingress
+    valuesInline:
+      service:
+        name: backstage
+        namespace: backstage
+        port:
+          name: backend
+          number: 7007
+      ingress:
+        accessPattern: internal  # Internal access only for Backstage
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+        secretName: backstage-tls  # Use existing TLS secret
+

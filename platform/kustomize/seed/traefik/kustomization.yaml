@@ -6,10 +6,21 @@ namespace: traefik
 resources:
   - traefik-namespace.yaml
 
-helmChartInflationGenerator:
-  - chartName: traefik
-    chartRepoUrl: https://traefik.github.io/charts
-    chartVersion: 32.1.1
+
+helmCharts:
+  - name: traefik
+    repo: https://traefik.github.io/charts
+    version: 32.1.1
     releaseName: traefik
-    releaseNamespace: traefik
-    values: values.yaml
+    namespace: traefik
+    valuesFile: values.yaml
+    includeCRDs: true
+
+patches:
+  - target:
+      kind: Service
+      name: traefik
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1ignore-healthcheck
+        value: "true"

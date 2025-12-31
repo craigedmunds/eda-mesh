@@ -10,7 +10,7 @@ resources:
   
   # Direct installations (no longer ArgoCD applications)
   - cert-manager/
-  # - rabbitmq-operator/
+  - rabbitmq-operator/
   - strimzi/
   - argo-rollouts/
   - kargo/

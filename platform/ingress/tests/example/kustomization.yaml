@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Lab environment overlay - includes all capabilities and supporting applications
+# Uses Helm charts for ingress resources instead of hardcoded manifests
+
+helmGlobals:
+  chartHome: ../../../../helm
+
+helmCharts:
+  # Private ingress example (internal access only)
+  - name: traefik-ingress
+    releaseName: sample-private
+    valuesInline:
+      service:
+        name: sample-server
+        namespace: argocd
+        port:
+          name: http
+      ingress:
+        name: sample-ingress-private
+        accessPattern: internal
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+  
+  # Public ingress example (internal + external access)
+  # - name: traefik-ingress
+  #   releaseName: sample-public
+  #   valuesInline:
+  #     service:
+  #       name: sample-server
+  #       namespace: argocd
+  #       port:
+  #         name: http
+  #     ingress:
+  #       name: sample-ingress-public
+  #       accessPattern: public
+  #     domains:
+  #       localDomainSuffix: lab.local.ctoaas.co
+  #       publicDomainSuffix: lab.ctoaas.co
+  #     t pu
+  #       enabled: true
+  #       issuer: letsencrypt-prod

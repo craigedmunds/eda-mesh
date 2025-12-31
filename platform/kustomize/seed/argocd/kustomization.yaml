@@ -22,13 +22,24 @@ patches:
     patch: |-
       - op: add
         path: /data/kustomize.buildOptions
-        value: --enable-helm
+        value: --enable-helm --load-restrictor=LoadRestrictionsNone
       - op: add
         path: /data/resource.customizations.health.networking.k8s.io_Ingress
         value: |
           hs = {}
           hs.status = "Healthy"
           return hs
+      - op: add
+        path: /data/resource.customizations.ignoreResourceUpdates.all
+        value: |
+          jsonPointers:
+            - /status
+            - /metadata/managedFields
+            - /metadata/resourceVersion
+            - /metadata/generation
+            - /metadata/creationTimestamp
+            - /metadata/uid
+            - /metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration
   - target:
       kind: ConfigMap
       name: argocd-cmd-params-cm

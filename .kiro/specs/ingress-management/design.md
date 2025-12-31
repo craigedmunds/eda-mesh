@@ -13,30 +13,39 @@ graph TB
     subgraph "Application Layer"
         A[Generic Ingress Manifest]
         B[Helm Chart with Generic Values]
+        C[Local Traefik Ingress Helm Chart]
     end
     
     subgraph "Kustomize Component System"
-        C[Environment Detection via ConfigMap]
-        D[Private Ingress Component<br/>ingress.ctoaas.co/managed: true]
-        E[Public Ingress Component<br/>ingress.ctoaas.co/managed-public: true]
-        F[Label-based Selection]
+        D[Environment Detection via ConfigMap]
+        E[Helm Chart Integration<br/>helmCharts: local charts]
+        F[Private ReplacementTransformer<br/>ingress.ctoaas.co/managed: true]
+        G[Public ReplacementTransformer<br/>ingress.ctoaas.co/managed-public: true]
+        H[Label-based Selection]
     end
     
     subgraph "Environment-Specific Outputs"
-        G[Private: *.lab.local.ctoaas.co only<br/>Internal access]
-        H[Public: *.lab.local.ctoaas.co + *.lab.ctoaas.co<br/>Internal + External access]
+        I[Private IngressRoute<br/>Internal: *.lab.local.ctoaas.co only]
+        J[Public IngressRoute<br/>Internal + External: *.lab.local.ctoaas.co + *.lab.ctoaas.co]
+        K[Templated Traefik Ingress<br/>Environment-specific annotations]
     end
     
-    A --> F
-    B --> F
-    F --> C
-    C --> D
+    A --> H
+    B --> H
     C --> E
+    H --> D
+    D --> F
     D --> G
-    E --> H
+    E --> K
+    F --> I
+    G --> J
 ```
 
-The system follows a single-component pattern where each environment overlay includes the ingress management component, with environment-specific configuration provided through ConfigMaps.
+The system provides multiple approaches for ingress management:
+
+1. **Kustomize Component Approach**: Uses ReplacementTransformer components to remove original Ingress resources and generate technology-specific resources (e.g., Traefik IngressRoute) with appropriate access patterns
+2. **Local Helm Chart Approach**: Uses kustomize's helmCharts integration with local Traefik ingress charts for better templating capabilities and reduced configuration repetition
+3. **Hybrid Approach**: Combines both methods where appropriate, using Helm charts for complex templating and kustomize components for simple transformations
 
 ## Components and Interfaces
 
@@ -92,13 +101,6 @@ Each environment uses kustomize overlays to include the ingress management compo
 - Cloudflare DNS-01 challenge configuration
 - Automatic TLS secret generation
 
-### 5. Component Configuration Management
-
-The system uses a single component with environment-specific configuration through kustomize overlays:
-```
-kustomize/_common/components/ingress-management/
-├── kustomization.yaml          # Ingress management component
-└── README.md                   # Documentation
 ```
 
 ## Data Models

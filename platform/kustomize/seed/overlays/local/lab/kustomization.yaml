@@ -17,7 +17,7 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
-  - ../../../../_common/components/ingress-management
+
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
@@ -26,19 +26,37 @@ configMapGenerator:
     literals:
       - targetRevision=feature/backstage-events
 
-  - name: ingress-environment-config
-    namespace: argocd
-    behavior: add
-    literals:
-      - localDomainSuffix=lab.local.ctoaas.co
-      - publicDomainSuffix=lab.ctoaas.co
-      - ingressClass=traefik
-      - tlsEnabled=letsencrypt-prod
-      - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
+
+helmGlobals:
+  chartHome: ../../../../../../helm
+
+helmCharts:
+  # Private ingress example (internal access only)
+  - name: traefik-ingress
+    releaseName: argocd
+    valuesInline:
+      service:
+        name: argocd-server
+        namespace: argocd
+        port:
+          name: http
+      ingress:
+        name: argocd-server-ingress
+        accessPattern: internal
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+        name: argocd
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+        secretName: argocd-ctoaas-tls
 
 generatorOptions:
   disableNameSuffixHash: true
-
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    
 # Lab-specific patches
 patches:
 
@@ -63,3 +81,21 @@ patches:
       - op: replace
         path: /spec/source/path
         value: eda/kustomize/mesh/overlays/lab
+
+  # Add argocd ingress
+  # - target:
+  #     kind: Service
+  #     name: argocd
+  #   patch: |-
+  #     - op: add
+  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.rule
+  #       value: Host(`argocd.lab.local.ctoaas.co`)
+  #     - op: add
+  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.entrypoints
+  #       value: websecure
+  #     - op: add
+  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls
+  #       value: "true"
+  #     - op: add
+  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls.certresolver
+  #       value: letsencrypt-prod

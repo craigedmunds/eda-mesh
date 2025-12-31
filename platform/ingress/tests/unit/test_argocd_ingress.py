@@ -80,9 +80,6 @@ class TestArgoCDIngressLabOverlay(PrivateIngressTest, EnvironmentSpecificTest):
         ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
         tls_configs = ingress.get("spec", {}).get("tls", [])
         
-        if not tls_configs:
-            pytest.skip("TLS not configured for this ingress")
-        
         # Should have exactly one TLS configuration
         assert len(tls_configs) == 1, "ArgoCD ingress should have exactly one TLS configuration"
         
@@ -90,7 +87,7 @@ class TestArgoCDIngressLabOverlay(PrivateIngressTest, EnvironmentSpecificTest):
         secret_name = tls_config.get("secretName")
         
         # Secret name should be based on ingress name
-        expected_secret_name = "argocd-server-ingress"
+        expected_secret_name = "argocd-ctoaas-tls"
         assert secret_name == expected_secret_name, \
             f"TLS secret name should be '{expected_secret_name}', got '{secret_name}'"
     

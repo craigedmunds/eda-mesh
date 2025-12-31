@@ -8,14 +8,13 @@ Tests the platform/kustomize/seed/supporting-applications/kargo/ to ensure:
 - Unlabeled ingress resources are not transformed
 """
 import pytest
-from base_test import PrivateIngressTest
+from base_test import BaseIngressTest
 
 
 @pytest.mark.ingress
-@pytest.mark.unmanaged
 @pytest.mark.kargo
-class TestKargoIngressUnmanaged(PrivateIngressTest):
-    """Test Kargo ingress remains unmanaged and unchanged."""
+class TestKargoIngressHardcoded(BaseIngressTest):
+    """Test Kargo ingress (hardcoded with standard configuration)."""
     
     @staticmethod
     def get_overlay_path() -> str:
@@ -32,6 +31,22 @@ class TestKargoIngressUnmanaged(PrivateIngressTest):
             "kargo.lab.ctoaas.co",
             "kargo.lab.local.ctoaas.co"
         ]
+    
+    def test_has_no_management_labels(self, kustomize_builder, ingress_validator):
+        """Test that ingress has no management labels (hardcoded, not generated)."""
+        ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
+        
+        assert not ingress_validator.has_management_label(ingress, "any"), \
+            f"Hardcoded ingress '{self.get_expected_ingress_name()}' should not have management labels"
+    
+    def test_hosts_unchanged(self, kustomize_builder, ingress_validator):
+        """Test that hosts remain exactly as specified (hardcoded)."""
+        ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
+        actual_hosts = ingress_validator.get_hosts(ingress)
+        expected_hosts = self.get_expected_hosts()
+        
+        assert set(actual_hosts) == set(expected_hosts), \
+            f"Hardcoded ingress hosts should remain unchanged. Expected: {expected_hosts}, Got: {actual_hosts}"
     
     def test_has_hardcoded_domains(self, kustomize_builder, ingress_validator):
         """Test that Kargo ingress has hardcoded domain patterns."""
@@ -95,9 +110,6 @@ class TestKargoIngressUnmanaged(PrivateIngressTest):
         ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
         tls_configs = ingress.get("spec", {}).get("tls", [])
         
-        if not tls_configs:
-            pytest.skip("TLS not configured for this ingress")
-        
         # Should have exactly one TLS configuration
         assert len(tls_configs) == 1, "Kargo ingress should have exactly one TLS configuration"
         
@@ -118,13 +130,13 @@ class TestKargoIngressUnmanaged(PrivateIngressTest):
             f"Kargo ingress should be in 'kargo' namespace, got '{namespace}'"
     
     def test_no_ingress_class_specified(self, kustomize_builder, ingress_validator):
-        """Test that Kargo ingress has no ingress class (uses default)."""
+        """Test that Kargo ingress has traefik ingress class specified."""
         ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
         ingress_class = ingress.get("spec", {}).get("ingressClassName")
         
-        # Should not have ingress class specified (uses cluster default)
-        assert ingress_class is None, \
-            f"Kargo ingress should not have ingressClassName specified, got '{ingress_class}'"
+        # Should have traefik ingress class specified
+        assert ingress_class == "traefik", \
+            f"Kargo ingress should have ingressClassName 'traefik', got '{ingress_class}'"
     
     def test_has_webhook_paths(self, kustomize_builder, ingress_validator):
         """Test that Kargo ingress has webhook paths configured."""
@@ -157,17 +169,44 @@ class TestKargoIngressUnmanaged(PrivateIngressTest):
         
         assert webhook_paths_found, "Kargo ingress should have /webhooks paths"
         assert root_paths_found, "Kargo ingress should have / (root) paths"
+    
+    def test_has_traefik_annotations(self, kustomize_builder, ingress_validator):
+        """Test that Kargo ingress has required Traefik annotations."""
+        ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
+        annotations = ingress_validator.get_annotations(ingress)
+        
+        # Should have Traefik router annotations
+        assert "traefik.ingress.kubernetes.io/router.entrypoints" in annotations, \
+            "Kargo ingress should have Traefik router.entrypoints annotation"
+        assert annotations["traefik.ingress.kubernetes.io/router.entrypoints"] == "websecure", \
+            f"Traefik entrypoints should be 'websecure', got '{annotations.get('traefik.ingress.kubernetes.io/router.entrypoints')}'"
+        
+        assert "traefik.ingress.kubernetes.io/router.tls" in annotations, \
+            "Kargo ingress should have Traefik router.tls annotation"
+        assert annotations["traefik.ingress.kubernetes.io/router.tls"] == "true", \
+            f"Traefik TLS should be 'true', got '{annotations.get('traefik.ingress.kubernetes.io/router.tls')}'"
+    
+    def test_has_cert_manager_annotations(self, kustomize_builder, ingress_validator):
+        """Test that Kargo ingress has cert-manager annotations."""
+        ingress = self.get_ingress_resource(kustomize_builder, ingress_validator)
+        annotations = ingress_validator.get_annotations(ingress)
+        
+        # Should have cert-manager cluster issuer annotation
+        assert "cert-manager.io/cluster-issuer" in annotations, \
+            "Kargo ingress should have cert-manager cluster-issuer annotation"
+        assert annotations["cert-manager.io/cluster-issuer"] == "letsencrypt-prod", \
+            f"cert-manager issuer should be 'letsencrypt-prod', got '{annotations.get('cert-manager.io/cluster-issuer')}'"
 
 
 @pytest.mark.ingress
 @pytest.mark.integration
 class TestKargoIngressIntegration:
-    """Integration tests for Kargo ingress (unmanaged)."""
+    """Integration tests for Kargo ingress (hardcoded)."""
     
     def test_kargo_ingress_unchanged_in_lab_overlay(self, kustomize_builder, ingress_validator):
         """Test that Kargo ingress remains unchanged when built through lab overlay."""
         # Build the lab overlay which includes Kargo
-        lab_documents = kustomize_builder(TestKargoIngressUnmanaged.get_overlay_path()) # "platform/kustomize/seed/overlays/local/lab")
+        lab_documents = kustomize_builder(TestKargoIngressHardcoded.get_overlay_path()) # "platform/kustomize/seed/overlays/local/lab")
         
         # Find Kargo ingress in the lab build
         kargo_ingress = ingress_validator.find_ingress_by_name(lab_documents, "kargo-api")
@@ -188,36 +227,7 @@ class TestKargoIngressIntegration:
         assert not ingress_validator.has_management_label(kargo_ingress, "any"), \
             "Kargo ingress should not have management labels"
         
-        # Should not have generated annotations
+        # Should have cert-manager annotations (hardcoded, not generated by management)
         annotations = ingress_validator.get_annotations(kargo_ingress)
-        assert "cert-manager.io/cluster-issuer" not in annotations, \
-            "Kargo ingress should not have generated cert-manager annotations"
-    
-    def test_kargo_vs_managed_ingress_comparison(self, kustomize_builder, ingress_validator):
-        """Test that Kargo (unmanaged) differs from managed ingresses."""
-        # Build lab overlay to get both Kargo and ArgoCD ingresses
-        lab_documents = kustomize_builder(TestKargoIngressUnmanaged.get_overlay_path()) #"platform/kustomize/seed/overlays/local/lab")
-        
-        kargo_ingress = ingress_validator.find_ingress_by_name(lab_documents, "kargo-api")
-        argocd_ingress = ingress_validator.find_ingress_by_name(lab_documents, "argocd-server-ingress")
-        
-        if not kargo_ingress or not argocd_ingress:
-            pytest.skip("Both Kargo and ArgoCD ingresses needed for comparison")
-        
-        # Kargo should have no management labels, ArgoCD should have public label
-        assert not ingress_validator.has_management_label(kargo_ingress, "any"), \
-            "Kargo should have no management labels"
-        assert ingress_validator.has_management_label(argocd_ingress, "public"), \
-            "ArgoCD should have public management label"
-        
-        # Kargo should have hardcoded domains, ArgoCD should have generated domains
-        kargo_hosts = ingress_validator.get_hosts(kargo_ingress)
-        argocd_hosts = ingress_validator.get_hosts(argocd_ingress)
-        
-        # Kargo hosts should be exactly as specified
-        assert "kargo.lab.ctoaas.co" in kargo_hosts, "Kargo should have hardcoded external domain"
-        assert "kargo.lab.local.ctoaas.co" in kargo_hosts, "Kargo should have hardcoded internal domain"
-        
-        # ArgoCD hosts should be generated (service name + domain suffix)
-        assert "argocd.lab.ctoaas.co" in argocd_hosts, "ArgoCD should have generated external domain"
-        assert "argocd.lab.local.ctoaas.co" in argocd_hosts, "ArgoCD should have generated internal domain"
+        assert "cert-manager.io/cluster-issuer" in annotations, \
+            "Kargo ingress should have hardcoded cert-manager annotations"
