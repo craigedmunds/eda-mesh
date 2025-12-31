@@ -12,20 +12,5 @@ resources:
   # - https://github.com/craigedmunds/confluent-kubernetes-examples//quickstart-deploy/kraft-quickstart/confluent-platform-c3%2B%2B?ref=feature/restructure-kraft-quickstart
   # - https://raw.githubusercontent.com/craigedmunds/confluent-kubernetes-examples/refs/heads/feature/restructure-kraft-quickstart/quickstart-deploy/kraft-quickstart/confluent-platform-c3%2B%2B/confluent-platform-c3%2B%2B.yaml
   - cfk.yaml
-  - ingress.yaml
 
-configMapGenerator:
-- name: ingress-environment-config
-  literals:
-    - localDomainSuffix=lab.local.ctoaas.co
-    - publicDomainSuffix=lab.ctoaas.co
-    - ingressClass=traefik
-    - tlsEnabled=letsencrypt-prod
-    - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
-
-generatorOptions:
-  disableNameSuffixHash: true
-
-components:
-- ../../../platform/kustomize/_common/components/ingress-management
 

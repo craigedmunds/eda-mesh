@@ -17,7 +17,6 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
-  # - ../../../../_common/components/ingress-management
 
 
 configMapGenerator:
@@ -52,19 +51,12 @@ helmCharts:
         issuer: letsencrypt-prod
         secretName: argocd-ctoaas-tls
 
-  # - name: ingress-environment-config
-  #   namespace: argocd
-  #   behavior: add
-  #   literals:
-  #     - localDomainSuffix=lab.local.ctoaas.co
-  #     - publicDomainSuffix=lab.ctoaas.co
-  #     - ingressClass=traefik
-  #     - tlsEnabled=letsencrypt-prod
-  #     - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
-
 generatorOptions:
   disableNameSuffixHash: true
-
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+    
 # Lab-specific patches
 patches:
 

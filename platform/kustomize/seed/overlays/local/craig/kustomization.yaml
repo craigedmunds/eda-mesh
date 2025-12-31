@@ -11,7 +11,6 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
-  - ../../../../_common/components/ingress-management
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
@@ -20,26 +19,5 @@ configMapGenerator:
     literals:
       - targetRevision=feature/backstage-events
 
-  - name: ingress-environment-config
-    namespace: argocd
-    literals:
-      - localDomainSuffix=127.0.0.1.nip.io
-      - ingressClass=traefik
-      - tlsEnabled=""
-      - annotations=traefik.ingress.kubernetes.io/router.tls=true
-
 generatorOptions:
   disableNameSuffixHash: true
-
-# Craig-specific patches
-patches:
-  - target:
-      kind: Ingress
-      name: argocd-server-ingress
-    patch: |-
-      - op: add
-        path: /metadata/annotations/cert-manager.io~1cluster-issuer
-        value: letsencrypt-prod
-      - op: replace
-        path: /spec/rules/0/host
-        value: argocd.127.0.0.1.nip.io

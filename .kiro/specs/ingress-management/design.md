@@ -101,13 +101,6 @@ Each environment uses kustomize overlays to include the ingress management compo
 - Cloudflare DNS-01 challenge configuration
 - Automatic TLS secret generation
 
-### 5. Component Configuration Management
-
-The system uses a single component with environment-specific configuration through kustomize overlays:
-```
-kustomize/_common/components/ingress-management/
-├── kustomization.yaml          # Ingress management component
-└── README.md                   # Documentation
 ```
 
 ## Data Models

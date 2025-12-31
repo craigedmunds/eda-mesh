@@ -44,21 +44,3 @@ helmCharts:
   #     t pu
   #       enabled: true
   #       issuer: letsencrypt-prod
-
-# components:
-#   - ../../../_common/components/ingress-management
-
-# configMapGenerator:
-#   - name: ingress-environment-config
-#     namespace: argocd
-#     behavior: add
-#     literals:
-#       - localDomainSuffix=lab.local.ctoaas.co
-#       - publicDomainSuffix=lab.ctoaas.co
-#       - ingressClass=traefik
-#       - tlsEnabled=letsencrypt-prod
-#       - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
-
-# generatorOptions:
-#   disableNameSuff
-#   disableNameSuffixHash: true

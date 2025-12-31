@@ -229,8 +229,6 @@ Troubleshooting:
    # Verify component is included
    cat platform/kustomize/seed/overlays/local/lab/kustomization.yaml
    
-   # Check component configuration
-   cat platform/kustomize/_common/components/ingress-management/kustomization.yaml
    ```
 
 5. **Review test artifacts**:
