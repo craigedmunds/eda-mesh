@@ -117,7 +117,7 @@ tasks:
     vars:
       OVERLAY: overlays/local/lab
     cmds:
-      - kustomize build {{.OVERLAY}} --enable-helm
+      - kustomize build {{.OVERLAY}} --load-restrictor=LoadRestrictionsNone --enable-helm
       # - kustomize build kustomize/seed/{{.OVERLAY}} --enable-helm | kubectl apply -f -
 
 

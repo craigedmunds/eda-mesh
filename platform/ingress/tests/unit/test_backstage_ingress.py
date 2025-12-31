@@ -72,8 +72,8 @@ class TestBackstageIngressLocalOverlay(PrivateIngressTest, EnvironmentSpecificTe
                 
                 assert service.get("name") == "backstage", \
                     f"Backstage ingress should point to 'backstage' service, got '{service.get('name')}'"
-                assert service.get("port", {}).get("name") == "http-backend", \
-                    f"Backstage ingress should use 'http-backend' port, got '{service.get('port', {}).get('name')}'"
+                assert service.get("port", {}).get("name") == "backend", \
+                    f"Backstage ingress should use 'backend' port, got '{service.get('port', {}).get('name')}'"
     
     def test_tls_secret_name_generation(self, kustomize_builder, ingress_validator):
         """Test that TLS secret name is generated correctly."""
@@ -86,8 +86,8 @@ class TestBackstageIngressLocalOverlay(PrivateIngressTest, EnvironmentSpecificTe
         tls_config = tls_configs[0]
         secret_name = tls_config.get("secretName")
         
-        # Secret name should be based on ingress name
-        expected_secret_name = "backstage-ingress"
+        # Secret name should be the existing Backstage TLS secret
+        expected_secret_name = "backstage-tls"
         assert secret_name == expected_secret_name, \
             f"TLS secret name should be '{expected_secret_name}', got '{secret_name}'"
     
@@ -165,9 +165,10 @@ class TestBackstageIngressIntegration:
         assert hosts[0].endswith(".lab.local.ctoaas.co"), "Should have internal domain only"
         assert not any(h.endswith(".lab.ctoaas.co") for h in hosts), "Should not have external domain"
         
-        # Should have private management label
-        assert labels.get("ingress.ctoaas.co/managed") == "true", "Should have private management label"
-        assert "ingress.ctoaas.co/managed-public" not in labels, "Should not have public management label"
+        # Should NOT have management labels (using Helm chart approach now)
+        if labels:
+            assert "ingress.ctoaas.co/managed" not in labels, "Should not have management labels with Helm chart approach"
+            assert "ingress.ctoaas.co/managed-public" not in labels, "Should not have public management label"
         
         # TLS should cover the single domain
         if tls_hosts:

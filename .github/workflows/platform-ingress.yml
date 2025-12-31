@@ -100,10 +100,10 @@ jobs:
           kustomize version
       
       - name: Install test dependencies
-        run: task ingress:test:kustomize:install
+        run: task ingress:test:install
       
       - name: Run all platform ingress tests
-        run: task ingress:test:kustomize
+        run: task ingress:test
       
       - name: Upload comprehensive test results
         uses: actions/upload-artifact@v4

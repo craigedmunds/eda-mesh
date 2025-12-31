@@ -15,3 +15,12 @@ helmCharts:
     namespace: traefik
     valuesFile: values.yaml
     includeCRDs: true
+
+patches:
+  - target:
+      kind: Service
+      name: traefik
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1ignore-healthcheck
+        value: "true"

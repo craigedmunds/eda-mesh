@@ -87,7 +87,7 @@ class TestArgoCDIngressLabOverlay(PrivateIngressTest, EnvironmentSpecificTest):
         secret_name = tls_config.get("secretName")
         
         # Secret name should be based on ingress name
-        expected_secret_name = "argocd-server-ingress"
+        expected_secret_name = "argocd-ctoaas-tls"
         assert secret_name == expected_secret_name, \
             f"TLS secret name should be '{expected_secret_name}', got '{secret_name}'"
     

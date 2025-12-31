@@ -32,7 +32,7 @@ Tests are organized using pytest markers:
 
 1. Install dependencies:
    ```bash
-   task ingress:test:kustomize:install
+   task ingress:test:install
    ```
 
 2. Ensure kustomize is installed:

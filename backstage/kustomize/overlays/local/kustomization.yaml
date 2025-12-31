@@ -3,32 +3,32 @@ kind: Kustomization
 namespace: backstage
 resources:
 - ../../base
+
 # Image will be updated by Kargo
 images:
 - name: ghcr.io/craigedmunds/backstage
   newTag: 0.7.7 # Kargo will update this
-# Add Traefik annotations to the service
-patches:
-- target:
-    kind: Service
-    name: backstage
-  patch: |-
-    - op: add
-      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.expose
-      value: "true"
-    - op: add
-      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.rule
-      value: Host(`backstage.lab.local.ctoaas.co`)
-    - op: add
-      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.entrypoints
-      value: websecure
-    - op: add
-      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls
-      value: "true"
-    - op: add
-      path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls.certresolver
-      value: letsencrypt-prod
-    - op: add
-      path: /metadata/annotations/traefik.ingress.kubernetes.io~1service.port
-      value: "7007"
+
+
+helmGlobals:
+  chartHome: ../../../../helm
+
+helmCharts:
+  - name: traefik-ingress
+    releaseName: backstage-ingress
+    valuesInline:
+      service:
+        name: backstage
+        namespace: backstage
+        port:
+          name: backend
+          number: 7007
+      ingress:
+        accessPattern: internal  # Internal access only for Backstage
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+        secretName: backstage-tls  # Use existing TLS secret
 

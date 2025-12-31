@@ -17,7 +17,8 @@ resources:
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
-  - ../../../../_common/components/ingress-management
+  # - ../../../../_common/components/ingress-management
+
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
@@ -26,15 +27,40 @@ configMapGenerator:
     literals:
       - targetRevision=feature/backstage-events
 
-  - name: ingress-environment-config
-    namespace: argocd
-    behavior: add
-    literals:
-      - localDomainSuffix=lab.local.ctoaas.co
-      - publicDomainSuffix=lab.ctoaas.co
-      - ingressClass=traefik
-      - tlsEnabled=letsencrypt-prod
-      - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
+
+helmGlobals:
+  chartHome: ../../../../../../helm
+
+helmCharts:
+  # Private ingress example (internal access only)
+  - name: traefik-ingress
+    releaseName: argocd
+    valuesInline:
+      service:
+        name: argocd-server
+        namespace: argocd
+        port:
+          name: http
+      ingress:
+        name: argocd-server-ingress
+        accessPattern: internal
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+        name: argocd
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+        secretName: argocd-ctoaas-tls
+
+  # - name: ingress-environment-config
+  #   namespace: argocd
+  #   behavior: add
+  #   literals:
+  #     - localDomainSuffix=lab.local.ctoaas.co
+  #     - publicDomainSuffix=lab.ctoaas.co
+  #     - ingressClass=traefik
+  #     - tlsEnabled=letsencrypt-prod
+  #     - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
 
 generatorOptions:
   disableNameSuffixHash: true

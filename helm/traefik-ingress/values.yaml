@@ -1,0 +1,58 @@
+# Default values for traefik-ingress chart
+# This chart creates Traefik ingress resources with environment-specific configuration
+
+# Service configuration
+service:
+  name: ""  # Required: Name of the service to expose
+  namespace: ""  # Required: Namespace where the service is located
+  port:
+    name: "http"  # Service port name
+    number: 80    # Service port number
+
+# Ingress configuration
+ingress:
+  name: ""  # Optional: Override ingress name (defaults to service.name)
+  className: "traefik"  # Ingress class name
+  
+  # Path configuration
+  path: "/"
+  pathType: "Prefix"
+  
+  # Access pattern: "internal" for internal-only, "public" for internal+external
+  accessPattern: "internal"  # Options: "internal", "public"
+
+# Domain configuration
+domains:
+  
+  name: "" # override the url prefix, defaults to service name
+  
+  # Internal domain suffix (always applied)
+  localDomainSuffix: "127.0.0.1.nip.io"  # Default for local development
+  
+  # External domain suffix (only for public access)
+  publicDomainSuffix: ""  # Only used when accessPattern is "public"
+  
+  # Custom subdomain prefix (optional)
+  subdomain: ""  # If specified, creates subdomain.service.domain pattern
+
+# TLS configuration
+tls:
+  enabled: false  # Enable TLS termination
+  issuer: ""      # cert-manager cluster issuer (e.g., "letsencrypt-prod")
+  secretName: ""  # Optional: Override TLS secret name (auto-generated if empty)
+
+# Traefik-specific annotations
+traefik:
+  # Router configuration
+  router:
+    entrypoints: "websecure"  # Traefik entrypoints
+    tls: true                 # Enable TLS on router
+    
+  # Additional annotations (merged with generated ones)
+  annotations: {}
+
+# Additional annotations to add to the ingress
+annotations: {}
+
+# Additional labels to add to the ingress
+labels: {}

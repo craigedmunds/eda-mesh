@@ -174,7 +174,7 @@ tasks:
   # Kustomize ingress testing
   test:
     desc: Run all kustomize ingress build tests
-    dir: tests/kustomize
+    dir: tests/unit
     cmds:
       - cmd: echo "🧪 Running kustomize ingress build tests..."
         silent: true
@@ -189,25 +189,25 @@ tasks:
 
   test:sample:build:
     desc: Run sample generation
-    dir: ../kustomize/_common/tests/ingress
+    dir: tests/example
     cmds:
       - cmd: echo "🧪 Running component tests..."
         silent: true
       - silent: true
         cmd: |
           echo "Building kustomize configuration..."
-          kustomize build .
+          kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone .
 
   test:sample:
     desc: Run sample ReplacementTransformer component tests with IngressRoute generation
-    dir: ../kustomize/_common/tests/ingress
+    dir: tests/example
     cmds:
       - cmd: echo "🧪 Running ReplacementTransformer component tests..."
         silent: true
       - silent: true
         cmd: |
           echo "Building kustomize configuration..."
-          kustomize build . > /tmp/ingress-test-output.yaml
+          kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone . > /tmp/ingress-test-output.yaml
           
           echo "✅ Kustomize build successful"
           
@@ -264,7 +264,7 @@ tasks:
 
   test:argocd:
     desc: Run ArgoCD ingress build tests
-    dir: tests/kustomize
+    dir: tests/unit
     cmds:
       - cmd: echo "🧪 Running ArgoCD ingress tests..."
         silent: true
@@ -279,7 +279,7 @@ tasks:
 
   test:backstage:
     desc: Run Backstage ingress build tests
-    dir: tests/kustomize
+    dir: tests/unit
     cmds:
       - cmd: echo "🧪 Running Backstage ingress tests..."
         silent: true
@@ -294,7 +294,7 @@ tasks:
 
   test:kargo:
     desc: Run Kargo ingress build tests
-    dir: tests/kustomize
+    dir: tests/unit
     cmds:
       - cmd: echo "🧪 Running Kargo ingress tests..."
         silent: true
@@ -309,7 +309,7 @@ tasks:
 
   test:install:
     desc: Install dependencies for kustomize ingress tests
-    dir: tests/kustomize
+    dir: tests/unit
     cmds:
       - cmd: echo "📦 Installing kustomize test dependencies..."
         silent: true

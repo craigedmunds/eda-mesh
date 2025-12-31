@@ -53,6 +53,7 @@ def kustomize_builder(project_root):
         cmd = ["kustomize", "build", str(full_path)]
         if enable_helm:
             cmd.append("--enable-helm")
+            cmd.append("--load-restrictor=LoadRestrictionsNone")
             
         print(f"🔨 Building kustomize overlay: {overlay_path}")  # Show when actually building
         

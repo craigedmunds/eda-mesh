@@ -22,7 +22,7 @@ patches:
     patch: |-
       - op: add
         path: /data/kustomize.buildOptions
-        value: --enable-helm
+        value: --enable-helm --load-restrictor=LoadRestrictionsNone
       - op: add
         path: /data/resource.customizations.health.networking.k8s.io_Ingress
         value: |

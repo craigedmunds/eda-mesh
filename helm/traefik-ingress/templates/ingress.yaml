@@ -1,0 +1,114 @@
+{{/*
+Traefik Ingress Template
+Supports both internal-only and public (internal+external) domain patterns
+*/}}
+{{- $serviceName := required "service.name is required" .Values.service.name }}
+{{- $namespace := required "service.namespace is required" .Values.service.namespace }}
+{{- $defaultIngressName := print $serviceName "-ingress" }}
+{{- $ingressName := .Values.ingress.name | default $defaultIngressName }}
+{{- $localDomainSuffix := required "domains.localDomainSuffix is required" .Values.domains.localDomainSuffix }}
+{{- $accessPattern := .Values.ingress.accessPattern | default "internal" }}
+
+{{/* Generate host names */}}
+{{- $baseHost := .Values.domains.name | default $serviceName }}
+{{- if .Values.domains.subdomain }}
+{{- $baseHost = printf "%s.%s" .Values.domains.subdomain $serviceName }}
+{{- end }}
+
+{{- $internalHost := printf "%s.%s" $baseHost $localDomainSuffix }}
+{{- $externalHost := "" }}
+{{- if and (eq $accessPattern "public") .Values.domains.publicDomainSuffix }}
+{{- $externalHost = printf "%s.%s" $baseHost .Values.domains.publicDomainSuffix }}
+{{- end }}
+
+{{/* Generate TLS secret name */}}
+{{- $tlsSecretName := .Values.tls.secretName }}
+{{- if and .Values.tls.enabled (not $tlsSecretName) }}
+{{- if eq $accessPattern "public" }}
+{{- $tlsSecretName = printf "%s-%s-tls" $ingressName (replace "." "-" .Values.domains.publicDomainSuffix | replace "-co" "") }}
+{{- else }}
+{{- $tlsSecretName = printf "%s-%s-tls" $ingressName (replace "." "-" $localDomainSuffix | replace "-co" "") }}
+{{- end }}
+{{- end }}
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $ingressName }}
+  namespace: {{ $namespace }}
+  labels:
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    # Traefik-specific annotations
+    {{- if .Values.traefik.router.entrypoints }}
+    traefik.ingress.kubernetes.io/router.entrypoints: {{ .Values.traefik.router.entrypoints }}
+    {{- end }}
+    {{- if .Values.traefik.router.tls }}
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    {{- end }}
+    
+    # cert-manager annotations
+    {{- if and .Values.tls.enabled .Values.tls.issuer }}
+    cert-manager.io/cluster-issuer: {{ .Values.tls.issuer }}
+    {{- end }}
+    
+    # Additional Traefik annotations
+    {{- with .Values.traefik.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    
+    # Additional custom annotations
+    {{- with .Values.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  
+  {{- if .Values.tls.enabled }}
+  tls:
+  - hosts:
+    - {{ $internalHost }}
+    {{- if $externalHost }}
+    - {{ $externalHost }}
+    {{- end }}
+    secretName: {{ $tlsSecretName }}
+  {{- end }}
+  
+  rules:
+  # Internal domain rule (always present)
+  - host: {{ $internalHost }}
+    http:
+      paths:
+      - path: {{ .Values.ingress.path }}
+        pathType: {{ .Values.ingress.pathType }}
+        backend:
+          service:
+            name: {{ $serviceName }}
+            port:
+              {{- if .Values.service.port.name }}
+              name: {{ .Values.service.port.name }}
+              {{- else }}
+              number: {{ .Values.service.port.number }}
+              {{- end }}
+  
+  {{- if $externalHost }}
+  # External domain rule (only for public access)
+  - host: {{ $externalHost }}
+    http:
+      paths:
+      - path: {{ .Values.ingress.path }}
+        pathType: {{ .Values.ingress.pathType }}
+        backend:
+          service:
+            name: {{ $serviceName }}
+            port:
+              {{- if .Values.service.port.name }}
+              name: {{ .Values.service.port.name }}
+              {{- else }}
+              number: {{ .Values.service.port.number }}
+              {{- end }}
+  {{- end }}

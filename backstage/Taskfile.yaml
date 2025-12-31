@@ -33,6 +33,13 @@ tasks:
       - cmd: echo "Applied Backstage configuration"
         silent: true
 
+  kustomize:build:
+    desc: Build Backstage kustomize configuration
+    dir: kustomize/overlays/local
+    cmds:
+      - kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone .
+      
+
   diff:
     desc: Show diff between local changes and cluster state
     cmds:

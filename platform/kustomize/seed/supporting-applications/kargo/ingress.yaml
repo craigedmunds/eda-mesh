@@ -3,7 +3,14 @@ kind: Ingress
 metadata:
   name: kargo-api
   namespace: kargo
+  annotations:
+    # Traefik-specific annotations
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    # cert-manager annotations
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  ingressClassName: traefik
   tls:
   - hosts:
     - kargo.lab.local.ctoaas.co

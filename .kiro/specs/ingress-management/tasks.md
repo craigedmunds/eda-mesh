@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation plan transforms the current hardcoded ingress management approach into an automated, environment-aware system using kustomize components. The plan includes creating a reusable kustomize component, setting up environment-specific configurations, and migrating existing ingress resources to use the new label-based management system.
+This implementation plan enhances the current ingress management system by adding local Helm chart templating capabilities to eliminate repetitive Traefik annotations and complex JSON patches. The plan focuses on creating a reusable Traefik ingress Helm chart, integrating it with kustomize overlays, and migrating existing ingress resources to use the improved templating system while maintaining the existing label-based management approach.
 
 ## Tasks
 
@@ -227,5 +227,74 @@ This implementation plan transforms the current hardcoded ingress management app
     - Check for any sync policy conflicts or resource conflicts
     - _Requirements: 4.3, 4.4_
 
-- [ ] 13. Final checkpoint - Ensure all tests pass
+- [x] 13. Create local Helm chart for Traefik ingress templating
+  - [x] 13.1 Create traefik-ingress Helm chart structure
+    - Create `helm/traefik-ingress/Chart.yaml` with chart metadata
+    - Create `helm/traefik-ingress/values.yaml` with configurable parameters for service name, namespace, internal/public domain patterns, and TLS settings
+    - Create `helm/traefik-ingress/templates/ingress.yaml` with Traefik-specific annotations and support for both internal-only and public (internal+external) domain patterns
+    - Include TLS configuration with cert-manager integration and environment-specific certificate issuers
+    - Support the same domain patterns as existing system: `localDomainSuffix` and `publicDomainSuffix`
+    - _Requirements: 2.1, 2.2, 2.4, 2.6, 2.7, 2.8, 3.1, 7.1, 7.2, 8.1, 8.2, 8.3_
+
+  - [ ]* 13.2 Write property test for Helm chart template generation
+    - **Property 27: Helm chart template generation**
+    - **Validates: Requirements 2.1, 2.2, 7.1, 7.2**
+
+  - [x] 13.3 Integrate Helm chart with kustomize overlays using environment configuration
+    - Update existing kustomize overlays to use `helmCharts:` with local chart reference
+    - Configure `helmGlobals.chartHome` to point to local helm directory
+    - Pass environment-specific values from existing `ingress-environment-config` ConfigMap to Helm chart (localDomainSuffix, publicDomainSuffix, ingressClass, tlsEnabled, annotations)
+    - Test Helm chart integration with `task ingress:test:sample:build` command
+    - _Requirements: 1.2, 2.1, 2.6, 5.3, 8.1_
+
+  - [ ]* 13.4 Write property test for kustomize Helm integration
+    - **Property 28: Kustomize Helm integration**
+    - **Validates: Requirements 1.2, 5.3**
+
+  - [x] 13.5 Test Helm chart with lab environment configuration
+    - Test chart with lab environment values: `localDomainSuffix=lab.local.ctoaas.co`, `publicDomainSuffix=lab.ctoaas.co`, `tlsEnabled=letsencrypt-prod`
+    - Verify chart generates correct internal-only ingress (single domain) and public ingress (dual domains)
+    - Validate TLS configuration includes appropriate cert-manager annotations and certificate secret names
+    - Test using `task ingress:test:sample:build` with different chart values
+    - _Requirements: 2.6, 2.7, 2.8, 7.1, 7.2, 8.1, 8.2, 8.3_
+
+  - [ ]* 13.6 Write property test for dual domain TLS configuration
+    - **Property 29: Dual domain TLS configuration**
+    - **Validates: Requirements 2.8, 7.2, 8.3**
+
+  - [x] 13.7 Migrate existing repetitive ingress configurations
+    - Replace hardcoded Traefik annotations in ArgoCD, Backstage, and other ingress resources with Helm chart usage
+    - Remove complex JSON patches from kustomize overlays that add Traefik annotations
+    - Update uv-service Helm chart to use the new traefik-ingress chart as a dependency or template
+    - Verify all migrated ingress resources generate the same output as before
+    - _Requirements: 2.5, 4.1, 4.2, 4.3_
+
+  - [ ]* 13.8 Write property test for annotation centralization
+    - **Property 30: Annotation centralization**
+    - **Validates: Requirements 2.5, 4.5**
+
+- [ ] 14. Validate Helm chart approach benefits
+  - [ ] 14.1 Compare before/after configuration complexity
+    - Document reduction in repetitive annotations across ingress files
+    - Measure improvement in maintainability of kustomize overlays by removing complex JSON patches
+    - Validate that debugging is easier with readable Helm templates vs complex ReplacementTransformer
+    - Compare Helm chart approach vs existing kustomize component approach for different use cases
+    - _Requirements: 2.5, 4.5_
+
+  - [ ]* 14.2 Write property test for template reusability
+    - **Property 31: Template reusability**
+    - **Validates: Requirements 4.1, 4.2**
+
+  - [ ] 14.3 Test Helm chart with multiple service patterns using task ingress:test:sample:build
+    - Test chart with different service configurations (different ports, paths, TLS requirements)
+    - Verify chart works with both private (internal-only) and public (internal+external) access patterns
+    - Test chart integration with existing label-based management system
+    - Use `task ingress:test:sample:build` to validate different chart configurations
+    - _Requirements: 1.1, 1.2, 3.1, 7.1, 7.2_
+
+  - [ ]* 14.4 Write property test for environment configuration integration
+    - **Property 32: Environment configuration integration**
+    - **Validates: Requirements 1.2, 2.6, 5.3**
+
+- [ ] 15. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.

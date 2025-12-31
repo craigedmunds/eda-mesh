@@ -2,3 +2,29 @@ name: dummy-service
 namespace: dummy-namespace
 configmap: dummy-config-map
 integrationFile: app.py
+
+# Ingress configuration
+ingress:
+  enabled: true
+  accessPattern: internal  # Options: "internal", "public"
+  className: traefik
+  
+  # Domain configuration
+  domains:
+    localDomainSuffix: "127.0.0.1.nip.io"  # Default for local development
+    publicDomainSuffix: ""  # Only used when accessPattern is "public"
+    subdomain: ""  # Optional custom subdomain
+  
+  # TLS configuration
+  tls:
+    enabled: false  # Enable TLS termination
+    issuer: ""      # cert-manager cluster issuer
+  
+  # Path configuration
+  path: "/"
+  pathType: "Prefix"
+  
+  # Service port configuration
+  servicePort:
+    name: "http"
+    number: 80

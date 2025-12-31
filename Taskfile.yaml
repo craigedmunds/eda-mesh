@@ -45,12 +45,12 @@ tasks:
   test:ingress:kustomize:
     desc: Run all kustomize ingress build tests
     cmds:
-      - task: ingress:test:kustomize
+      - task: ingress:test
 
   test:ingress:kustomize:argocd:
     desc: Run ArgoCD ingress build tests
     cmds:
-      - task: ingress:test:kustomize:argocd
+      - task: ingress:test:argocd
 
   test:ingress:kustomize:backstage:
     desc: Run Backstage ingress build tests
@@ -60,7 +60,7 @@ tasks:
   test:ingress:kustomize:kargo:
     desc: Run Kargo ingress build tests
     cmds:
-      - task: ingress:test:kustomize:kargo
+      - task: ingress:test:kargo
 
   # Development workflow - most commonly used
   dev:apply:
@@ -98,3 +98,86 @@ tasks:
     desc: Show pods that are not running
     cmds:
       - kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
+
+  # Documentation tasks
+  docs:taskfile:
+    desc: Generate/update the taskfile steering documentation
+    cmds:
+      - |
+        cat > .kiro/steering/taskfile.md << 'EOF'
+        # Taskfile Commands and Development Workflow
+
+        This repository uses Taskfile for task automation and development workflows. Understanding and using these tasks is essential for effective development and troubleshooting.
+
+        ## Key Development Principles
+
+        1. **Use tasks instead of raw commands** - If you regularly execute a command, it should be in a Taskfile
+        2. **Leverage existing workflows** - Many common operations already have tasks defined
+        3. **Follow the ArgoCD development workflow** - Pause ArgoCD sync for local testing, then resume when ready
+
+        ## Essential Daily Tasks
+
+        ### Development Workflow
+        - `task dev:apply` - Apply kustomize directly (bypassing ArgoCD) for development
+        - `task dev:diff` - Show diff between local changes and cluster state
+        - `task cluster:info` - Show cluster and context information
+        - `task pods` - Show pods that are not running (quick troubleshooting)
+
+        ### Status and Monitoring
+        - `task status` - Run all status methods across components
+        - `task argocd:status` - Print status for ArgoCD
+        - `task backstage:status` - Show Backstage application and pod status
+        - `task images:status` - Show comprehensive status of Image Factory components
+
+        ### Testing
+        - `task test:ingress:kustomize` - Run all kustomize ingress build tests
+        - `task images:test:all` - Run all tests (unit + integration)
+        - `task backstage:test:kargo:acceptance` - Run Kargo acceptance test for Backstage
+
+        ## Available Tasks
+
+        The following tasks are available in this repository. Use `task --list` to see the most current list:
+
+        EOF
+      - task --list >> .kiro/steering/taskfile.md
+      - |
+        cat >> .kiro/steering/taskfile.md << 'EOF'
+
+        ## Task Categories
+
+        ### ArgoCD Management
+        - Pause/resume sync for development workflow
+        - Check application status and troubleshoot issues
+        - Access UI and get credentials
+
+        ### Development and Testing
+        - Apply configurations directly for rapid iteration
+        - Run comprehensive test suites
+        - Debug and troubleshoot components
+
+        ### Monitoring and Status
+        - Check overall system health
+        - Monitor specific component status
+        - View logs and artifacts
+
+        ### Infrastructure Components
+        - Backstage: Developer portal and catalog
+        - Image Factory: Container image building and promotion
+        - EDA: Event-driven architecture mesh
+        - Ingress: Traffic routing and SSL management
+        - Secrets: Central secret management
+
+        ## Best Practices
+
+        1. **Always check status first** - Use `task status` or component-specific status tasks
+        2. **Use the development workflow** - Pause ArgoCD, apply directly, test, then resume
+        3. **Run tests before committing** - Use appropriate test tasks for your changes
+        4. **Leverage existing tasks** - Don't reinvent commands that already exist
+        5. **Update tasks when needed** - If you find yourself running the same commands repeatedly, add them to a Taskfile
+
+        ## Updating This File
+
+        This file should be regenerated when new tasks are added. Run `task docs:taskfile` to update it with the latest task list.
+        EOF
+      - cmd: echo "Updated .kiro/steering/taskfile.md with current task list"
+        silent: true
