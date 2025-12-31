@@ -61,7 +61,7 @@ helmCharts:
         
         # RabbitMQ Management - internal access only
         - service:
-            name: eda-mesh
+            name: eda-mesh-rabbitmq
             namespace: eda-mesh
             port:
               name: management
@@ -98,6 +98,20 @@ helmCharts:
           tls:
             secretName: kargo-ctoaas-tls
 
+        # # Rabbitmq - internal access only (based on test expectations)
+        # - service:
+        #     name: eda-mesh-rabbitmq
+        #     namespace: eda-mesh
+        #     port:
+        #       name: management
+        #   ingress:
+        #     # name: rabbit
+        #     accessPattern: internal
+        #   domains:
+        #     # name: headlamp
+        #   tls:
+        #     secretName: eda-mesh-rabbitmq-ctoaas-tls
+
         # Headlamp - internal access only (based on test expectations)
         - service:
             name: cluster-headlamp
@@ -111,6 +125,7 @@ helmCharts:
             name: headlamp
           tls:
             secretName: headlamp-ctoaas-tls
+
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

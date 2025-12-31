@@ -28,3 +28,37 @@ generatorOptions:
     
 components:
   - ../../../../../platform/kustomize/_common/components/argocd-branch-targetrevision
+
+
+helmGlobals:
+  chartHome: ../../../../../helm
+
+helmCharts:
+  # Multiple platform services using enhanced array-based format
+  - name: traefik-ingress
+    releaseName: platform-services
+    valuesInline:
+      # Global configuration
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+        publicDomainSuffix: lab.ctoaas.co
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+      
+      # Array of ingress configurations
+      ingresses:
+      
+        # RabbitMQ Management - internal access only
+        - service:
+            name: eda-mesh-rabbitmq
+            namespace: eda-mesh
+            port:
+              name: management
+          ingress:
+            name: rabbitmq-ingress
+            accessPattern: internal
+          # domains:
+          #   name: rabbitmq
+          tls:
+            secretName: rabbitmq-ctoaas-tls
