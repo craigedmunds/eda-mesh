@@ -30,6 +30,9 @@ includes:
   platform:
     taskfile: platform/Taskfile.yaml
     dir: platform
+  headlamp:
+    taskfile: platform/kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
+    dir: platform/kustomize/seed/supporting-applications/headlamp
 
 tasks:
   status:
