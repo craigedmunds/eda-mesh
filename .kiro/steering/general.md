@@ -3,7 +3,10 @@
 - All our infrastructure is code. If a manual change is made to a k8s resource to test a fix, do not forget to update the code.
 - Do not create uneccessary .md files. Useful information should either be in the appropriate spec, or in the appropriate README.md
 - Don't create new spec folders without confirming; new requirements often part of an existing spec.
+- Requirements should be generic and focus on the outcomes. Do not include implementation specific details.
 - When reviewing new requirements, ensure the existing requirements for the spec are understood & modify them where applicable rather than adding new ones
+- Only change the requirements if the outcomes themselves are changing.
 - If you regularly execute a command, consider adding it to an appropriate Taskfile and using it from there.
 - The lab k8s cluster is managed by proxmox and should be regularly tested by reverting to a clean state, before argo is installed and then runnign the init task `task seed:_init`
 - Any component we write a spec for should consider how its tested
+- Do not introduce unecessary complexity by supporting "backwards compatability" when a component is solely within this repo (e.g helm ingress), support the new feature, keep it simple & migrate any existing uses to the new structure.

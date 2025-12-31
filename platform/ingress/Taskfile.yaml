@@ -77,6 +77,7 @@ tasks:
         silent: true
       - cmd: echo "###############################################"
         silent: true
+      - cmd: openssl s_client -showcerts -connect {{.HOST}}:443
       - cmd: echo "1. Certificate Resources:"
         silent: true
       - kubectl get certificate -A | grep -E "(NAMESPACE|{{.HOST}})" || echo "No certificates found for {{.HOST}}"

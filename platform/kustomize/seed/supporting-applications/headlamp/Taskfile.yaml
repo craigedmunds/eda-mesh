@@ -1,0 +1,34 @@
+version: '3'
+
+tasks:
+  token:
+    desc: Get Headlamp admin service account token
+    cmds:
+      - kubectl create token headlamp-admin -n headlamp
+
+  status:
+    desc: Show Headlamp status
+    cmds:
+      - cmd: echo "=== Headlamp Namespace ==="
+        silent: true
+      - kubectl get namespace headlamp -o wide 2>/dev/null || echo "Namespace not found"
+      - cmd: echo -e "\n=== Headlamp Pods ==="
+        silent: true
+      - kubectl get pods -n headlamp -o wide 2>/dev/null || echo "No pods found"
+      - cmd: echo -e "\n=== Headlamp Service Account ==="
+        silent: true
+      - kubectl get serviceaccount headlamp-admin -n headlamp -o wide 2>/dev/null || echo "Service account not found"
+      - cmd: echo -e "\n=== Headlamp Cluster Role Binding ==="
+        silent: true
+      - kubectl get clusterrolebinding headlamp-admin -o wide 2>/dev/null || echo "Cluster role binding not found"
+
+  ui:
+    desc: Open Headlamp UI (requires port-forward)
+    cmds:
+      - cmd: echo "Starting port-forward to Headlamp..."
+        silent: true
+      - cmd: echo "Access Headlamp at http://localhost:8080"
+        silent: true
+      - cmd: echo "Use 'task headlamp:token' to get the authentication token"
+        silent: true
+      - kubectl port-forward -n headlamp svc/cluster-headlamp 8080:80

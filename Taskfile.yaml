@@ -30,6 +30,9 @@ includes:
   platform:
     taskfile: platform/Taskfile.yaml
     dir: platform
+  headlamp:
+    taskfile: platform/kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
+    dir: platform/kustomize/seed/supporting-applications/headlamp
 
 tasks:
   status:
@@ -42,22 +45,22 @@ tasks:
         # silent: true
 
   # Testing tasks
-  test:ingress:kustomize:
+  test:ingress:
     desc: Run all kustomize ingress build tests
     cmds:
       - task: ingress:test
 
-  test:ingress:kustomize:argocd:
+  test:ingress:argocd:
     desc: Run ArgoCD ingress build tests
     cmds:
       - task: ingress:test:argocd
 
-  test:ingress:kustomize:backstage:
+  test:ingress:backstage:
     desc: Run Backstage ingress build tests
     cmds:
       - task: backstage:test:kustomize
 
-  test:ingress:kustomize:kargo:
+  test:ingress:kargo:
     desc: Run Kargo ingress build tests
     cmds:
       - task: ingress:test:kargo
@@ -130,7 +133,7 @@ tasks:
         - `task images:status` - Show comprehensive status of Image Factory components
 
         ### Testing
-        - `task test:ingress:kustomize` - Run all kustomize ingress build tests
+        - `task test:ingress` - Run all kustomize ingress build tests
         - `task images:test:all` - Run all tests (unit + integration)
         - `task backstage:test:kargo:acceptance` - Run Kargo acceptance test for Backstage
 

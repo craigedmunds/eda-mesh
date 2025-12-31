@@ -72,7 +72,7 @@ class TestBackstageIngressLocalOverlay(PrivateIngressTest, EnvironmentSpecificTe
                 
                 assert service.get("name") == "backstage", \
                     f"Backstage ingress should point to 'backstage' service, got '{service.get('name')}'"
-                assert service.get("port", {}).get("name") == "backend", \
+                assert service.get("port", {}).get("name") == "http-backend", \
                     f"Backstage ingress should use 'backend' port, got '{service.get('port', {}).get('name')}'"
     
     def test_tls_secret_name_generation(self, kustomize_builder, ingress_validator):

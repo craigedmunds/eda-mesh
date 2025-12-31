@@ -23,7 +23,7 @@ This repository uses Taskfile for task automation and development workflows. Und
 - `task images:status` - Show comprehensive status of Image Factory components
 
 ### Testing
-- `task test:ingress:kustomize` - Run all kustomize ingress build tests
+- `task test:ingress` - Run all kustomize ingress build tests
 - `task images:test:all` - Run all tests (unit + integration)
 - `task backstage:test:kargo:acceptance` - Run Kargo acceptance test for Backstage
 
@@ -112,10 +112,10 @@ task: Available tasks for this project:
 * seed:build:                             Build seed
 * seed:passwords:                         Ensure initial passwords exist and create them
 * seed:status:                            Print status for the seed component
-* test:ingress:kustomize:                 Run all kustomize ingress build tests
-* test:ingress:kustomize:argocd:          Run ArgoCD ingress build tests
-* test:ingress:kustomize:backstage:       Run Backstage ingress build tests
-* test:ingress:kustomize:kargo:           Run Kargo ingress build tests
+* test:ingress:                 Run all kustomize ingress build tests
+* test:ingress:argocd:          Run ArgoCD ingress build tests
+* test:ingress:backstage:       Run Backstage ingress build tests
+* test:ingress:kargo:           Run Kargo ingress build tests
 * uv:build:                               Build the UV Docker image
 * uv:clean:                               Clean up local UV images
 * uv:debug:shell:                         Get a shell in the UV image for debugging (if possible)

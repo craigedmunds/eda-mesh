@@ -44,14 +44,14 @@ Tests are organized using pytest markers:
 
 Run all tests:
 ```bash
-task test:ingress:kustomize
+task test:ingress
 ```
 
 Run specific test suites:
 ```bash
-task test:ingress:kustomize:argocd    # ArgoCD ingress tests
-task test:ingress:kustomize:backstage # Backstage ingress tests
-task test:ingress:kustomize:kargo     # Kargo ingress tests
+task test:ingress:argocd    # ArgoCD ingress tests
+task test:ingress:backstage # Backstage ingress tests
+task test:ingress:kargo     # Kargo ingress tests
 ```
 
 Run tests with specific markers:
@@ -200,7 +200,7 @@ Individual Test Results:
 
 Troubleshooting:
 1. Check the test artifacts for detailed failure information
-2. Run tests locally: `task test:ingress:kustomize`
+2. Run tests locally: `task test:ingress`
 3. Check kustomize build output: `kustomize build platform/kustomize/seed/overlays/local/lab`
 4. Verify ingress management component configuration
 ```
