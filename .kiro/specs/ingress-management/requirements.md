@@ -105,6 +105,18 @@ The current ingress configuration system requires hardcoded domain names and env
 4. WHEN TLS configuration is applied, THE Ingress_Management_System SHALL ensure certificate secrets are properly referenced
 5. WHEN development environments are used, THE Ingress_Management_System SHALL optionally disable TLS for simplified local testing
 
+### Requirement 6
+
+**User Story:** As a platform engineer, I want to configure multiple paths per ingress resource, so that a single service can handle different endpoints with different backend services.
+
+#### Acceptance Criteria
+
+1. WHEN an ingress configuration specifies multiple paths, THE Ingress_Management_System SHALL create path rules for each specified path and backend service combination
+2. WHEN multiple paths are configured for the same host, THE Ingress_Management_System SHALL include all paths in the same ingress resource
+3. WHEN different paths point to different services, THE Ingress_Management_System SHALL configure appropriate backend service references for each path
+4. WHEN path types are specified (Prefix, Exact), THE Ingress_Management_System SHALL apply the correct pathType for each path rule
+5. WHEN multiple paths are used with TLS, THE Ingress_Management_System SHALL configure TLS for the host covering all paths
+
 ### Requirement 9
 
 **User Story:** As a platform engineer, I want automated unit tests for kustomize build outputs, so that ingress configuration regressions are caught before deployment and I can ensure consistent ingress transformations across all overlays.

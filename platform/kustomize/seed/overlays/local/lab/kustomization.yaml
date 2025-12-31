@@ -31,25 +31,72 @@ helmGlobals:
   chartHome: ../../../../../../helm
 
 helmCharts:
-  # Private ingress example (internal access only)
+  # Multiple platform services using enhanced array-based format
   - name: traefik-ingress
-    releaseName: argocd
+    releaseName: platform-services
     valuesInline:
-      service:
-        name: argocd-server
-        namespace: argocd
-        port:
-          name: http
-      ingress:
-        name: argocd-server-ingress
-        accessPattern: internal
+      # Global configuration
       domains:
         localDomainSuffix: lab.local.ctoaas.co
-        name: argocd
+        publicDomainSuffix: lab.ctoaas.co
       tls:
         enabled: true
         issuer: letsencrypt-prod
-        secretName: argocd-ctoaas-tls
+      
+      # Array of ingress configurations
+      ingresses:
+        # ArgoCD - internal access only (based on test expectations)
+        - service:
+            name: argocd-server
+            namespace: argocd
+            port:
+              name: http
+          ingress:
+            name: argocd-server-ingress
+            accessPattern: internal
+          domains:
+            name: argocd
+          tls:
+            secretName: argocd-ctoaas-tls
+        
+        # RabbitMQ Management - internal access only
+        - service:
+            name: eda-mesh
+            namespace: eda-mesh
+            port:
+              name: management
+          ingress:
+            name: rabbitmq-management-ingress
+            accessPattern: internal
+          domains:
+            name: rabbitmq
+          tls:
+            secretName: rabbitmq-ctoaas-tls
+        
+        # Kargo - public access with multiple paths
+        - service:
+            name: kargo-api  # Default service (not used when paths are specified)
+            namespace: kargo
+          ingress:
+            name: kargo-ingress
+            accessPattern: public
+            paths:
+            - path: /
+              pathType: Prefix
+              service:
+                name: kargo-api
+                port:
+                  number: 80
+            - path: /webhooks
+              pathType: Prefix
+              service:
+                name: kargo-external-webhooks-server
+                port:
+                  number: 80
+          domains:
+            name: kargo
+          tls:
+            secretName: kargo-ctoaas-tls
 
 generatorOptions:
   disableNameSuffixHash: true

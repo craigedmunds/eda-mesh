@@ -17,18 +17,23 @@ helmCharts:
   - name: traefik-ingress
     releaseName: backstage-ingress
     valuesInline:
-      service:
-        name: backstage
-        namespace: backstage
-        port:
-          name: http-backend
-          number: 7007
-      ingress:
-        accessPattern: internal  # Internal access only for Backstage
+      # Global configuration
       domains:
         localDomainSuffix: lab.local.ctoaas.co
       tls:
         enabled: true
         issuer: letsencrypt-prod
-        secretName: backstage-tls  # Use existing TLS secret
+      
+      # Array of ingress configurations
+      ingresses:
+        - service:
+            name: backstage
+            namespace: backstage
+            port:
+              name: http-backend
+              number: 7007
+          ingress:
+            accessPattern: internal  # Internal access only for Backstage
+          tls:
+            secretName: backstage-tls  # Use existing TLS secret
 

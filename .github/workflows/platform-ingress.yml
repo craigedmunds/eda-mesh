@@ -141,7 +141,7 @@ jobs:
             echo "- Domain generation and TLS configuration" >> $GITHUB_STEP_SUMMARY
             echo "- Kustomize component integration" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Run tests locally:** \`task test:ingress:kustomize\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Run tests locally:** \`task test:ingress\`" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Some platform ingress tests failed." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -151,7 +151,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
             echo "1. Check the test artifacts for detailed failure information" >> $GITHUB_STEP_SUMMARY
-            echo "2. Run tests locally: \`task test:ingress:kustomize\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. Run tests locally: \`task test:ingress\`" >> $GITHUB_STEP_SUMMARY
             echo "3. Check kustomize build output: \`kustomize build platform/kustomize/seed/overlays/local/lab\`" >> $GITHUB_STEP_SUMMARY
             echo "4. Verify ingress management component configuration" >> $GITHUB_STEP_SUMMARY
             echo "5. Review test documentation: \`platform/ingress/tests/kustomize/README.md\`" >> $GITHUB_STEP_SUMMARY

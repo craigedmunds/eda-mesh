@@ -8,39 +8,65 @@ helmGlobals:
   chartHome: ../../../../helm
 
 helmCharts:
-  # Private ingress example (internal access only)
+  # Sample ingress configuration using new array-based format
   - name: traefik-ingress
-    releaseName: sample-private
+    releaseName: sample-ingresses
     valuesInline:
-      service:
-        name: sample-server
-        namespace: argocd
-        port:
-          name: http
-      ingress:
-        name: sample-ingress-private
-        accessPattern: internal
+      # Global configuration
       domains:
         localDomainSuffix: lab.local.ctoaas.co
+        publicDomainSuffix: lab.ctoaas.co
       tls:
         enabled: true
         issuer: letsencrypt-prod
-  
-  # Public ingress example (internal + external access)
-  # - name: traefik-ingress
-  #   releaseName: sample-public
-  #   valuesInline:
-  #     service:
-  #       name: sample-server
-  #       namespace: argocd
-  #       port:
-  #         name: http
-  #     ingress:
-  #       name: sample-ingress-public
-  #       accessPattern: public
-  #     domains:
-  #       localDomainSuffix: lab.local.ctoaas.co
-  #       publicDomainSuffix: lab.ctoaas.co
-  #     t pu
-  #       enabled: true
-  #       issuer: letsencrypt-prod
+      
+      # Array of ingress configurations
+      ingresses:
+        # Private ingress example (internal access only)
+        - service:
+            name: sample-server
+            namespace: argocd
+            port:
+              name: http
+          ingress:
+            name: sample-ingress-private
+            accessPattern: internal
+        
+        # Public ingress example (both internal and external access)
+        - service:
+            name: sample-public-server
+            namespace: argocd
+            port:
+              number: 8080
+          ingress:
+            name: sample-ingress-public
+            accessPattern: public
+          domains:
+            name: sample-public
+          tls:
+            secretName: sample-public-tls
+        
+        # Multi-path ingress example (like Kargo)
+        - service:
+            name: kargo-api  # Default service (not used when paths are specified)
+            namespace: kargo
+          ingress:
+            name: kargo-ingress
+            accessPattern: public
+            paths:
+            - path: /
+              pathType: Prefix
+              service:
+                name: kargo-api
+                port:
+                  number: 80
+            - path: /webhooks
+              pathType: Prefix
+              service:
+                name: kargo-external-webhooks-server
+                port:
+                  number: 80
+          domains:
+            name: kargo
+          tls:
+            secretName: kargo-ctoaas-tls

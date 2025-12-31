@@ -15,13 +15,13 @@ helmCharts:
       dashboard:
         enabled: true
         ingress:
-          enabled: true
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: websecure
-            traefik.ingress.kubernetes.io/router.tls: "true"
-          hosts:
-            - argo-rollouts.lab.ctoaas.co
-          pathType: Prefix
+          enabled: false
+          # annotations:
+          #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          #   traefik.ingress.kubernetes.io/router.tls: "true"
+          # hosts:
+          #   - argo-rollouts.lab.ctoaas.co
+          # pathType: Prefix
       
       # Configure log streaming for AnalysisRuns
       controller:

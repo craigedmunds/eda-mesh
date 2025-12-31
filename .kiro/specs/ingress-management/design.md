@@ -1,238 +1,301 @@
-# Environment-Aware Ingress Management System Design
+# Helm-Based Ingress Management System Design
 
 ## Overview
 
-The Environment-Aware Ingress Management System uses kustomize components to automatically transform generic ingress resources into environment-specific configurations. This eliminates hardcoded domain names and environment-specific annotations from application manifests, enabling the same ingress definitions to work across local development and lab cluster environments.
+The Helm-Based Ingress Management System uses a local traefik-ingress Helm chart integrated with kustomize's helmCharts feature to generate environment-specific ingress resources. The system eliminates hardcoded domain names and repetitive Traefik annotations by providing a reusable Helm template that accepts environment-specific values through kustomize overlays.
 
-The system works by detecting ingress resources with management labels (`ingress.ctoaas.co/managed: "true"`) and applying environment-specific transformations through kustomize's built-in replacement mechanism. Each environment overlay includes the ingress management component and provides environment-specific configuration through ConfigMaps.
+The system uses a multi-service chart that can generate multiple ingress resources with hierarchical value inheritance. Common configuration (domain suffixes, TLS settings, annotations) is defined at the root level, while individual ingress configurations can override specific values as needed. Single-service use cases are handled as a single entry in the ingresses array.
 
 ## Architecture
 
 ```mermaid
 graph TB
-    subgraph "Application Layer"
-        A[Generic Ingress Manifest]
-        B[Helm Chart with Generic Values]
-        C[Local Traefik Ingress Helm Chart]
+    subgraph "Kustomize Overlay Layer"
+        A[Environment-Specific Values<br/>localDomainSuffix, TLS settings]
+        B[helmCharts Configuration<br/>Chart reference + values]
     end
     
-    subgraph "Kustomize Component System"
-        D[Environment Detection via ConfigMap]
-        E[Helm Chart Integration<br/>helmCharts: local charts]
-        F[Private ReplacementTransformer<br/>ingress.ctoaas.co/managed: true]
-        G[Public ReplacementTransformer<br/>ingress.ctoaas.co/managed-public: true]
-        H[Label-based Selection]
+    subgraph "Helm Chart System"
+        C[traefik-ingress Chart<br/>Local chart in helm/ directory]
+        D[Multi-Service Template<br/>Hierarchical value inheritance]
+        E[Domain Generation Logic<br/>Internal/Public patterns]
     end
     
-    subgraph "Environment-Specific Outputs"
-        I[Private IngressRoute<br/>Internal: *.lab.local.ctoaas.co only]
-        J[Public IngressRoute<br/>Internal + External: *.lab.local.ctoaas.co + *.lab.ctoaas.co]
-        K[Templated Traefik Ingress<br/>Environment-specific annotations]
+    subgraph "Generated Resources"
+        F[Internal Access Ingress<br/>*.lab.local.ctoaas.co only]
+        G[Public Access Ingress<br/>Internal + External domains]
+        H[TLS Certificate Configuration<br/>cert-manager integration]
     end
     
-    A --> H
-    B --> H
+    A --> B
+    B --> C
+    C --> D
     C --> E
-    H --> D
     D --> F
     D --> G
-    E --> K
-    F --> I
-    G --> J
+    E --> H
 ```
 
-The system provides multiple approaches for ingress management:
+The system uses a single approach:
 
-1. **Kustomize Component Approach**: Uses ReplacementTransformer components to remove original Ingress resources and generate technology-specific resources (e.g., Traefik IngressRoute) with appropriate access patterns
-2. **Local Helm Chart Approach**: Uses kustomize's helmCharts integration with local Traefik ingress charts for better templating capabilities and reduced configuration repetition
-3. **Hybrid Approach**: Combines both methods where appropriate, using Helm charts for complex templating and kustomize components for simple transformations
+**Helm Chart Integration**: Uses kustomize's helmCharts feature with a local traefik-ingress chart that provides templating capabilities, hierarchical value inheritance, and environment-specific configuration through kustomize overlays.
 
 ## Components and Interfaces
 
-### 1. Ingress Label System
+### 1. Helm Chart Template System
 
-Applications mark ingress resources for management using a single label:
+The traefik-ingress Helm chart provides a reusable template for generating Traefik ingress resources:
 
-**Managed Ingress (Internal Access):**
+**Single Service Configuration:**
 ```yaml
-metadata:
-  name: backstage  # Used as service name for domain generation
-  labels:
-    ingress.ctoaas.co/managed: "true"  # Internal access only
+helmCharts:
+- name: traefik-ingress
+  releaseName: argocd
+  valuesInline:
+    # Common configuration
+    domains:
+      localDomainSuffix: lab.local.ctoaas.co
+      publicDomainSuffix: lab.ctoaas.co
+    tls:
+      enabled: true
+      issuer: letsencrypt-prod
+    
+    # Single ingress in array
+    ingresses:
+    - service:
+        name: argocd-server
+        namespace: argocd
+      ingress:
+        accessPattern: internal
 ```
 
-The system derives the service name from the ingress metadata name and uses kustomize replacements to transform placeholder domains into environment-specific domains.
+**Multi-Service Configuration:**
+```yaml
+helmCharts:
+- name: traefik-ingress
+  releaseName: platform-ingresses
+  valuesInline:
+    # Common configuration applied to all ingresses
+    domains:
+      localDomainSuffix: lab.local.ctoaas.co
+      publicDomainSuffix: lab.ctoaas.co
+    tls:
+      enabled: true
+      issuer: letsencrypt-prod
+    
+    # Array of ingress configurations
+    ingresses:
+    - service:
+        name: kargo-api
+        namespace: kargo
+      ingress:
+        accessPattern: internal
+    - service:
+        name: rabbitmq
+        namespace: eda-mesh
+      ingress:
+        accessPattern: public
+    - service:
+        name: argo-rollouts-dashboard
+        namespace: argo-rollouts
+      ingress:
+        accessPattern: internal
+```
 
-### 2. Environment Detection
+**Multi-Path Configuration:**
+```yaml
+helmCharts:
+- name: traefik-ingress
+  releaseName: kargo-ingress
+  valuesInline:
+    domains:
+      localDomainSuffix: lab.local.ctoaas.co
+      publicDomainSuffix: lab.ctoaas.co
+    tls:
+      enabled: true
+      issuer: letsencrypt-prod
+    
+    # Single ingress with multiple paths
+    ingresses:
+    - service:
+        name: kargo-api  # Default service for root path
+        namespace: kargo
+      ingress:
+        accessPattern: public
+        paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: kargo-api
+            port:
+              number: 80
+        - path: /webhooks
+          pathType: Prefix
+          service:
+            name: kargo-external-webhooks-server
+            port:
+              number: 80
+```
 
-Kustomize components use environment-specific ConfigMaps to determine the current environment configuration:
+### 2. Environment Integration
+
+Kustomize overlays provide environment-specific values directly to the Helm chart:
 
 ```yaml
-configMapGenerator:
-  - name: ingress-environment-config
-    literals:
-      - primaryDomainSuffix=lab.ctoaas.co
-      - secondaryDomainSuffix=lab.local.ctoaas.co
-      - ingressClass=traefik
-      - tlsEnabled=letsencrypt-prod
+# Lab environment overlay
+helmCharts:
+- name: traefik-ingress
+  valuesInline:
+    domains:
+      localDomainSuffix: lab.local.ctoaas.co
+      publicDomainSuffix: lab.ctoaas.co
+    tls:
+      enabled: true
+      issuer: letsencrypt-prod
+
+# Local development overlay  
+helmCharts:
+- name: traefik-ingress
+  valuesInline:
+    domains:
+      localDomainSuffix: 127.0.0.1.nip.io
+    tls:
+      enabled: false
 ```
 
-### 3. Kustomize Component System
+### 3. Access Pattern Control
 
-The system uses a single kustomize component to handle managed ingress resources:
+The chart supports two access patterns:
 
-**Ingress Management Component (`ingress-management`):**
-- Processes ingresses with `ingress.ctoaas.co/managed: "true"`
-- Creates host rules for internal domains (e.g., `*.lab.local.ctoaas.co`)
-- Suitable for all managed services requiring internal access
+**Internal Access (`accessPattern: internal`):**
+- Creates host rules only for internal domains (e.g., `service.lab.local.ctoaas.co`)
+- TLS certificate includes only internal domain
+- Suitable for most platform services
 
-### 4. Environment-Specific Overlays
-
-Each environment uses kustomize overlays to include the ingress management component and provide environment-specific configuration:
-
-**Local Development Overlay:**
-- Domain pattern: `{service-name}.127.0.0.1.nip.io`
-- Traefik annotations for local routing
-- TLS disabled for simplified development
-
-**Lab Cluster Overlay:**
-- Domain pattern: `{service-name}.lab.local.ctoaas.co` (internal access)
-- cert-manager annotations for Let's Encrypt
-- Cloudflare DNS-01 challenge configuration
-- Automatic TLS secret generation
-
-```
+**Public Access (`accessPattern: public`):**
+- Creates host rules for both internal and external domains
+- TLS certificate includes both domains
+- Suitable for user-facing services like ArgoCD UI
 
 ## Data Models
 
-### Environment Configuration
+### Helm Chart Values Structure
 
-**Base Configuration:**
+**Root Level Configuration:**
 ```yaml
-configMapGenerator:
-  - name: ingress-environment-config
-    literals:
-      - primaryDomainSuffix=127.0.0.1.nip.io
-      - ingressClass=traefik
-      - tlsEnabled=""
-      - annotations=traefik.ingress.kubernetes.io/router.tls=true
+# Common configuration inherited by all ingresses
+domains:
+  localDomainSuffix: lab.local.ctoaas.co
+  publicDomainSuffix: lab.ctoaas.co
+tls:
+  enabled: true
+  issuer: letsencrypt-prod
+traefik:
+  router:
+    entrypoints: websecure
+    tls: true
+
+# Array of ingress configurations
+ingresses:
+- service:
+    name: service-name
+    namespace: service-namespace
+    port:
+      name: http
+  ingress:
+    accessPattern: internal  # or "public"
+    name: custom-ingress-name  # optional override
+    # Single path (backward compatible)
+    path: /
+    pathType: Prefix
+    # OR multiple paths (new feature)
+    paths:
+    - path: /
+      pathType: Prefix
+      service:
+        name: primary-service
+        port:
+          number: 80
+    - path: /api
+      pathType: Prefix
+      service:
+        name: api-service
+        port:
+          name: http
+  domains:
+    name: custom-domain-prefix  # optional override
+  # Individual ingress can override any root-level values
 ```
 
-**Lab Cluster Overlay Configuration:**
-```yaml
-configMapGenerator:
-  - name: ingress-environment-config
-    literals:
-      - localDomainSuffix=lab.local.ctoaas.co
-      - ingressClass=traefik
-      - tlsEnabled=letsencrypt-prod
-      - annotations=cert-manager.io/cluster-issuer=letsencrypt-prod
-```
-
-### Private Ingress Template
+### Generated Internal Access Ingress (Lab Cluster)
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: backstage  # Used for domain generation
-  labels:
-    ingress.ctoaas.co/managed: "true"  # Managed ingress
-spec:
-  rules:
-  - host: "backstage"  # Will be suffixed with internal domain
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: backstage
-            port:
-              name: http
-```
-
-### Transformed Managed Ingress (Lab Cluster)
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: backstage
-  labels:
-    ingress.ctoaas.co/managed: "true"
+  name: service-name-ingress
+  namespace: service-namespace
   annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    managed-by: kustomize-ingress-component
 spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - backstage.lab.local.ctoaas.co
-    secretName: backstage-lab-local-ctoaas-tls
+    - service-name.lab.local.ctoaas.co
+    secretName: service-name-ingress-lab-local-ctoaas-tls
   rules:
-  - host: backstage.lab.local.ctoaas.co  # Internal access
+  - host: service-name.lab.local.ctoaas.co
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: backstage
+            name: service-name
             port:
               name: http
 ```
 
-For custom subdomains, developers can specify them in the placeholder host:
-```yaml
-spec:
-  rules:
-  - host: "api.backstage.placeholder.local"  # Results in api.backstage.lab.local.ctoaas.co
-```
-          service:
-            name: backstage
-            port:
-              name: http
-```
-
-### Transformed Public Ingress (Lab Cluster)
+### Generated Public Access Ingress (Lab Cluster)
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: argocd
-  labels:
-    ingress.ctoaas.co/managed-public: "true"
+  name: service-name-ingress
+  namespace: service-namespace
   annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    managed-by: kustomize-ingress-component
 spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - argocd.lab.local.ctoaas.co
-    - argocd.lab.ctoaas.co
-    secretName: argocd-lab-ctoaas-tls
+    - service-name.lab.local.ctoaas.co
+    - service-name.lab.ctoaas.co
+    secretName: service-name-ingress-lab-ctoaas-tls
   rules:
-  - host: argocd.lab.local.ctoaas.co  # Internal access
+  - host: service-name.lab.local.ctoaas.co  # Internal access
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: backstage
+            name: service-name
             port:
               name: http
-  - host: backstage.lab.local.ctoaas.co  # Second domain pattern for internal access
+  - host: service-name.lab.ctoaas.co  # External access
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: backstage
+            name: service-name
             port:
               name: http
 ```
@@ -320,6 +383,14 @@ Property 17: Backstage ingress domain testing
 Property 18: Regression prevention through continuous integration
 *For any* pull request or commit, kustomize build tests should execute automatically and prevent deployment of configurations that fail ingress transformation validation
 **Validates: Requirements 9.7, 9.8, 9.9**
+
+Property 19: Multiple paths configuration
+*For any* ingress configuration with multiple paths specified, the system should generate path rules for each path with appropriate backend service references and path types
+**Validates: Requirements 6.1, 6.2, 6.3, 6.4**
+
+Property 20: Multi-path TLS configuration
+*For any* ingress with multiple paths and TLS enabled, the system should configure TLS for the host covering all paths without duplicating TLS configuration
+**Validates: Requirements 6.5**
 ## Error Handling
 
 ### Invalid Label Values
