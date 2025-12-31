@@ -11,7 +11,7 @@ spec:
   generators:
   - git:
       repoURL: https://github.com/craigedmunds/argocd-eda.git
-      revision: HEAD
+      revision: main
       directories:
       - path: eda/mesh/lobs/*
   template:
@@ -23,7 +23,7 @@ spec:
       project: "eventing"
       source:
         repoURL: https://github.com/craigedmunds/argocd-eda.git
-        targetRevision: HEAD
+        targetRevision: main
         path: 'eda/helm/mesh-lob'
         helm:
           parameters:

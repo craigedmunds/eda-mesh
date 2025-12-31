@@ -13,7 +13,7 @@ spec:
   generators:
   - git:
       repoURL: https://github.com/craigedmunds/argocd-eda.git
-      revision: HEAD
+      revision: main
       directories:
       - path: eda/mesh/consumers/*
       values:
@@ -30,11 +30,11 @@ spec:
       sources:
         
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
-          targetRevision: HEAD
+          targetRevision: main
           ref: lob
 
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
-          targetRevision: HEAD
+          targetRevision: main
           path: 'eda/helm/mesh-consumer'
           helm:
             # valueFiles:

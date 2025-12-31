@@ -11,11 +11,11 @@ spec:
   generators:
   - git:
       repoURL: https://github.com/craigedmunds/argocd-eda.git
-      revision: HEAD
+      revision: main
       directories:
       - path: eda/mesh/producers/*/*
       values:
-        producer: "{{index .path.segments 2}}"
+        producer: "{{index .path.segments 3}}"
         service: "{{.path.basename}}"
 
   template:
@@ -34,7 +34,7 @@ spec:
       project: "eventing"
       source:
         repoURL: https://github.com/craigedmunds/argocd-eda.git
-        targetRevision: HEAD
+        targetRevision: main
         path: 'eda/mesh/producers/{{.values.producer}}/{{.values.service}}'
       destination:
         server: https://kubernetes.default.svc

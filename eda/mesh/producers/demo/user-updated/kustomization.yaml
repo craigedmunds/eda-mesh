@@ -1,6 +1,6 @@
 
 helmChartInflationGenerator:
-  - chartHome: ../../../helm
+  - chartHome: ../../../../helm
     chartName: jbang-camel-integration
     releaseName: eda-mesh-producer-demo-user-updated
     values: values.yaml
