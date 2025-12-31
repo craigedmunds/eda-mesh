@@ -21,7 +21,7 @@ helmCharts:
         name: backstage
         namespace: backstage
         port:
-          name: backend
+          name: http-backend
           number: 7007
       ingress:
         accessPattern: internal  # Internal access only for Backstage

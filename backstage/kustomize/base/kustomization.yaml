@@ -12,7 +12,6 @@ helmChartInflationGenerator:
 
 resources:
   - namespace.yaml
-  - tls.yaml
   - k8s-rbac.yaml
   - configmap-catalog.yaml
   - configmap-rootlocation.yaml
