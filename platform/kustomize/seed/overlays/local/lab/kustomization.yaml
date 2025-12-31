@@ -81,21 +81,3 @@ patches:
       - op: replace
         path: /spec/source/path
         value: eda/kustomize/mesh/overlays/lab
-
-  # Add argocd ingress
-  # - target:
-  #     kind: Service
-  #     name: argocd
-  #   patch: |-
-  #     - op: add
-  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.rule
-  #       value: Host(`argocd.lab.local.ctoaas.co`)
-  #     - op: add
-  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.entrypoints
-  #       value: websecure
-  #     - op: add
-  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls
-  #       value: "true"
-  #     - op: add
-  #       path: /metadata/annotations/traefik.ingress.kubernetes.io~1router.tls.certresolver
-  #       value: letsencrypt-prod
