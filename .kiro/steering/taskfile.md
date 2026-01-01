@@ -88,12 +88,12 @@ task: Available tasks for this project:
 * images:logs:                                     Show logs from all running Image Factory components
 * images:logs:analysis:                            Show logs from the most recent AnalysisRun
 * images:logs:promotion:                           Show logs from the most recent promotion
-* images:setup:                                    Set up Image Factory development environment
 * images:status:                                   Show comprehensive status of Image Factory components
 * images:test:acceptance:                          Run acceptance tests for Image Factory
 * images:test:all:                                 Run all tests for Image Factory
 * images:test:integration:                         Run integration tests for Image Factory
 * images:test:unit:                                Run unit tests for Image Factory
+* images:test:unit:setup:                          Set up Image Factory development environment
 * images:tool:run:                                 Run the image factory analysis tool
 * images:tool:run:backstage:                       Run analysis tool for Backstage image (local testing)
 * images:tool:run:uv:                              Run analysis tool for UV image (local testing)
