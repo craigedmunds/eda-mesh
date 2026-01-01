@@ -78,12 +78,11 @@ tasks:
     cmds:
       - cmd: echo "🧪 Running Image Factory app unit tests..."
         silent: true
-      - dir: app
-        cmd: |
+      - cmd: |
           if [ -n "$CI" ]; then
-            python -m pytest test_app.py -v
+            python -m pytest tests/test_app.py -v
           else
-            .venv/bin/python -m pytest test_app.py -v
+            .venv/bin/python -m pytest tests/test_app.py -v
           fi
 
   cdk8s:test:unit:
