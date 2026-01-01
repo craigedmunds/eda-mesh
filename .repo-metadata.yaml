@@ -1,0 +1,95 @@
+repository:
+  name: "argocd-eda"
+  type: "mono-repo"
+  description: "Mono repository for ArgoCD-based EDA platform with Backstage, Image Factory, and EDA mesh capabilities"
+
+components:
+  # Backstage capability - Developer portal and catalog
+  - name: "backstage"
+    path: "backstage/app"
+    test_trigger_paths:
+      - 'backstage/**'  # Match existing backstage.yml workflow
+      - '!backstage/*.md'
+      - '!backstage/Taskfile.yaml'
+    image:
+      registry: "craigedmunds/backstage"
+      dockerfile: "backstage/app/packages/backend/Dockerfile"
+      context: "backstage/app"
+      build_from_feature_branches: true  # Enable feature branch builds for infrastructure testing
+    description: "Internal developer catalog and portal built with Backstage"
+
+  # Image Factory capability - Container lifecycle management
+  - name: "image-factory"
+    path: "image-factory"
+    test_trigger_paths:
+      - 'image-factory/**'
+      - '!image-factory/*.md'
+      - '!image-factory/Taskfile.yaml'
+    # No image section = Image Factory doesn't build its own Docker image
+    description: "Image Factory capability for container lifecycle management (app + cdk8s)"
+
+  # UV service application
+  - name: "uv"
+    path: "apps/uv"
+    test_trigger_paths:
+      - 'apps/uv/**'  # Match existing uv.yml workflow
+      - '!apps/uv/*.md'
+      - '!apps/uv/Taskfile.yaml'
+    image:
+      registry: "craigedmunds/uv"
+      dockerfile: "apps/uv/Dockerfile"
+      context: "apps/uv"
+      build_from_feature_branches: true  # Enable feature branch builds for infrastructure testing
+    description: "UV service application for Python package management"
+
+  # E2E test runner
+  - name: "e2e-runner"
+    path: "apps/e2e-test-runner"
+    test_trigger_paths:
+      - 'apps/e2e-test-runner/**'  # Match existing e2e-runner.yml workflow
+      - '!apps/e2e-test-runner/*.md'
+      - '!apps/e2e-test-runner/Taskfile.yaml'
+    image:
+      registry: "craigedmunds/e2e-test-runner"
+      dockerfile: "apps/e2e-test-runner/Dockerfile"
+      context: "apps/e2e-test-runner"
+    description: "End-to-end test runner for acceptance testing"
+
+  # EDA mesh components (configuration only)
+  - name: "eda-mesh"
+    path: "eda"
+    test_trigger_paths:
+      - 'eda/mesh/**'
+      - 'eda/helm/**'
+      - 'eda/kustomize/**'
+      - '!eda/*.md'
+      - '!eda/Taskfile.yaml'
+    # No image section = no Docker build
+    description: "Event-driven architecture mesh components and configuration"
+
+  # Platform components (Kustomize configurations and components)
+  - name: "platform"
+    path: "platform"
+    test_trigger_paths:
+      - 'platform/ingress/**'
+      - 'platform/kustomize/_common/components/argocd-branch-targetrevision/**'
+      - '!platform/ingress/*.md'
+      - '!platform/ingress/Taskfile.yaml'
+    # No image section = no Docker build
+    description: "Platform infrastructure components including ingress management and branch targeting"
+
+# Global configuration
+bootstrap:
+  command: "kubectl apply -k platform/kustomize/seed/overlays/local/pi"
+  description: "Bootstrap the platform with full capabilities"
+
+environments:
+  - name: "local-pi"
+    path: "platform/kustomize/seed/overlays/local/pi"
+    description: "Local development environment with full capabilities"
+  - name: "local-craig"
+    path: "platform/kustomize/seed/overlays/local/craig"
+    description: "Local development environment without Image Factory"
+  - name: "production"
+    path: "platform/kustomize/seed/overlays/production"
+    description: "Production environment with core components only"

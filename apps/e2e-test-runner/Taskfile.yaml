@@ -1,0 +1,12 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the E2E test runner Docker image
+    cmds:
+      - docker build -t craigedmunds/e2e-test-runner:local .
+
+  run:
+    desc: Run the E2E test runner image
+    cmds:
+      - docker run --rm craigedmunds/e2e-test-runner:local

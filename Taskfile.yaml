@@ -6,94 +6,108 @@ includes:
   seed:
     taskfile: platform/kustomize/seed/Taskfile.yaml
     dir: platform/kustomize/seed
-  secrets:
-    taskfile: platform/kustomize/central-secret-store/Taskfile.yaml
-    dir: platform/kustomize/central-secret-store
+  platform:
+    taskfile: platform/Taskfile.yaml
+    dir: platform
   backstage:
     taskfile: backstage/Taskfile.yaml
     dir: backstage
   eda:
     taskfile: eda/Taskfile.yaml
     dir: eda
-  kargo:
-    taskfile: platform/kustomize/seed/supporting-applications/kargo/Taskfile.yaml
-    dir: platform/kustomize/seed/supporting-applications/kargo
-  ingress:
-    taskfile: platform/ingress/Taskfile.yaml
-    dir: platform/ingress
-  branch-targeting:
-    taskfile: platform/kustomize/_common/components/argocd-branch-targetrevision/Taskfile.yaml
-    dir: platform/kustomize/_common/components/argocd-branch-targetrevision
   images:
     taskfile: image-factory/Taskfile.yaml
     dir: image-factory
   uv:
     taskfile: apps/uv/Taskfile.yaml
     dir: apps/uv
-  platform:
-    taskfile: platform/Taskfile.yaml
-    dir: platform
-  headlamp:
-    taskfile: platform/kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
-    dir: platform/kustomize/seed/supporting-applications/headlamp
 
 tasks:
   status:
     desc: Run all the status' methods
     cmds:
       - task: seed:status
-      - task: ingress:status
+      - task: platform:status
       - task: argocd:status
       - cmd: echo "Done"
         # silent: true
 
-  # Testing tasks
-  test:ingress:
-    desc: Run all kustomize ingress build tests
+  # Change detection testing tasks
+  test:changed:
+    desc: "Run tests for components that have changed compared to main"
     cmds:
-      - task: ingress:test
+      - ./scripts/run-changed-tests.sh all
 
-  test:branch-targeting:
-    desc: Run all branch targeting component tests
+  test:changed:unit:
+    desc: "Run unit tests for components that have changed"
     cmds:
-      - task: branch-targeting:test
+      - ./scripts/run-changed-tests.sh unit
 
-  test:kustomize:
-    desc: Run all kustomize tests (ingress + branch targeting)
+  test:changed:integration:
+    desc: "Run integration tests for components that have changed"
     cmds:
-      - task: test:ingress
-      - task: test:branch-targeting
+      - ./scripts/run-changed-tests.sh integration
 
-  test:ingress:argocd:
-    desc: Run ArgoCD ingress build tests
+  test:changed:acceptance:
+    desc: "Run acceptance tests for components that have changed"
     cmds:
-      - task: ingress:test:argocd
+      - ./scripts/run-changed-tests.sh acceptance
 
-  test:ingress:backstage:
-    desc: Run Backstage ingress build tests
+  # CI/CD synchronization validation
+  validate:ci-sync:
+    desc: "Validate that all GitHub Actions use task commands exclusively"
     cmds:
-      - task: backstage:test:kustomize
+      - cmd: |
+          echo "🔍 Validating CI/CD synchronization..."
+          
+          # Check that no workflow files contain inline test execution commands
+          echo "Checking for inline test execution commands in workflows..."
+          INLINE_COMMANDS=$(grep -r "run:.*pytest\|run:.*npm test\|run:.*go test" .github/workflows/ --exclude="*.md" || true)
+          if [ -n "$INLINE_COMMANDS" ]; then
+            echo "❌ ERROR: Found inline test execution commands in workflows:"
+            echo "$INLINE_COMMANDS"
+            echo ""
+            echo "All test execution should use 'task test:*' pattern instead"
+            exit 1
+          fi
+          
+          # Check that all test workflows use task commands
+          echo "Checking that workflows use task commands..."
+          WORKFLOW_FILES=$(find .github/workflows/ -name "*.yml" -o -name "*.yaml" | grep -v "_component-test.yml")
+          MISSING_TASK_COMMANDS=""
+          
+          for workflow in $WORKFLOW_FILES; do
+            if grep -q "test" "$workflow" && ! grep -q "task test:" "$workflow" && ! grep -q "uses: ./.github/workflows/_component-test.yml" "$workflow"; then
+              MISSING_TASK_COMMANDS="$MISSING_TASK_COMMANDS\n$workflow"
+            fi
+          done
+          
+          if [ -n "$MISSING_TASK_COMMANDS" ]; then
+            echo "⚠️  WARNING: Some workflows may not use task commands:"
+            echo -e "$MISSING_TASK_COMMANDS"
+            echo ""
+            echo "Consider updating these workflows to use 'task test:*' commands"
+          fi
+          
+          # Check that reusable workflow uses only task commands for execution
+          echo "Checking reusable workflow..."
+          if [ -f ".github/workflows/_component-test.yml" ]; then
+            if grep -q "run:.*pytest\|run:.*npm test\|run:.*go test" ".github/workflows/_component-test.yml"; then
+              echo "❌ ERROR: Reusable workflow contains inline test execution commands"
+              echo "The reusable workflow should only use 'task test:*' commands for execution"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ CI/CD synchronization validation passed"
 
-  test:ingress:kargo:
-    desc: Run Kargo ingress build tests
+  # Documentation generation tasks
+  docs:update:
+    desc: "Update all auto-generated documentation"
+    deps: [docs:taskfile]
     cmds:
-      - task: ingress:test:kargo
-
-  test:branch-targeting:
-    desc: Run all branch targeting component tests
-    cmds:
-      - task: branch-targeting:test
-
-  test:branch-targeting:platform-seed:
-    desc: Run platform seed overlay tests
-    cmds:
-      - task: branch-targeting:test:platform-seed
-
-  test:kustomize:
-    desc: Run all kustomize tests (ingress + branch targeting)
-    cmds:
-      - task: test:ingress
-      - task: test:branch-targeting
+      - cmd: echo "✅ All documentation updated"
+        silent: true
 
   # Development workflow - most commonly used
   dev:apply:
@@ -183,11 +197,11 @@ tasks:
         - `task images:status` - Show comprehensive status of Image Factory components
 
         ### Testing
-        - `task test:kustomize` - Run all kustomize tests (ingress + branch targeting)
-        - `task test:ingress` - Run all kustomize ingress build tests
-        - `task test:branch-targeting` - Run all branch targeting component tests
-        - `task images:test:all` - Run all tests (unit + integration)
-        - `task backstage:test:kargo:acceptance` - Run Kargo acceptance test for Backstage
+        - Use component-specific test tasks (e.g., \`task backstage:test:all\`, \`task images:test:all\`)
+        - \`task test:changed\` - Run tests for components that have changed
+        - \`task test:changed:unit\` - Run unit tests for changed components
+        - \`task test:changed:integration\` - Run integration tests for changed components
+        - \`task test:changed:acceptance\` - Run acceptance tests for changed components
 
         ## Available Tasks
 

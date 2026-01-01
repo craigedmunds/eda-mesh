@@ -1,0 +1,60 @@
+name: Fast Component Test (Unit + Integration)
+
+on:
+  workflow_call:
+    inputs:
+      component-path:
+        required: true
+        type: string
+        description: 'Path to the component directory (e.g., backstage/app)'
+      component-name:
+        required: true
+        type: string
+        description: 'Human-readable component name (e.g., Backstage App)'
+      test-type:
+        required: true
+        type: string
+        description: 'Type of test to run (unit or integration)'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js (for npm tests)
+        if: hashFiles(format('{0}/**/package.json', inputs.component-path)) != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.component-path }}/package-lock.json
+      - name: Setup Python (for pytest tests)
+        if: hashFiles(format('{0}/**/pytest.ini', inputs.component-path)) != '' || hashFiles(format('{0}/**/pyproject.toml', inputs.component-path)) != ''
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      # - name: Install UV (for Python projects)
+      #   if: hashFiles(format('{0}/**/pyproject.toml', inputs.component-path)) != ''
+      #   uses: astral-sh/setup-uv@v3
+      # - name: Install Python dependencies
+      #   run: pip install -r requirements.txt
+      - name: Run ${{ inputs.test-type }} setup for ${{ inputs.component-name }}
+        run: |
+          if [ -f "Taskfile.yaml" ] && grep -q "test:${{ inputs.test-type }}:setup:" Taskfile.yaml; then
+            task test:${{ inputs.test-type }}
+          else
+            echo "No ${{ inputs.test-type }} tests found for ${{ inputs.component-name }}"
+          fi
+        working-directory: ${{ inputs.component-path }}
+      - name: Run ${{ inputs.test-type }} tests for ${{ inputs.component-name }}
+        run: |
+          if [ -f "Taskfile.yaml" ] && grep -q "test:${{ inputs.test-type }}:" Taskfile.yaml; then
+            task test:${{ inputs.test-type }}
+          else
+            echo "No ${{ inputs.test-type }} tests found for ${{ inputs.component-name }}"
+          fi
+        working-directory: ${{ inputs.component-path }}

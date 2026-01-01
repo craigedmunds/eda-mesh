@@ -1,0 +1,24 @@
+# Auto-generated from .repo-metadata.yaml - DO NOT EDIT MANUALLY
+# Use 'task scripts:generate' to regenerate this file
+
+name: Platform Tests
+
+on:
+  pull_request:
+    paths:
+      - 'platform/ingress/**'
+      - 'platform/kustomize/_common/components/argocd-branch-targetrevision/**'
+      - '!platform/ingress/*.md'
+      - '!platform/ingress/Taskfile.yaml'
+      - '.github/workflows/platform-test.generated.yml'
+      - '.github/workflows/_component-test-fast.yml'
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/_component-test-fast.yml
+    with:
+      component-path: 'platform'
+      component-name: 'Platform'
+      test-type: 'unit'
+

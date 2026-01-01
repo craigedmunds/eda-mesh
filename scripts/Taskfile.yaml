@@ -1,0 +1,33 @@
+version: '3'
+
+tasks:
+  install:
+    desc: Install Python dependencies for workflow generation using venv
+    cmds:
+      - cmd: echo "📦 Installing workflow generation dependencies with venv..."
+        silent: true
+      - python3 -m venv .venv
+      - .venv/bin/pip install -r requirements.txt
+      - cmd: echo "✅ Dependencies installed"
+        silent: true
+
+  generate:
+    desc: Generate component workflows from .repo-metadata.yaml
+    cmds:
+      - cmd: echo "🔧 Generating component workflows..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python generate-component-workflows.py
+          else
+            .venv/bin/python generate-component-workflows.py
+          fi
+      - cmd: echo "✅ Component workflows generated"
+        silent: true
+
+  clean:
+    desc: Clean up venv virtual environment
+    cmds:
+      - rm -rf .venv
+      - cmd: echo "🧹 Cleaned up virtual environment"
+        silent: true

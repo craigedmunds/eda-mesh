@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - feature/backstage-events
+      # No feature branch builds for e2e-runner (build_from_feature_branches: false in .repo-metadata.yaml)
     paths:
       - 'apps/e2e-test-runner/**'
       - '.github/workflows/e2e-runner.yml'
-      - '.github/workflows/reusable-docker-build.yml'
+      - '.github/workflows/_docker-build.yml'
       - '!apps/e2e-test-runner/*.md'
       - '!apps/e2e-test-runner/Taskfile.yaml'
   
@@ -26,7 +26,7 @@ on:
 
 jobs:
   build-and-push:
-    uses: ./.github/workflows/reusable-docker-build.yml
+    uses: ./.github/workflows/_docker-build.yml
     with:
       app_name: 'E2E Runner'
       image_name: 'craigedmunds/e2e-test-runner'

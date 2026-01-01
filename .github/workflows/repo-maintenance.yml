@@ -1,0 +1,60 @@
+name: Repository Maintenance
+
+on:
+  pull_request:
+    paths:
+      - '.repo-metadata.yaml'
+      - 'Taskfile.yaml'
+      - '.github/workflows/repo-maintenance.yml'
+      - 'scripts/generate-*.py'
+      - 'scripts/generate-*.sh'
+  workflow_dispatch:     # Allow manual triggering
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Generate taskfile documentation
+        run: |
+          # Generate/update the taskfile steering documentation
+          task docs:taskfile
+          
+      - name: Validate CI/CD synchronization
+        run: |
+          # Validate that all workflows use task commands
+          task validate:ci-sync
+          
+      - name: Update repository documentation
+        run: |
+          # Update any auto-generated documentation
+          echo "Repository documentation is up to date"
+          
+      - name: Check for maintenance drift
+        run: |
+          if ! git diff --quiet; then
+            echo "❌ ERROR: Repository maintenance tasks produced changes"
+            echo "This indicates the repository is out of sync with its metadata"
+            echo ""
+            echo "**Changes detected:**"
+            git diff --name-only
+            echo ""
+            echo "**Diff:**"
+            git diff
+            echo ""
+            echo "**Next steps:**"
+            echo "1. Run 'task docs:taskfile' locally"
+            echo "2. Commit the changes"
+            echo "3. Push the updated documentation"
+            exit 1
+          else
+            echo "✅ Repository maintenance is up to date"
+          fi

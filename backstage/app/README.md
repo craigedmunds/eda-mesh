@@ -2,6 +2,33 @@
 
 This is your newly scaffolded Backstage App, Good Luck!
 
+## Testing
+
+This component supports multiple test levels:
+
+- **Unit Tests**: `task test:unit` - Fast tests with no external dependencies
+- **Integration Tests**: `task test:integration` - Tests with internal dependencies  
+- **Acceptance Tests**: `task test:acceptance` - End-to-end tests using Playwright
+- **All Tests**: `task test:all` - Run complete test suite
+
+### Test Structure
+
+- `tests/unit/` - Unit tests (when implemented)
+- `tests/integration/` - Integration tests (when implemented)  
+- `tests/acceptance/` - Playwright acceptance tests
+
+### Running Tests Locally
+
+```bash
+# Run all tests
+task test:all
+
+# Run specific test level
+task test:unit
+task test:integration  
+task test:acceptance
+```
+
 ## Local Development Setup
 
 1. **Set up environment variables:**

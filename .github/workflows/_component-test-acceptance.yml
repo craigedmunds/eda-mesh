@@ -1,0 +1,55 @@
+name: Component Acceptance Test (Post-deployment)
+
+on:
+  workflow_call:
+    inputs:
+      component-path:
+        required: true
+        type: string
+        description: 'Path to the component directory (e.g., backstage/app)'
+      component-name:
+        required: true
+        type: string
+        description: 'Human-readable component name (e.g., Backstage App)'
+      environment:
+        required: false
+        type: string
+        default: 'local'
+        description: 'Target environment for acceptance tests'
+
+jobs:
+  acceptance-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js (for Playwright tests)
+        if: hashFiles(format('{0}/tests/acceptance/package.json', inputs.component-path)) != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ${{ inputs.component-path }}/tests/acceptance/package-lock.json
+      - name: Setup Python (for pytest tests)
+        if: hashFiles(format('{0}/**/pytest.ini', inputs.component-path)) != '' || hashFiles(format('{0}/**/pyproject.toml', inputs.component-path)) != ''
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      # - name: Install UV (for Python projects)
+      #   if: hashFiles(format('{0}/**/pyproject.toml', inputs.component-path)) != ''
+      #   uses: astral-sh/setup-uv@v3
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Run acceptance tests for ${{ inputs.component-name }}
+        run: |
+          if [ -f "Taskfile.yaml" ] && grep -q "test:acceptance:" Taskfile.yaml; then
+            task test:acceptance
+          else
+            echo "No acceptance tests found for ${{ inputs.component-name }}"
+          fi
+        working-directory: ${{ inputs.component-path }}
+        env:
+          TEST_ENVIRONMENT: ${{ inputs.environment }}

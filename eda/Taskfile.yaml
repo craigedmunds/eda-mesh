@@ -1,6 +1,7 @@
 version: '3'
 
 tasks:
+
   logs:rabbitmq:
     desc: Follow RabbitMQ logs
     cmds:

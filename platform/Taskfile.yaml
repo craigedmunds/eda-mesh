@@ -1,4 +1,56 @@
 version: '3'
 
-# Platform-level tasks can be added here as needed
-# Test tasks are handled directly by the ingress Taskfile
+includes:
+  ingress:
+    taskfile: ./ingress/Taskfile.yaml
+    dir: ./ingress
+  branch-targeting:
+    taskfile: ./kustomize/_common/components/argocd-branch-targetrevision/Taskfile.yaml
+    dir: ./kustomize/_common/components/argocd-branch-targetrevision
+  secrets:
+    taskfile: ./kustomize/central-secret-store/Taskfile.yaml
+    dir: ./kustomize/central-secret-store
+  kargo:
+    taskfile: ./kustomize/seed/supporting-applications/kargo/Taskfile.yaml
+    dir: ./kustomize/seed/supporting-applications/kargo
+  headlamp:
+    taskfile: ./kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
+    dir: ./kustomize/seed/supporting-applications/headlamp
+
+tasks:
+  test:unit:setup:
+    desc: "Setup unit tests for platform components (ingress + branch targeting)"
+    cmds:
+      - cmd: echo "🧪 Setting up platform unit tests..."
+        silent: true
+      - task: ingress:test:unit:setup
+      - task: branch-targeting:test:unit:setup
+  test:unit:
+    desc: "Run unit tests for platform components (ingress + branch targeting)"
+    cmds:
+      - cmd: echo "🧪 Running platform unit tests..."
+        silent: true
+      - task: ingress:test:unit
+      - task: branch-targeting:test:unit
+      - cmd: echo "✅ All platform unit tests passed"
+        silent: true
+
+  test:all:
+    desc: "Run all tests for platform components"
+    deps: [test:unit]
+
+  # Status and debugging tasks (delegated to ingress)
+  status:
+    desc: Check ingress status and troubleshoot connectivity issues
+    cmds:
+      - task: ingress:status
+
+  ssl:check:
+    desc: Check SSL certificate status for a given host
+    cmds:
+      - task: ingress:ssl:check
+
+  cert:debug:
+    desc: Debug certificate issues for a specific certificate
+    cmds:
+      - task: ingress:cert:debug
