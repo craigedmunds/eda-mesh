@@ -45,13 +45,21 @@ tasks:
       - cmd: echo "🔧 Setting up Image Factory app environment..."
         silent: true
       - cmd: |
-          if [ ! -d ".venv" ]; then
-            echo "Creating virtual environment..."
-            python -m venv .venv
+          if [ -n "$CI" ]; then
+            echo "CI environment detected, skipping virtual environment creation"
+          else
+            if [ ! -d ".venv" ]; then
+              echo "Creating virtual environment..."
+              python -m venv .venv
+            fi
           fi
       - cmd: |
           echo "Installing dependencies..."
-          .venv/bin/pip install -e ".[dev]"
+          if [ -n "$CI" ]; then
+            pip install -e ".[dev]"
+          else
+            .venv/bin/pip install -e ".[dev]"
+          fi
 
   cdk8s:setup:
     desc: "Set up Image Factory CDK8s component"
@@ -60,16 +68,28 @@ tasks:
       - cmd: echo "🔧 Setting up Image Factory CDK8s environment..."
         silent: true
       - cmd: |
-          if [ ! -d ".venv" ]; then
-            echo "Creating virtual environment..."
-            python -m venv .venv
+          if [ -n "$CI" ]; then
+            echo "CI environment detected, skipping virtual environment creation"
+          else
+            if [ ! -d ".venv" ]; then
+              echo "Creating virtual environment..."
+              python -m venv .venv
+            fi
           fi
       - cmd: |
           echo "Installing dependencies..."
-          .venv/bin/pip install -e ".[dev]"
+          if [ -n "$CI" ]; then
+            pip install -e ".[dev]"
+          else
+            .venv/bin/pip install -e ".[dev]"
+          fi
       - cmd: |
           echo "Importing CDK8s types..."
-          .venv/bin/cdk8s import
+          if [ -n "$CI" ]; then
+            cdk8s import
+          else
+            .venv/bin/cdk8s import
+          fi
 
   # Component-specific test tasks
   app:test:unit:
