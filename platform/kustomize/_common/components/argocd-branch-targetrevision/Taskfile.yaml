@@ -1,0 +1,110 @@
+version: '3'
+
+tasks:
+  test:
+    desc: Run all branch targeting component tests
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running branch targeting component tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest -v --tb=short
+          else
+            .venv/bin/python -m pytest -v --tb=short
+          fi
+      - cmd: echo "✅ All branch targeting tests passed"
+        silent: true
+
+  test:platform-seed:
+    desc: Run platform seed overlay tests
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running platform seed overlay tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest test_platform_seed_overlays.py -v --tb=short -m platform_seed
+          else
+            .venv/bin/python -m pytest test_platform_seed_overlays.py -v --tb=short -m platform_seed
+          fi
+      - cmd: echo "✅ Platform seed overlay tests passed"
+        silent: true
+
+  test:eda-mesh:
+    desc: Run EDA mesh overlay tests
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running EDA mesh overlay tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest test_eda_mesh_overlays.py -v --tb=short -m eda_mesh
+          else
+            .venv/bin/python -m pytest test_eda_mesh_overlays.py -v --tb=short -m eda_mesh
+          fi
+      - cmd: echo "✅ EDA mesh overlay tests passed"
+        silent: true
+
+  test:git-applications:
+    desc: Run tests for git-based applications
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running git application tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest -v --tb=short -m git_applications
+          else
+            .venv/bin/python -m pytest -v --tb=short -m git_applications
+          fi
+      - cmd: echo "✅ Git application tests passed"
+        silent: true
+
+  test:helm-applications:
+    desc: Run tests for helm-based applications
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running helm application tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest -v --tb=short -m helm_applications
+          else
+            .venv/bin/python -m pytest -v --tb=short -m helm_applications
+          fi
+      - cmd: echo "✅ Helm application tests passed"
+        silent: true
+
+  test:multisource:
+    desc: Run tests for multisource applications
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running multisource application tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest -v --tb=short -m multisource
+          else
+            .venv/bin/python -m pytest -v --tb=short -m multisource
+          fi
+      - cmd: echo "✅ Multisource application tests passed"
+        silent: true
+
+  test:install:
+    desc: Install dependencies for branch targeting tests
+    dir: tests/unit
+    cmds:
+      - cmd: echo "📦 Installing branch targeting test dependencies..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            # In CI, install directly
+            pip install -r requirements.txt
+          else
+            # Locally, use venv
+            python3 -m venv .venv
+            .venv/bin/pip install -r requirements.txt
+          fi
+      - cmd: echo "✅ Dependencies installed"
+        silent: true

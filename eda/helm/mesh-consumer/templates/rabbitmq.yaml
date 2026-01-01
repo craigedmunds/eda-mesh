@@ -21,7 +21,7 @@ spec:
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
-    name: eda-mesh
+    name: eda-mesh-rabbitmq
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Binding
@@ -33,5 +33,5 @@ spec:
   source: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
   destinationType: queue
   rabbitmqClusterReference:
-    name: eda-mesh
+    name: eda-mesh-rabbitmq
 {{- end }}

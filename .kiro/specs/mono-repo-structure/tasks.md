@@ -176,22 +176,60 @@ This implementation plan restructures the mono repository to consolidate capabil
     - Verify applications support branch targeting mechanism
     - _Requirements: 5.3_
 
-  - [ ]* 12.4 Write property test for branch targeting functionality
+  - [x] 12.4 Enhance branch targeting for helm parameters
+    - Update branch targeting component to support helm parameter replacement
+    - Add feature_branch parameter support to replace service-specific branch parameters
+    - Update component to handle both targetRevision and helm parameter updates
+    - _Requirements: 5.6, 5.7, 5.8_
+
+  - [x] 12.5 Update helm charts to use generic feature_branch parameter
+    - Replace argocd.lob_services.branch with feature_branch in mesh-lob helm chart
+    - Update ApplicationSets to use feature_branch parameter instead of service-specific names
+    - Remove manual patches in overlays that are now handled by the component
+    - _Requirements: 5.7, 5.8_
+
+  - [x] 12.6 Add comprehensive kustomize tests for branch targeting
+    - Create test folders for each location that uses the branch targeting component
+    - Add tests to validate targetRevision replacement in git sources
+    - Add tests to validate feature_branch parameter replacement in helm applications
+    - Add tests for both Application and ApplicationSet resources
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8_
+
+  - [ ]* 12.7 Write property test for enhanced branch targeting functionality
     - **Property 4: Branch Targeting Functionality**
-    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5**
+    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8**
 
 - [ ] 13. Migration and cleanup
-  - [ ] 13.1 Test bootstrap process with self-managing seed
+  - [ ] 13.1 Add comprehensive kustomize testing infrastructure
+    - Update root Taskfile.yaml to include `test:kustomize` task
+    - Ensure `test:kustomize` runs all kustomize unit tests (ingress + branch targeting)
+    - Add test validation to CI/CD pipeline
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8_
+
+  - [ ] 13.2 Test bootstrap process with self-managing seed
     - Test `kubectl apply -k platform/kustomize/seed/overlays/local/pi`
     - Verify self-managing applications are created and functional
     - Test that subsequent changes to seed are automatically applied
     - _Requirements: 2.1, 2.6, 2.7_
 
-  - [ ] 13.2 Test branch targeting functionality
+  - [ ] 13.3 Test branch targeting functionality
     - Configure a feature branch target revision
     - Verify all labeled applications switch to the target branch
     - Test with both single-source and multi-source applications
-    - _Requirements: 5.1, 5.2, 5.4_
+    - Test helm parameter replacement functionality
+    - _Requirements: 5.1, 5.2, 5.4, 5.6, 5.7, 5.8_
+
+  - [ ] 13.4 Remove deprecated seed directory
+    - Remove old `seed/` directory after confirming new structure works
+    - Update any remaining references
+    - _Requirements: 2.3_
+
+  - [ ]* 13.5 Write integration tests for complete bootstrap process
+    - Test complete platform deployment from consolidated structure
+    - Test multi-environment overlay functionality
+    - Test self-managing seed behavior
+    - Test branch targeting across environments
+    - _Requirements: 2.1, 2.5, 2.6, 2.7, 5.1, 5.2_
 
   - [ ] 13.3 Remove deprecated seed directory
     - Remove old `seed/` directory after confirming new structure works
@@ -205,5 +243,40 @@ This implementation plan restructures the mono repository to consolidate capabil
     - Test branch targeting across environments
     - _Requirements: 2.1, 2.5, 2.6, 2.7, 5.1, 5.2_
 
-- [ ] 14. Final checkpoint - Complete system validation
+- [ ] 14. Implement CI/CD testing infrastructure
+  - [ ] 14.1 Standardize component test structure
+    - Create flexible test directory structure where components include only needed test types (unit/, integration/, acceptance/)
+    - Ensure each component has appropriate Taskfile.yaml with test tasks for its test types
+    - Update existing components to follow flexible test organization
+    - _Requirements: 7.1, 7.4_
+
+  - [ ] 14.2 Create component-specific test tasks
+    - Add test tasks (`test:unit`, `test:integration`, `test:acceptance`, `test:all`) to component Taskfiles based on what test types each component actually has
+    - Ensure test tasks are composable and can run independently
+    - Document test execution in component README files
+    - _Requirements: 7.6, 7.4_
+
+  - [ ] 14.3 Implement path-based selective test execution
+    - Create CI/CD workflows that use path-based change detection (GitHub Actions `paths:` semantics)
+    - Add logic to run only tests for components that have changed based on file paths
+    - Ensure component test isolation is maintained
+    - _Requirements: 7.3, 7.7_
+
+  - [ ] 14.4 Create minimal CI/CD workflow integration
+    - Create minimal CI/CD workflow files that use path-based triggering and delegate to component-specific tasks
+    - Ensure local and CI/CD test execution use identical commands
+    - Support consolidation of component workflows into repo-level workflows with path-based triggering
+    - Document CI/CD integration approach
+    - _Requirements: 7.2, 7.5, 7.7_
+
+  - [ ]* 14.5 Write property tests for CI/CD testing structure
+    - **Property 11: Test Level Organization**
+    - **Property 12: Local-CI/CD Test Parity**
+    - **Property 13: Component Test Isolation**
+    - **Property 14: Decentralized Test Configuration**
+    - **Property 15: Minimal Centralized Workflows**
+    - **Property 16: Composable Test Execution**
+    - **Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.6**
+
+- [ ] 15. Final checkpoint - Complete system validation
   - Ensure all tests pass, ask the user if questions arise.

@@ -11,14 +11,6 @@ configMapGenerator:
     literals:
       - targetRevision=feature/backstage-events
 
-patches:
-  - target:
-      group: argoproj.io
-      version: v1alpha1
-      kind: ApplicationSet
-      name: eda-mesh-lob-applications
-    path: patch-feature-branch.yaml
-
 generatorOptions:
   disableNameSuffixHash: true
 

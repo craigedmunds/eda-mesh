@@ -9,6 +9,7 @@ generatorOptions:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
 
 replacements:
+  # Update targetRevision for git sources (non-helm applications)
   - source:
       kind: ConfigMap
       name: argocd-branch-targetrevision
@@ -36,3 +37,33 @@ replacements:
         fieldPaths:
           - spec.generators.*.git.revision
           - spec.template.spec.sources.*.targetRevision
+  
+  # Update git generators and source targetRevision for helm applications
+  - source:
+      kind: ConfigMap
+      name: argocd-branch-targetrevision
+      fieldPath: data.targetRevision
+    targets:
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,source-type=helm"
+        fieldPaths:
+          - spec.generators.0.git.revision
+          - spec.template.spec.source.targetRevision
+  
+  # Update helm parameters for branch targeting (using same targetRevision value)
+  - source:
+      kind: ConfigMap
+      name: argocd-branch-targetrevision
+      fieldPath: data.targetRevision
+    targets:
+      - select:
+          kind: Application
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,source-type=helm"
+        fieldPaths:
+          - spec.source.helm.parameters.[name=feature_branch].value
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,source-type=helm"
+        fieldPaths:
+          - spec.template.spec.source.helm.parameters.[name=feature_branch].value

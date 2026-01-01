@@ -9,7 +9,7 @@ spec:
   generators:
   - git:
       repoURL: https://github.com/craigedmunds/argocd-eda.git
-      revision: {{ .Values.argocd.lob_services.branch }}
+      revision: {{ .Values.feature_branch }}
       directories:
       - path: 'eda/mesh/lobs/{{.Values.name}}/*'
       values:
@@ -22,11 +22,11 @@ spec:
       project: "eventing"
       sources:
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
-          targetRevision: {{ .Values.argocd.lob_services.branch }}
+          targetRevision: {{ .Values.feature_branch }}
           ref: lob
 
         - repoURL: https://github.com/craigedmunds/argocd-eda.git
-          targetRevision: {{ .Values.argocd.lob_services.branch }}
+          targetRevision: {{ .Values.feature_branch }}
           path: 'eda/helm/mesh-lob-service'
           helm:
             fileParameters:
@@ -41,6 +41,8 @@ spec:
                 value: "{{.Values.name}}"
               - name: name
                 value: '{{`{{ .values.service }}`}}'
+              - name: feature_branch
+                value: "{{ .Values.feature_branch }}"
       destination:
         server: https://kubernetes.default.svc
         namespace: "eda-mesh-{{.Values.name}}"

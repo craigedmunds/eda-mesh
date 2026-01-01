@@ -79,7 +79,7 @@ sequenceDiagram
 
 ### Branch Targeting Mechanism
 
-The repository implements a branch targeting system that allows all ArgoCD applications to track a specific Git branch for isolated development:
+The repository implements a branch targeting system that allows all ArgoCD applications to track a specific Git branch for isolated development. The enhanced mechanism supports both `targetRevision` updates and helm parameter updates using the same value:
 
 ```yaml
 # platform/kustomize/_common/components/argocd-branch-targetrevision/kustomization.yaml
@@ -87,6 +87,7 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
 replacements:
+  # Update targetRevision for git sources
   - source:
       kind: ConfigMap
       name: argocd-branch-targetrevision
@@ -94,9 +95,43 @@ replacements:
     targets:
       - select:
           kind: Application
-          labelSelector: "repo=argocd-eda"
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy notin (multisource),source-type!=helm"
         fieldPaths:
           - spec.source.targetRevision
+      - select:
+          kind: Application
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy in (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.sources.*.targetRevision
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy notin (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.generators.0.git.revision
+          - spec.template.spec.source.targetRevision
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,argocd-branch-targetrevision-strategy in (multisource),source-type!=helm"
+        fieldPaths:
+          - spec.generators.*.git.revision
+          - spec.template.spec.sources.*.targetRevision
+  
+  # Update helm parameters for branch targeting (using same targetRevision value)
+  - source:
+      kind: ConfigMap
+      name: argocd-branch-targetrevision
+      fieldPath: data.targetRevision
+    targets:
+      - select:
+          kind: Application
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,source-type=helm"
+        fieldPaths:
+          - spec.source.helm.parameters.[name=feature_branch].value
+      - select:
+          kind: ApplicationSet
+          labelSelector: "repo=argocd-eda,argocd-branch-targetrevision=true,source-type=helm"
+        fieldPaths:
+          - spec.template.spec.source.helm.parameters.[name=feature_branch].value
 ```
 
 **Usage in Overlays:**
@@ -107,7 +142,7 @@ components:
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
-    behavior: add
+    behavior: replace
     literals:
       - targetRevision=feature/backstage-events
 ```
@@ -166,6 +201,36 @@ The platform offers multiple messaging infrastructure options to support demonst
 - **Configuration**: Minimal configuration suitable for local development workflows
 
 Both messaging platforms are managed as supporting applications, allowing environment overlays to selectively include them based on requirements and resource constraints.
+
+### CI/CD Testing Architecture
+
+The repository implements a distributed testing approach that enables efficient CI/CD pipelines while maintaining local development parity:
+
+#### Test Level Organization
+```
+component/
+├── src/                    # Source code
+├── tests/                  # Only test types the component needs
+│   ├── unit/              # Fast tests, no dependencies (optional)
+│   ├── integration/       # Medium speed, internal deps (optional)
+│   └── acceptance/        # Slow tests, external deps (optional)
+├── Taskfile.yaml          # Component-specific test tasks
+└── README.md              # Testing documentation
+```
+
+#### Component-Specific Testing
+Each component defines only the test tasks it needs:
+- `task test:unit` - Fast unit tests (if component has unit tests)
+- `task test:integration` - Integration tests (if component has integration tests)
+- `task test:acceptance` - End-to-end acceptance tests (if component has acceptance tests)
+- `task test:all` - Complete test suite for that component
+
+#### CI/CD Integration Strategy
+- **Local Parity**: Same commands run locally and in CI/CD
+- **Path-Based Selective Execution**: Use GitHub Actions `paths:` semantics to trigger tests only for changed components
+- **Composable Tests**: Each test level can be run independently
+- **Minimal Centralization**: CI/CD workflows delegate to component-specific tasks
+- **Component Autonomy**: Each component defines its own test structure and requirements
 
 ### Application Structure Standards
 
@@ -284,8 +349,8 @@ After reviewing the prework analysis, several properties can be consolidated:
 **Validates: Requirements 2.6, 2.7, 2.8**
 
 **Property 4: Branch Targeting Functionality**
-*For any* ArgoCD application labeled with repo=argocd-eda, when a target revision ConfigMap is configured, the application should use the specified target revision regardless of whether it's a single-source, multi-source, Application, or ApplicationSet resource
-**Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5**
+*For any* ArgoCD application labeled with repo=argocd-eda, when a target revision ConfigMap is configured, the application should use the specified target revision regardless of whether it's a single-source, multi-source, Application, or ApplicationSet resource, and helm applications should have their feature_branch parameter updated to match the target revision
+**Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8**
 
 **Property 5: Component Documentation Linking**
 *For any* major component, its documentation should include links to detailed README files and relevant specifications
@@ -310,6 +375,30 @@ After reviewing the prework analysis, several properties can be consolidated:
 **Property 10: Messaging Application Consistency**
 *For any* messaging infrastructure ArgoCD application, it should follow the same structural patterns and labeling conventions as other supporting applications
 **Validates: Requirements 6.5**
+
+**Property 11: Test Level Organization**
+*For any* component with tests, it should organize tests into unit, integration, and acceptance levels with appropriate directory structure and clear separation of dependencies
+**Validates: Requirements 7.1**
+
+**Property 12: Local-CI/CD Test Parity**
+*For any* component with tests, the Taskfile commands used for local testing should be the same as those referenced in CI/CD pipeline configurations
+**Validates: Requirements 7.2**
+
+**Property 13: Component Test Isolation**
+*For any* component, its test execution should be independent and not require running tests from other components to validate its functionality
+**Validates: Requirements 7.3**
+
+**Property 14: Decentralized Test Configuration**
+*For any* component with tests, all test configuration and execution logic should be located within the component directory rather than in centralized CI/CD workflow files
+**Validates: Requirements 7.4**
+
+**Property 15: Minimal Centralized Workflows**
+*For any* CI/CD workflow file, it should delegate to component-specific test processes rather than containing inline test logic, keeping centralized workflow files minimal
+**Validates: Requirements 7.5**
+
+**Property 16: Composable Test Execution**
+*For any* component with tests, it should provide separate, independently executable tasks for unit tests, integration tests, and acceptance tests
+**Validates: Requirements 7.6**
 
 ## Error Handling
 

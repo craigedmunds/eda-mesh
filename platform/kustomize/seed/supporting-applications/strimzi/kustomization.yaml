@@ -11,3 +11,7 @@ resources:
   
   # Install a single node shared cluster for things that want it
   - https://strimzi.io/examples/latest/kafka/kafka-single-node.yaml
+
+# patches:
+  # No longer needed - control plane taint removed globally in lab environment
+  # - path: kafka-tolerations-patch.yaml

@@ -82,6 +82,9 @@ This specification defines the organizational structure and conventions for the 
 3. WHEN applications support branch targeting, THEN they SHALL be labeled with repo=argocd-eda to enable the targeting mechanism
 4. WHEN using the branch targeting component, THEN it SHALL support both single-source and multi-source ArgoCD applications
 5. WHEN branch targeting is applied, THEN it SHALL work for both Application and ApplicationSet resources
+6. WHEN applications use Helm charts with branch parameters, THEN the Branch_Targeting_Mechanism SHALL update helm parameter values to match the target revision
+7. WHEN the branch targeting component is configured, THEN it SHALL use a generic parameter name "feature_branch" instead of service-specific parameter names
+8. WHEN helm applications have branch-related parameters, THEN they SHALL be automatically updated by the branch targeting component without requiring manual patches
 
 ### Requirement 6
 
@@ -94,3 +97,17 @@ This specification defines the organizational structure and conventions for the 
 3. WHEN deploying open source Kafka, THE System SHALL provide a simple single-node configuration suitable for development and testing
 4. WHEN configuring environment overlays, THE System SHALL allow selective deployment of messaging infrastructure based on environment needs
 5. WHEN managing supporting applications, THE System SHALL maintain consistent ArgoCD application patterns for all messaging infrastructure components
+
+### Requirement 7
+
+**User Story:** As a developer, I want automated testing workflows that run efficiently in CI/CD pipelines, so that I can get fast feedback on changes and ensure code quality without running unnecessary tests.
+
+#### Acceptance Criteria
+
+1. WHEN tests are organized, THE System SHALL support multiple test levels from fastest (unit tests with no dependencies) to medium speed (integration tests with internal dependencies) to slowest (acceptance tests with external dependencies and/or browser-based testing) where each component includes only the test levels it requires
+2. WHEN running tests locally, THE System SHALL provide the same test processes via Taskfile commands as those used in CI/CD pipeline checks
+3. WHEN changes are made to a component, THE System SHALL run only tests appropriate to that component by default rather than all repository tests using path-based change detection
+4. WHEN test processes are defined for each component, THE System SHALL locate test configuration and execution solely within that component directory rather than in centralized CI/CD workflow files
+5. WHEN CI/CD workflows are created, THE System SHALL minimize the number of centralized workflow files by using component-specific test processes and support path-based triggering for selective execution
+6. WHEN tests are executed, THE System SHALL support running unit tests, integration tests, and acceptance tests as separate, composable operations where each component defines only the test types it needs
+7. WHEN pipeline checks are configured, THE System SHALL use path-based change detection to determine which components have changed and run appropriate tests for those components only

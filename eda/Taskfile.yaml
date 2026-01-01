@@ -49,14 +49,30 @@ tasks:
         silent: true
       - kubectl get ingress -n eda-mesh
 
-  apply:
-    desc: Apply EDA mesh kustomize configuration directly
+  build:
+    desc: Build EDA mesh kustomize configuration
+    dir: kustomize/mesh/overlays/lab
     cmds:
-      - kubectl apply -k kustomize/mesh/base/
+      - kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone .
+      
+  apply:
+    desc: Apply EDA mesh kustomize configuration
+    dir: kustomize/mesh/overlays/lab
+    cmds:
+      - kubectl apply -k .
       - cmd: echo "Applied EDA mesh configuration"
         silent: true
 
   diff:
     desc: Show diff between local changes and cluster state
+    dir: kustomize/mesh/overlays/lab
     cmds:
-      - kubectl diff -k kustomize/mesh/base/
+      - kubectl diff -k .
+
+
+  demo:consumer:
+    desc: Run Kafka console consumer
+    vars:
+      TOPIC: '{{.TOPIC | default "users"}}'
+    cmds:
+      - kubectl run demo-kafka-consumer -n kafka --image=quay.io/strimzi/kafka:0.49.1-kafka-4.1.1 --rm=true --restart=Never -ti -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic {{.TOPIC}} --from-beginning

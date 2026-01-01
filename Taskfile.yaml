@@ -21,6 +21,9 @@ includes:
   ingress:
     taskfile: platform/ingress/Taskfile.yaml
     dir: platform/ingress
+  branch-targeting:
+    taskfile: platform/kustomize/_common/components/argocd-branch-targetrevision/Taskfile.yaml
+    dir: platform/kustomize/_common/components/argocd-branch-targetrevision
   images:
     taskfile: image-factory/Taskfile.yaml
     dir: image-factory
@@ -50,6 +53,17 @@ tasks:
     cmds:
       - task: ingress:test
 
+  test:branch-targeting:
+    desc: Run all branch targeting component tests
+    cmds:
+      - task: branch-targeting:test
+
+  test:kustomize:
+    desc: Run all kustomize tests (ingress + branch targeting)
+    cmds:
+      - task: test:ingress
+      - task: test:branch-targeting
+
   test:ingress:argocd:
     desc: Run ArgoCD ingress build tests
     cmds:
@@ -64,6 +78,22 @@ tasks:
     desc: Run Kargo ingress build tests
     cmds:
       - task: ingress:test:kargo
+
+  test:branch-targeting:
+    desc: Run all branch targeting component tests
+    cmds:
+      - task: branch-targeting:test
+
+  test:branch-targeting:platform-seed:
+    desc: Run platform seed overlay tests
+    cmds:
+      - task: branch-targeting:test:platform-seed
+
+  test:kustomize:
+    desc: Run all kustomize tests (ingress + branch targeting)
+    cmds:
+      - task: test:ingress
+      - task: test:branch-targeting
 
   # Development workflow - most commonly used
   dev:apply:
@@ -102,6 +132,26 @@ tasks:
     cmds:
       - kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
 
+  # Kafka tasks
+  kafka:producer:
+    desc: Run Kafka console producer (interactive)
+    vars:
+      TOPIC: '{{.TOPIC | default "my-topic"}}'
+    cmds:
+      - kubectl run kafka-producer -n kafka --image=quay.io/strimzi/kafka:0.49.1-kafka-4.1.1 --rm=true --restart=Never -ti --overrides='{"spec":{"tolerations":[{"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"}]}}' -- bin/kafka-console-producer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic {{.TOPIC}}
+
+  kafka:consumer:
+    desc: Run Kafka console consumer
+    vars:
+      TOPIC: '{{.TOPIC | default "my-topic"}}'
+    cmds:
+      - kubectl run kafka-consumer -n kafka --image=quay.io/strimzi/kafka:0.49.1-kafka-4.1.1 --rm=true --restart=Never -ti --overrides='{"spec":{"tolerations":[{"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"}]}}' -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic {{.TOPIC}} --from-beginning
+
+  kafka:topics:
+    desc: List Kafka topics
+    cmds:
+      - kubectl run kafka-topics -n kafka --image=quay.io/strimzi/kafka:0.49.1-kafka-4.1.1 --rm=true --restart=Never --overrides='{"spec":{"tolerations":[{"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"}]}}' -- bin/kafka-topics.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --list
+
   # Documentation tasks
   docs:taskfile:
     desc: Generate/update the taskfile steering documentation
@@ -133,7 +183,9 @@ tasks:
         - `task images:status` - Show comprehensive status of Image Factory components
 
         ### Testing
+        - `task test:kustomize` - Run all kustomize tests (ingress + branch targeting)
         - `task test:ingress` - Run all kustomize ingress build tests
+        - `task test:branch-targeting` - Run all branch targeting component tests
         - `task images:test:all` - Run all tests (unit + integration)
         - `task backstage:test:kargo:acceptance` - Run Kargo acceptance test for Backstage
 

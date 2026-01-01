@@ -1,4 +1,2 @@
 name: mistake
-argocd:
-  lob_services:
-    branch: main
+feature_branch: main
