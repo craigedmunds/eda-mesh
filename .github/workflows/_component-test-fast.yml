@@ -42,12 +42,12 @@ jobs:
       #   uses: astral-sh/setup-uv@v3
       # - name: Install Python dependencies
       #   run: pip install -r requirements.txt
-      - name: Run ${{ inputs.test-type }} setup for ${{ inputs.component-name }}
+      - name: Run ${{ inputs.test-type }} test setup for ${{ inputs.component-name }}
         run: |
           if [ -f "Taskfile.yaml" ] && grep -q "test:${{ inputs.test-type }}:setup:" Taskfile.yaml; then
-            task test:${{ inputs.test-type }}
+            task test:${{ inputs.test-type }}:setup
           else
-            echo "No ${{ inputs.test-type }} tests found for ${{ inputs.component-name }}"
+            echo "No setup task for ${{ inputs.test-type }} tests found for ${{ inputs.component-name }}"
           fi
         working-directory: ${{ inputs.component-path }}
       - name: Run ${{ inputs.test-type }} tests for ${{ inputs.component-name }}
