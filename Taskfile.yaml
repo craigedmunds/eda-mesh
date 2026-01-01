@@ -208,7 +208,7 @@ tasks:
         The following tasks are available in this repository. Use `task --list` to see the most current list:
 
         EOF
-      - task --list >> .kiro/steering/taskfile.md
+      - COLUMNS=1000 task --list >> .kiro/steering/taskfile.md
       - |
         cat >> .kiro/steering/taskfile.md << 'EOF'
 

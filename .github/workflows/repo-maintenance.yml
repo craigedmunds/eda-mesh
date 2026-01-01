@@ -25,8 +25,8 @@ jobs:
       
       - name: Generate taskfile documentation
         run: |
-          # Generate/update the taskfile steering documentation
-          task docs:taskfile
+          # Generate/update the taskfile steering documentation with consistent terminal width
+          COLUMNS=1000 task docs:taskfile
           
       - name: Validate CI/CD synchronization
         run: |
