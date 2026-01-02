@@ -13,9 +13,35 @@ tasks:
       - task: app:test:unit
       - task: cdk8s:test:unit
 
+  # Component-specific setup tasks
+  test:integration:setup:
+    desc: "Set up integration test"
+    dir: tests/integration
+    cmds:
+      - cmd: echo "🔧 Setting up integration test environment..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            echo "CI environment detected, skipping virtual environment creation"
+          else
+            if [ ! -d ".venv" ]; then
+              echo "Creating virtual environment..."
+              python3 -m venv .venv
+            fi
+          fi
+        silent: true
+      - cmd: |
+          echo "Installing dependencies..."
+          if [ -n "$CI" ]; then
+            pip install -e ".[dev]"
+          else
+            .venv/bin/pip install -e ".[dev]"
+          fi
+        silent: true
+
   test:integration:
     desc: "Run integration tests for Image Factory"
-    dir: .
+    dir: tests/integration
     cmds:
       - cmd: |
           if [ -n "$CI" ]; then
@@ -271,7 +297,7 @@ tasks:
       - echo "⚙️ Job Logs (if any running):"
       - kubectl get jobs -n image-factory-kargo -o name | xargs -I {} kubectl logs -n image-factory-kargo {} --tail=50 || echo "❌ No jobs found"
       - echo ""
-      - echo "� Pod Ltogs (if any running):"
+      - echo "🐳 Pod Logs (if any running):"
       - kubectl get pods -n image-factory-kargo --field-selector=status.phase=Running -o name | xargs -I {} kubectl logs -n image-factory-kargo {} --tail=50 || echo "❌ No running pods found"
 
   logs:analysis:
@@ -294,7 +320,7 @@ tasks:
       - echo "📋 Stage Configuration:"
       - kubectl get stage {{.STAGE | default "analyze-dockerfile-uv"}} -n image-factory-kargo -o yaml || echo "❌ Stage not found"
       - echo ""
-      - echo "� Recenot Promotions for this Stage:"
+      - echo "🚀 Recent Promotions for this Stage:"
       - kubectl get promotions -n image-factory-kargo --sort-by=.metadata.creationTimestamp | grep {{.STAGE | default "analyze-dockerfile-uv"}} | tail -5 || echo "❌ No promotions found"
       - echo ""
       - echo "🔬 Recent AnalysisRuns for this Stage:"
