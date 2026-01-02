@@ -50,9 +50,10 @@ tasks:
           else
             if [ ! -d ".venv" ]; then
               echo "Creating virtual environment..."
-              python -m venv .venv
+              python3 -m venv .venv
             fi
           fi
+        silent: true
       - cmd: |
           echo "Installing dependencies..."
           if [ -n "$CI" ]; then
@@ -60,6 +61,7 @@ tasks:
           else
             .venv/bin/pip install -e ".[dev]"
           fi
+        silent: true
 
   cdk8s:setup:
     desc: "Set up Image Factory CDK8s component"
@@ -73,9 +75,37 @@ tasks:
           else
             if [ ! -d ".venv" ]; then
               echo "Creating virtual environment..."
-              python -m venv .venv
+              
+              echo "Finding compatible Python version (>=3.10, <3.15)"
+              python_cmd=""
+              for py in python3.11 python3.12 python3.13 python3.10 python3; do
+                if command -v "$py" >/dev/null 2>&1; then
+                  if $py -c "import sys; exit(0 if (3, 10) <= sys.version_info[:2] < (3, 15) else 1)" 2>/dev/null; then
+                    python_version=$($py -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+                    echo "Found compatible Python $python_version ($py)"
+                    python_cmd="$py"
+                    break
+                  fi
+                fi
+              done
+              
+              if [ -z "$python_cmd" ]; then
+                echo "Error: No compatible Python version found"
+                echo "Required: Python >=3.10, <3.15 (GitHub Actions uses 3.11)"
+                echo "Available Python versions:"
+                for py in python3.11 python3.12 python3.13 python3.10 python3; do
+                  if command -v "$py" >/dev/null 2>&1; then
+                    version=$($py -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "unknown")
+                    echo "  $py: Python $version"
+                  fi
+                done
+                exit 1
+              fi
+              
+              $python_cmd -m venv .venv
             fi
           fi
+        silent: true
       - cmd: |
           echo "Installing dependencies..."
           if [ -n "$CI" ]; then
@@ -83,13 +113,7 @@ tasks:
           else
             .venv/bin/pip install -e ".[dev]"
           fi
-      - cmd: |
-          echo "Importing CDK8s types..."
-          if [ -n "$CI" ]; then
-            cdk8s import
-          else
-            .venv/bin/cdk8s import
-          fi
+        silent: true
 
   # Component-specific test tasks
   app:test:unit:
