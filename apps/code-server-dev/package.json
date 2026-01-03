@@ -1,0 +1,12 @@
+{
+  "name": "code-server-dev",
+  "version": "1.0.0",
+  "description": "Custom code-server image with development tools pre-installed",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["code-server", "development", "tools"],
+  "author": "Craig Edmunds",
+  "license": "MIT"
+}

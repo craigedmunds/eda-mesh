@@ -127,6 +127,20 @@ helmCharts:
           tls:
             secretName: headlamp-ctoaas-tls
 
+        # Code Server - internal access only
+        - service:
+            name: code-server
+            namespace: code-server
+            port:
+              number: 8080
+          ingress:
+            name: code-server
+            accessPattern: internal
+          domains:
+            name: code-server
+          tls:
+            secretName: code-server-ctoaas-tls
+
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

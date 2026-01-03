@@ -92,6 +92,7 @@ task: Available tasks for this project:
 * images:test:acceptance:                          Run acceptance tests for Image Factory
 * images:test:all:                                 Run all tests for Image Factory
 * images:test:integration:                         Run integration tests for Image Factory
+* images:test:integration:setup:                   Set up integration test
 * images:test:unit:                                Run unit tests for Image Factory
 * images:test:unit:setup:                          Set up Image Factory development environment
 * images:tool:run:                                 Run the image factory analysis tool

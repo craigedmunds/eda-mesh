@@ -14,5 +14,6 @@ resources:
   - strimzi/
   - argo-rollouts/
   - kargo/
+  - code-server/
   # - kyverno/  # Replaced with kustomize component approach
   # - prometheus/

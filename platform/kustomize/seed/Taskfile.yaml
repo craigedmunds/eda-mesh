@@ -112,6 +112,28 @@ tasks:
             --from-literal=tokenSigningKey="$signing_key" \
             -n central-secret-store
 
+      - ignore_error: true
+        cmd: |
+          SSH_KEY_PATH="/Users/craig/Library/CloudStorage/Dropbox/MacSetup/projects/ctoaas/k8s-lab/ssh-keys"
+          
+          # Check if SSH keys exist, if not create them
+          if [ ! -f "$SSH_KEY_PATH/id_rsa" ]; then
+            echo "Creating SSH key pair for code-server..."
+            mkdir -p "$SSH_KEY_PATH"
+            ssh-keygen -t rsa -b 4096 -f "$SSH_KEY_PATH/id_rsa" -N "" -C "code-server@lab.ctoaas.co"
+            echo "SSH key pair created at $SSH_KEY_PATH"
+            echo "Public key:"
+            cat "$SSH_KEY_PATH/id_rsa.pub"
+            echo ""
+            echo "Add this public key to your Git repositories (GitHub, GitLab, etc.)"
+          fi
+          
+          # Create the secret from the SSH key files
+          kubectl create secret generic code-server-ssh-key \
+            --from-file=id_rsa="$SSH_KEY_PATH/id_rsa" \
+            --from-file=id_rsa.pub="$SSH_KEY_PATH/id_rsa.pub" \
+            -n central-secret-store
+
   build:
     desc: Build seed
     vars:

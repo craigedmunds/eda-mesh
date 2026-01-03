@@ -1,0 +1,251 @@
+version: '3'
+
+tasks:
+  install-tools:
+    desc: Install development tools defined in workspaces.yaml
+    cmds:
+      - |
+        kubectl exec -n code-server deployment/code-server -- /bin/bash -c '
+        set -e
+        
+        echo "Installing development tools..."
+        
+        # Update package lists
+        sudo apt-get update
+        
+        # Install system packages
+        echo "Installing system packages..."
+        sudo apt-get install -y curl wget git jq tree htop vim nano
+        
+        # Install yq
+        echo "Installing yq..."
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+        
+        # Install kustomize
+        echo "Installing kustomize..."
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
+        
+        # Install helm
+        echo "Installing helm..."
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        
+        # Install k9s
+        echo "Installing k9s..."
+        K9S_VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep tag_name | cut -d "\"" -f 4)
+        curl -sL https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_amd64.tar.gz | sudo tar xfz - -C /usr/local/bin k9s
+        
+        # Install uv (Python package manager)
+        echo "Installing uv..."
+        export CARGO_HOME=/home/coder/.cargo
+        export RUSTUP_HOME=/home/coder/.rustup
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "export PATH=\"/home/coder/.cargo/bin:\$PATH\"" >> /home/coder/.bashrc
+        
+        # Install pipx
+        echo "Installing pipx..."
+        python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+        
+        # Install Node.js and npm
+        echo "Installing Node.js..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+        
+        # Install yarn
+        echo "Installing yarn..."
+        sudo npm install -g yarn ts-node
+        
+        # Install Go
+        echo "Installing Go..."
+        GO_VERSION="1.21.5"
+        wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+        sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+        rm go${GO_VERSION}.linux-amd64.tar.gz
+        echo "export PATH=\$PATH:/usr/local/go/bin" >> /home/coder/.bashrc
+        
+        # Install Task runner
+        echo "Installing Task runner..."
+        sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
+        
+        echo "Development tools installation completed!"
+        echo "Installed tools:"
+        echo "- System: curl, wget, git, jq, yq, tree, htop, vim, nano"
+        echo "- Kubernetes: kubectl, kustomize, helm, k9s"
+        echo "- Python: uv, pip, pipx"
+        echo "- Node.js: node, npm, yarn, ts-node"
+        echo "- Go: go compiler and tools"
+        echo "- Task: task runner"
+        '
+
+  sync:
+    desc: Sync code-server workspaces and projects
+    cmds:
+      - |
+        kubectl exec -n code-server deployment/code-server -- /bin/bash -c '
+        set -e
+        
+        echo "Starting workspace sync..."
+        
+        # Ensure directories exist
+        mkdir -p /home/coder/projects /home/coder/workspaces /home/coder/cache
+        
+        # Remove test project if it exists
+        if [ -d "/home/coder/projects/test-project" ]; then
+          echo "Removing test project..."
+          rm -rf /home/coder/projects/test-project
+        fi
+        
+        # Remove test workspace if it exists
+        if [ -f "/home/coder/workspaces/test-project.code-workspace" ]; then
+          echo "Removing test workspace..."
+          rm -f /home/coder/workspaces/test-project.code-workspace
+        fi
+        
+        # Clone/update argocd-eda project
+        if [ -d "/home/coder/projects/argocd-eda" ]; then
+          echo "Updating argocd-eda project..."
+          cd /home/coder/projects/argocd-eda
+          git fetch --all
+          git checkout feature/backstage-events
+          git pull origin feature/backstage-events
+        else
+          echo "Cloning argocd-eda project..."
+          git clone git@github.com:craigedmunds/argocd-eda.git /home/coder/projects/argocd-eda
+          cd /home/coder/projects/argocd-eda
+          git checkout feature/backstage-events
+        fi
+        
+        # Clone/update ai-dev project
+        if [ -d "/home/coder/projects/ai-dev" ]; then
+          echo "Updating ai-dev project..."
+          cd /home/coder/projects/ai-dev
+          git fetch --all
+          git pull origin main
+        else
+          echo "Cloning ai-dev project..."
+          git clone git@github.com:craigedmunds/ai-dev.git /home/coder/projects/ai-dev
+        fi
+        
+        # Generate argocd-eda workspace
+        cat > /home/coder/workspaces/argocd-eda.code-workspace << EOF
+        {
+          "folders": [
+            {
+              "name": "argocd-eda",
+              "path": "../projects/argocd-eda"
+            }
+          ],
+          "settings": {
+            "git.autofetch": true,
+            "git.enableSmartCommit": true,
+            "files.watcherExclude": {
+              "**/node_modules/**": true,
+              "**/.git/objects/**": true,
+              "**/.git/subtree-cache/**": true,
+              "**/cache/**": true
+            },
+            "terminal.integrated.defaultProfile.linux": "bash",
+            "terminal.integrated.cwd": "/home/coder/projects/argocd-eda"
+          },
+          "extensions": {
+            "recommendations": [
+              "ms-python.python",
+              "ms-vscode.vscode-yaml",
+              "redhat.vscode-kubernetes-tools",
+              "ms-kubernetes-tools.vscode-kubernetes-tools",
+              "golang.go",
+              "bradlc.vscode-tailwindcss",
+              "ms-vscode.vscode-typescript-next",
+              "task.vscode-task"
+            ]
+          }
+        }
+        EOF
+        
+        # Generate ai-dev workspace
+        cat > /home/coder/workspaces/ai-dev.code-workspace << EOF
+        {
+          "folders": [
+            {
+              "name": "ai-dev",
+              "path": "../projects/ai-dev"
+            }
+          ],
+          "settings": {
+            "git.autofetch": true,
+            "git.enableSmartCommit": true,
+            "files.watcherExclude": {
+              "**/node_modules/**": true,
+              "**/.git/objects/**": true,
+              "**/.git/subtree-cache/**": true,
+              "**/cache/**": true
+            },
+            "terminal.integrated.defaultProfile.linux": "bash",
+            "terminal.integrated.cwd": "/home/coder/projects/ai-dev"
+          },
+          "extensions": {
+            "recommendations": [
+              "ms-python.python",
+              "ms-vscode.vscode-yaml",
+              "ms-vscode.vscode-typescript-next"
+            ]
+          }
+        }
+        EOF
+        
+        echo "Workspace sync completed!"
+        '
+
+  status:
+    desc: Show code-server workspace status
+    cmds:
+      - kubectl exec -n code-server deployment/code-server -- ls -la /home/coder/
+      - kubectl exec -n code-server deployment/code-server -- ls -la /home/coder/projects/ || echo "No projects directory"
+      - kubectl exec -n code-server deployment/code-server -- ls -la /home/coder/workspaces/ || echo "No workspaces directory"
+
+  shell:
+    desc: Get a shell in the code-server pod
+    cmds:
+      - kubectl exec -it -n code-server deployment/code-server -- /bin/bash
+
+  test-tools:
+    desc: Test installed development tools
+    cmds:
+      - |
+        kubectl exec -n code-server deployment/code-server -- /bin/bash -c '
+        echo "Testing installed tools..."
+        echo "=== System Tools ==="
+        git --version
+        jq --version
+        yq --version
+        echo "=== Kubernetes Tools ==="
+        kubectl version --client
+        kustomize version
+        helm version
+        k9s version
+        echo "=== Python Tools ==="
+        python3 --version
+        uv --version || echo "uv not found"
+        pipx --version || echo "pipx not found"
+        echo "=== Node.js Tools ==="
+        node --version
+        npm --version
+        yarn --version
+        echo "=== Go Tools ==="
+        go version || echo "go not found"
+        echo "=== Task Runner ==="
+        task --version || echo "task not found"
+        '
+
+  sync-github:
+    desc: Sync GitHub repositories (requires SSH key to be added to GitHub)
+    cmds:
+      - |
+        echo "Note: This requires the SSH public key to be added to your GitHub account"
+        echo "Public key:"
+        kubectl exec -n code-server deployment/code-server -- cat /home/coder/.ssh/id_rsa.pub
+        echo ""
+        echo "Add this key to GitHub at: https://github.com/settings/ssh/new"
+        echo "Then run the sync task to clone repositories"

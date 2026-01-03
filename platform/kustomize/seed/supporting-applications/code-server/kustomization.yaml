@@ -1,0 +1,100 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: code-server
+
+resources:
+- namespace.yaml
+- ssh-key-external-secret.yaml
+- ssh-config.yaml
+- workspace-configmap.yaml
+
+patches:
+- target:
+    kind: Deployment
+    name: code-server
+  patch: |-
+    - op: add
+      path: /spec/template/spec/initContainers/-
+      value:
+        name: setup-ssh
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          mkdir -p /home/coder/.ssh
+          cp /tmp/ssh-keys/* /home/coder/.ssh/
+          cp /tmp/ssh-config/config /home/coder/.ssh/config
+          chmod 700 /home/coder/.ssh
+          chmod 600 /home/coder/.ssh/*
+          chown -R 1000:1000 /home/coder/.ssh
+        volumeMounts:
+        - name: code-server-storage
+          mountPath: /home/coder
+        - name: ssh-keys
+          mountPath: /tmp/ssh-keys
+        - name: ssh-config
+          mountPath: /tmp/ssh-config
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          runAsNonRoot: false
+    - op: add
+      path: /spec/template/spec/initContainers/-
+      value:
+        name: setup-directories
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          mkdir -p /home/coder/projects /home/coder/workspaces /home/coder/cache
+          chown -R 1000:1000 /home/coder/projects /home/coder/workspaces /home/coder/cache
+        volumeMounts:
+        - name: code-server-storage
+          mountPath: /home/coder
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          runAsNonRoot: false
+    - op: add
+      path: /spec/template/spec/volumes/-
+      value:
+        name: ssh-keys
+        secret:
+          secretName: code-server-ssh-key
+          defaultMode: 384
+    - op: add
+      path: /spec/template/spec/volumes/-
+      value:
+        name: ssh-config
+        configMap:
+          name: code-server-ssh-config
+          defaultMode: 384
+    - op: add
+      path: /spec/template/spec/volumes/-
+      value:
+        name: workspaces-config
+        configMap:
+          name: code-server-workspaces-config
+    - op: add
+      path: /spec/template/spec/containers/0/volumeMounts/-
+      value:
+        name: workspaces-config
+        mountPath: /etc/workspaces
+    - op: add
+      path: /spec/template/spec/imagePullSecrets
+      value:
+      - name: gh-docker-registry-creds
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+helmCharts:
+  - name: code-server
+    releaseName: code-server
+    repo: https://charts.pascaliske.dev
+    version: 2.0.0
+    namespace: code-server
+    valuesFile: values.yaml
