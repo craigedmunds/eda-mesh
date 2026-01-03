@@ -7,11 +7,10 @@ on:
       # Feature branch builds enabled via .repo-metadata.yaml flag
       - feature/*  # Enable builds from feature branches for infrastructure testing
     paths:
-      - 'apps/code-server-dev/**'
+      - 'platform/kustomize/seed/supporting-applications/code-server/**'
       - '.github/workflows/code-server-dev.yml'
       - '.github/workflows/_docker-build.yml'
-      - '!apps/code-server-dev/*.md'
-      - '!apps/code-server-dev/Taskfile.yaml'
+      - '!platform/kustomize/seed/supporting-applications/code-server/*.md'
 
   
   workflow_dispatch:
@@ -32,9 +31,9 @@ jobs:
     with:
       app_name: 'Code Server Dev'
       image_name: 'craigedmunds/code-server-dev'
-      dockerfile: 'apps/code-server-dev/Dockerfile'
-      context: 'apps/code-server-dev'
-      version_file: 'apps/code-server-dev/VERSION'
+      dockerfile: 'platform/kustomize/seed/supporting-applications/code-server/Dockerfile'
+      context: 'platform/kustomize/seed/supporting-applications/code-server'
+      version_file: 'platform/kustomize/seed/supporting-applications/code-server/VERSION'
       version_type: 'file'
       # No pre-build script needed for code-server-dev
       # Pass through version_bump input if present
