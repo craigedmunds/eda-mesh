@@ -22,6 +22,10 @@ includes:
     taskfile: apps/uv/Taskfile.yaml
     dir: apps/uv
 
+  dev-common:
+    taskfile: ../../../ctoaas/dev-common/Taskfile.yaml
+    # dir: ../dev-common
+
 tasks:
   status:
     desc: Run all the status' methods
@@ -167,21 +171,17 @@ tasks:
       - kubectl run kafka-topics -n kafka --image=quay.io/strimzi/kafka:0.49.1-kafka-4.1.1 --rm=true --restart=Never --overrides='{"spec":{"tolerations":[{"key":"node-role.kubernetes.io/control-plane","operator":"Exists","effect":"NoSchedule"}]}}' -- bin/kafka-topics.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --list
 
   # Documentation tasks
+
+  # IMPORTANT: This only works because we import
+  # dev-common/Taskfile.yaml without setting dir
+  # If we find we need to set dir, we'll need to reconsider this 
   docs:taskfile:
     desc: Generate/update the taskfile steering documentation
     cmds:
+      - task: dev-common:docs:taskfile
       - |
-        cat > .kiro/steering/taskfile.md << 'EOF'
-        # Taskfile Commands and Development Workflow
-
-        This repository uses Taskfile for task automation and development workflows. Understanding and using these tasks is essential for effective development and troubleshooting.
-
-        ## Key Development Principles
-
-        1. **Use tasks instead of raw commands** - If you regularly execute a command, it should be in a Taskfile
-        2. **Leverage existing workflows** - Many common operations already have tasks defined
-        3. **Follow the ArgoCD development workflow** - Pause ArgoCD sync for local testing, then resume when ready
-
+        cat >> .kiro/steering/taskfile.md << 'EOF'
+       
         ## Essential Daily Tasks
 
         ### Development Workflow
@@ -202,15 +202,6 @@ tasks:
         - \`task test:changed:unit\` - Run unit tests for changed components
         - \`task test:changed:integration\` - Run integration tests for changed components
         - \`task test:changed:acceptance\` - Run acceptance tests for changed components
-
-        ## Available Tasks
-
-        The following tasks are available in this repository. Use `task --list` to see the most current list:
-
-        EOF
-      - NO_COLOR=1 COLUMNS=1000 task --list >> .kiro/steering/taskfile.md
-      - |
-        cat >> .kiro/steering/taskfile.md << 'EOF'
 
         ## Task Categories
 
@@ -244,9 +235,6 @@ tasks:
         4. **Leverage existing tasks** - Don't reinvent commands that already exist
         5. **Update tasks when needed** - If you find yourself running the same commands repeatedly, add them to a Taskfile
 
-        ## Updating This File
-
-        This file should be regenerated when new tasks are added. Run `task docs:taskfile` to update it with the latest task list.
         EOF
       - cmd: echo "Updated .kiro/steering/taskfile.md with current task list"
         silent: true
