@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/backstage-events
     paths:
       - 'backstage/**'
       - '.github/workflows/backstage.yml'
@@ -38,6 +39,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -78,7 +82,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Image
     # Only run on main branch pushes and manual workflow dispatch
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    # if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     needs: kustomize-tests
     uses: ./.github/workflows/_docker-build.yml
     with:

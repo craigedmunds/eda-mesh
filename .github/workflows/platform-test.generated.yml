@@ -21,4 +21,5 @@ jobs:
       component-path: 'platform'
       component-name: 'Platform'
       test-type: 'unit'
+    secrets: inherit
 

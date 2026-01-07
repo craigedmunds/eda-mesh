@@ -23,7 +23,7 @@ includes:
     dir: apps/uv
 
   dev-common:
-    taskfile: ../../../ctoaas/dev-common/Taskfile.yaml
+    taskfile: libs/dev-common/Taskfile.yaml
     # dir: ../dev-common
 
 tasks:

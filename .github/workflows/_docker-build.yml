@@ -59,8 +59,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SUBMODULE_PAT }}
 
       - name: Run pre-build script
         if: inputs.pre_build_script != ''

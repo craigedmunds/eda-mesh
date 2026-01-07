@@ -18,6 +18,7 @@ jobs:
       component-path: '{{ component.path }}'
       component-name: '{{ component.name | title | replace('-', ' ') }}'
       test-type: 'unit'
+    secrets: inherit
 
 {% endif %}{% if component.has_integration_tests %}  integration-tests:
     name: Integration Tests
@@ -27,6 +28,7 @@ jobs:
       component-path: '{{ component.path }}'
       component-name: '{{ component.name | title | replace('-', ' ') }}'
       test-type: 'integration'
+    secrets: inherit
 
 {% endif %}{% if not component.has_unit_tests and not component.has_integration_tests %}  # No tests configured for this component
   placeholder:

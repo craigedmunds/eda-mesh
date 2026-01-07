@@ -13,6 +13,20 @@ This file should be regenerated when new tasks are added. Run `task docs:taskfil
 3. **MUST Follow the ArgoCD development workflow** - Pause ArgoCD sync for local testing, then resume when ready
 4. **MUST Refactor and reuse** - Identify duplication and refactor, including into the dev-common shared tasks
 
+## Common Command Mappings
+
+**❌ NEVER run these raw commands - use tasks instead:**
+
+| Raw Command | ✅ Use Task Instead |
+|-------------|---------------------|
+| `kubectl apply -k path/` | `task infra:apply` |
+| `kubectl logs -f deployment/X` | `task infra:logs` |
+| `docker build -t image .` | `task infra:build` |
+| `pytest` or `python -m pytest` | `task test` or `task metrics:test` |
+| `python script.py` | Check for `task <component>:<action>` |
+
+**Before running ANY command, check if a task exists for it.**
+
 ## Available Tasks
 
 The following tasks are available in this repository. Use `task --list` to see the most current list:
