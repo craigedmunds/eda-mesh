@@ -10,12 +10,12 @@ includes:
   secrets:
     taskfile: ./kustomize/central-secret-store/Taskfile.yaml
     dir: ./kustomize/central-secret-store
-  kargo:
-    taskfile: ./kustomize/seed/supporting-applications/kargo/Taskfile.yaml
-    dir: ./kustomize/seed/supporting-applications/kargo
-  headlamp:
-    taskfile: ./kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
-    dir: ./kustomize/seed/supporting-applications/headlamp
+  # kargo:
+  #   taskfile: ./kustomize/seed/supporting-applications/kargo/Taskfile.yaml
+  #   dir: ./kustomize/seed/supporting-applications/kargo
+  # headlamp:
+  #   taskfile: ./kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
+  #   dir: ./kustomize/seed/supporting-applications/headlamp
 
 tasks:
   test:unit:setup:

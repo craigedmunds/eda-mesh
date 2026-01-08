@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../ctoaas/k8s-lab"
+		},
+		{
+			"path": "../../../ctoaas/n8n-operator"
+		}
+	],
+	"settings": {
+		"kiroAgent.configureMCP": "Enabled"
+	}
+}

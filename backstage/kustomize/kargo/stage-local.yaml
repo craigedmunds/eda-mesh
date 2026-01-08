@@ -18,7 +18,7 @@ spec:
           config:
             repoURL: https://github.com/craigedmunds/argocd-eda.git
             checkout:
-              - branch: feature/backstage-events
+              - branch: main
                 path: ./repo
         
         - uses: kustomize-set-image
@@ -38,7 +38,7 @@ spec:
         - uses: git-push
           config:
             path: ./repo
-            targetBranch: feature/backstage-events
+            targetBranch: main
         
         - uses: argocd-update
           config:

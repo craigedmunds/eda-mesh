@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/backstage-events
     paths:
       - 'backstage/**'
       - '.github/workflows/backstage.yml'

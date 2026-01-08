@@ -5,12 +5,12 @@ resources:
   - ../../rabbitmq
   - ../../backstage-catalog-api
 
-configMapGenerator:
-  - name: argocd-branch-targetrevision
-    namespace: argocd
-    behavior: add
-    literals:
-      - targetRevision=feature/backstage-events
+# configMapGenerator:
+#   - name: argocd-branch-targetrevision
+#     namespace: argocd
+#     behavior: add
+#     literals:
+#       - targetRevision=feature/backstage-events
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -20,7 +20,7 @@ generatorOptions:
     argocd.argoproj.io/compare-options: IgnoreExtraneous
     
 components:
-  - ../../../../../platform/kustomize/_common/components/argocd-branch-targetrevision
+  # - ../../../../../platform/kustomize/_common/components/argocd-branch-targetrevision
 
 
 helmGlobals:

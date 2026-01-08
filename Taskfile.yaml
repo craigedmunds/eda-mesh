@@ -1,8 +1,8 @@
 version: '3'
 
 includes:
-  argocd:
-    taskfile: platform/kustomize/seed/argocd/Taskfile.yaml
+  # argocd:
+  #   taskfile: platform/kustomize/seed/argocd/Taskfile.yaml
   seed:
     taskfile: platform/kustomize/seed/Taskfile.yaml
     dir: platform/kustomize/seed

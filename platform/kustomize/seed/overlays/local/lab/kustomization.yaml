@@ -3,29 +3,20 @@ kind: Kustomization
 
 # Lab environment overlay - includes all capabilities and supporting applications
 resources:
-  - ../../../traefik
-  - ../../../argocd
   - ../../../eda
   - ../../../backstage
   - ../../../image-factory
-  - ../../../supporting-applications
-  - ../../../../local-storage
-  - mobile-ai-dev-seed.yaml
-  # - ../../../seed-app
-  # - patch-seed-application.yaml
-  - letsencrypt-issuer.yaml
-  - remove-control-plane-taint-job.yaml
-
+  
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
 
 
-configMapGenerator:
-  - name: argocd-branch-targetrevision
-    namespace: argocd
-    behavior: add
-    literals:
-      - targetRevision=feature/backstage-events
+# configMapGenerator:
+#   - name: argocd-branch-targetrevision
+#     namespace: argocd
+#     behavior: add
+#     literals:
+#       - targetRevision=feature/backstage-events
 
 
 helmGlobals:
@@ -156,7 +147,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/source/targetRevision
-        value: feature/backstage-events
+        value: main
       - op: replace
         path: /spec/source/path
         value: platform/kustomize/seed/overlays/local/lab
@@ -167,7 +158,7 @@ patches:
     patch: |-
       - op: replace
         path: /spec/source/targetRevision
-        value: feature/backstage-events
+        value: main
       - op: replace
         path: /spec/source/path
         value: eda/kustomize/mesh/overlays/lab

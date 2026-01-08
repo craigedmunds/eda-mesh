@@ -39,7 +39,7 @@ class PostDeploymentE2E:
         # Since we're running in a container, we need to clone/access the Backstage repo
         self.work_dir = Path('/tmp/backstage-acceptance')
         self.backstage_repo_url = config.get('backstage_repo_url', 'https://github.com/craigedmunds/argocd-eda.git')
-        self.backstage_branch = config.get('backstage_branch', 'feature/backstage-events')
+        self.backstage_branch = config.get('backstage_branch', 'main')
         
         # Setup logging
         logging.basicConfig(
@@ -1034,7 +1034,7 @@ def load_config(config_file: Optional[str] = None) -> Dict:
         'health_check_interval': 10,
         'test_timeout': 600,
         'backstage_repo_url': 'https://github.com/craigedmunds/argocd-eda.git',
-        'backstage_branch': 'feature/backstage-events'
+        'backstage_branch': 'main'
     }
     
     if config_file and Path(config_file).exists():

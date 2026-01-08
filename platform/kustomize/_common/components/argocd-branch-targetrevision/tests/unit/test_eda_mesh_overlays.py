@@ -15,7 +15,7 @@ class TestEdaMeshOverlayCraig(BaseBranchTargetingTest):
         return "eda/kustomize/mesh/overlays/craig"
     
     def get_expected_target_revision(self) -> str:
-        return "feature/backstage-events"
+        return "main"
     
     def test_application_sets_have_branch_targeting_labels(self, kustomize_builder, branch_targeting_validator):
         """Test that EDA ApplicationSets have the required branch targeting labels."""
@@ -109,7 +109,7 @@ class TestEdaMeshOverlayLab(BaseBranchTargetingTest):
         return "eda/kustomize/mesh/overlays/lab"
     
     def get_expected_target_revision(self) -> str:
-        return "feature/backstage-events"
+        return "main"
     
     def test_application_sets_have_branch_targeting_labels(self, kustomize_builder, branch_targeting_validator):
         """Test that EDA ApplicationSets have the required branch targeting labels."""

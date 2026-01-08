@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: seed
+  name: argocd-eda-seed
   namespace: argocd
   labels:
     repo: argocd-eda
@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/craigedmunds/argocd-eda.git
     path: platform/kustomize/seed/overlays/local/lab
-    targetRevision: feature/backstage-events
+    targetRevision: main
   destination:
     server: https://kubernetes.default.svc
   syncPolicy:
