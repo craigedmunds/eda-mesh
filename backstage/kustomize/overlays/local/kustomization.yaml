@@ -7,7 +7,7 @@ resources:
 # Image will be updated by Kargo
 images:
 - name: ghcr.io/craigedmunds/backstage
-  newTag: 0.7.7 # Kargo will update this
+  newTag: 0.7.11-draft-20-merge
 
 
 helmGlobals:
