@@ -160,9 +160,9 @@ backstage:
         - type: url
           metadata:
             name: personal-repos-locations
-          target: https://github.com/craigedmunds/k8s-lab/blob/main/backstage/catalog-locations/personal-repos.yaml
-          rules:
-            - allow: [Location]
+          target: https://github.com/craigedmunds/k8s-lab/blob/main/backstage.yaml
+          # rules:
+          #   - allow: [Location]
       providers:
         github:
           # Organization repositories discovery

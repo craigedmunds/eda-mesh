@@ -10,10 +10,8 @@ helmChartInflationGenerator:
     releaseName: my-simple-http-service
     values: values.yaml
 
-# resources:
-#   - ingress.yaml
-#   - k8s-rbac.yaml
-#   - users-configmap.yaml
+resources:
+  - backstage.yaml
 
 generatorOptions:
   disableNameSuffixHash: true

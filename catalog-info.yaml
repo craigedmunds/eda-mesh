@@ -30,6 +30,7 @@ metadata:
   description: Backstage Catalog API service - dynamic catalog provider
   annotations:
     github.com/project-slug: craigedmunds/argocd-eda
+    backstage.io/source-location: url:https://github.com/craigedmunds/argocd-eda/tree/feature/backstage-events/eda/services/backstage-catalog-api
     backstage.io/kubernetes-id: backstage-catalog-api
   tags:
     - api

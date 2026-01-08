@@ -72,9 +72,15 @@ The following tasks are available in this repository. Use `task --list` to see t
 | eda:build | Build EDA mesh kustomize configuration|
 | eda:demo:consumer | Run Kafka console consumer|
 | eda:diff | Show diff between local changes and cluster state|
+| eda:kustomize | Build EDA mesh application kustomize configuration|
+| eda:logs:catalog-api | Follow backstage-catalog-api logs|
 | eda:logs:rabbitmq | Follow RabbitMQ logs|
 | eda:passwords:rabbitmq | Get RabbitMQ admin credentials|
 | eda:status | Show EDA mesh application and component status|
+| eda:status:catalog-api | Show backstage-catalog-api status|
+| eda:test:catalog-api | Test backstage-catalog-api endpoints|
+| eda:test:catalog-api:internal | Test backstage-catalog-api endpoints from within the cluster (internal service)|
+| eda:test:unit | Run unit tests for an EDA app (mesh or core service)|
 | eda:ui:rabbitmq | Open RabbitMQ Management UI in browser|
 | images:app:setup | Set up Image Factory app component|
 | images:app:test:unit | Run unit tests for Image Factory app component|
@@ -151,12 +157,13 @@ The following tasks are available in this repository. Use `task --list` to see t
 | test:changed:unit | Run unit tests for components that have changed|
 | uv:build | Build the UV Docker image|
 | uv:clean | Clean up local UV images|
-| uv:debug:shell | Get a shell in the UV image for debugging (if possible)|
+| uv:env | Test the UV image with a simple script|
 | uv:push | Push the UV Docker image to registry|
+| uv:python | Open a python shell inside the image|
 | uv:run | Run the UV image as a server (default mode)|
+| uv:run:nooverrides | Run the UV image as a server (default mode)|
 | uv:run:script | Run a script in the UV image (usage - task run:script SCRIPT=app.py ARGS="--help")|
 | uv:shell | Open a python shell inside the image|
-| uv:test:analysis | Test running the image factory analysis tool|
 | uv:test:entrypoint | Test the entrypoint script directly|
 | uv:test:kubernetes | Test the image in a Kubernetes job (similar to AnalysisTemplate)|
 | uv:test:paths | Test what Python paths are available in the image|

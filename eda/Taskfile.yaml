@@ -127,7 +127,14 @@ tasks:
     dir: kustomize/mesh/overlays/lab
     cmds:
       - kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone .
-      
+
+  kustomize:
+    desc: Build EDA mesh application kustomize configuration
+    vars:
+      APP: mesh/services/example-destination-service-wiremock
+    cmds:
+      - kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone {{.APP}}
+  
   apply:
     desc: Apply EDA mesh kustomize configuration
     dir: kustomize/mesh/overlays/lab
