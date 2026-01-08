@@ -121,12 +121,11 @@ catalog:
           timeout: { minutes: 3 }
     githubOrg:
       # Organization structure discovery (teams, users)
-      production:
-        id: production
-        orgUrl: 'https://github.com/ctoaas'
-        schedule:
-          frequency: { hours: 1 }
-          timeout: { minutes: 15 }
+      id: production
+      orgUrl: 'https://github.com/ctoaas'
+      schedule:
+        frequency: { hours: 1 }
+        timeout: { minutes: 15 }
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file
