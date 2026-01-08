@@ -166,8 +166,7 @@ backstage:
               timeout: { minutes: 3 }
         githubOrg:
           # Organization structure discovery (teams, users)
-          default:
-            id: production
+          production:
             orgUrl: 'https://github.com/ctoaas'
             schedule:
               frequency: { hours: 1 }
