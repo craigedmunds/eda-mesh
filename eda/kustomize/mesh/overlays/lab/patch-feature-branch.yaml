@@ -10,5 +10,5 @@ spec:
           parameters:
             - name: name
               value: '{{.path.basename}}'
-            - name: feature_branch
-              value: feature/backstage-events
+            # - name: feature_branch
+            #   value: feature/backstage-events

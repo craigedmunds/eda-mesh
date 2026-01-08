@@ -12,7 +12,7 @@ enrollment:
   source:
     provider: github
     repo: craigedmunds/argocd-eda
-    branch: feature/backstage-events
+    branch: main
     dockerfile: apps/uv/Dockerfile
     workflow: uv.yml
   rebuildDelay: 7d

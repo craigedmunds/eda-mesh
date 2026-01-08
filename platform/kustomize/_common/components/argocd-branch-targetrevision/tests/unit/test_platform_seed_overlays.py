@@ -15,7 +15,7 @@ class TestPlatformSeedLocalPi(BaseBranchTargetingTest):
         return "platform/kustomize/seed/overlays/local/pi"
     
     def get_expected_target_revision(self) -> str:
-        return "feature/backstage-events"
+        return "main"
 
 
 @pytest.mark.platform_seed
@@ -27,7 +27,7 @@ class TestPlatformSeedLocalCraig(BaseBranchTargetingTest):
         return "platform/kustomize/seed/overlays/local/craig"
     
     def get_expected_target_revision(self) -> str:
-        return "feature/backstage-events"
+        return "main"
 
 
 @pytest.mark.platform_seed
@@ -39,7 +39,7 @@ class TestPlatformSeedLocalLab(BaseBranchTargetingTest):
         return "platform/kustomize/seed/overlays/local/lab"
     
     def get_expected_target_revision(self) -> str:
-        return "feature/backstage-events"
+        return "main"
     
     def test_applications_have_branch_targeting_labels(self, kustomize_builder, branch_targeting_validator):
         """Test that ArgoCD applications have the required branch targeting labels."""

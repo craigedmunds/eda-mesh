@@ -10,7 +10,7 @@ spec:
     repoURL: https://github.com/craigedmunds/argocd-eda.git
     # path: platform/kustomize/seed
     # targetRevision: main
-    targetRevision: feature/backstage-events
+    targetRevision: main
     path: platform/kustomize/seed/overlays/local/lab
 
   destination:

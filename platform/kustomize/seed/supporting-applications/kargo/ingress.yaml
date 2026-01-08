@@ -1,3 +1,0 @@
-# Kargo ingress is now managed through the Helm chart in the lab overlay
-# See platform/kustomize/seed/overlays/local/lab/kustomization.yaml
-# This provides multi-path support for both / and /webhooks endpoints

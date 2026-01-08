@@ -1,8 +1,8 @@
 version: '3'
 
 includes:
-  argocd:
-    taskfile: platform/kustomize/seed/argocd/Taskfile.yaml
+  # argocd:
+  #   taskfile: platform/kustomize/seed/argocd/Taskfile.yaml
   seed:
     taskfile: platform/kustomize/seed/Taskfile.yaml
     dir: platform/kustomize/seed
@@ -22,8 +22,8 @@ includes:
     taskfile: apps/uv/Taskfile.yaml
     dir: apps/uv
 
-  dev-common:
-    taskfile: libs/dev-common/Taskfile.yaml
+  workspace-shared:
+    taskfile: libs/workspace-shared/Taskfile.yaml
     # dir: ../dev-common
 
 tasks:
@@ -178,7 +178,7 @@ tasks:
   docs:taskfile:
     desc: Generate/update the taskfile steering documentation
     cmds:
-      - task: dev-common:docs:taskfile
+      - task: workspace-shared:docs:taskfile
       - |
         cat >> .kiro/steering/taskfile.md << 'EOF'
        

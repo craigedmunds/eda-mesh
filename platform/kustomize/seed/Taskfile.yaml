@@ -153,10 +153,15 @@ tasks:
 
 
 
-  _init:
-    desc: Apply _init seed
-    deps: [passwords]
-    cmds:
-      - kustomize build _init --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
+  # _init:
+  #   desc: Apply _init seed
+  #   deps: [passwords]
+  #   cmds:
+  #     - kustomize build _init --enable-helm | kubectl apply --server-side=true --force-conflicts -f -
+
+  # _init:build:
+  #   desc: Apply _init seed
+  #   cmds:
+  #     - kustomize build _init --enable-helm
 
   

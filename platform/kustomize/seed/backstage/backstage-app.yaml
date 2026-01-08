@@ -13,7 +13,7 @@ spec:
   project: eventing
   source:
     repoURL: https://github.com/craigedmunds/argocd-eda.git
-    targetRevision: feature/backstage-events
+    targetRevision: main
     path: backstage/kustomize/overlays/local
   destination:
     server: https://kubernetes.default.svc
