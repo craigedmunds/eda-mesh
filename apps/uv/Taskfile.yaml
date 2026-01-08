@@ -1,62 +1,75 @@
 version: '3'
 
+env:
+  UV_TASKFILE_DOCKER_ARGS: -e PYTHON=/usr/local/bin/python --rm -v ./example:/integration
+
 tasks:
   build:
     desc: Build the UV Docker image
     cmds:
-      - docker build -t craigedmunds/uv:local .
+      - docker build -t ghcr.io/craigedmunds/uv:local .
 
   clean:
     desc: Clean up local UV images
     cmds:
-      - docker rmi craigedmunds/uv:local || true
-
-  debug:shell:
-    desc: Get a shell in the UV image for debugging (if possible)
-    cmds:
-      - docker run -it --rm craigedmunds/uv:local /bin/bash
+      - docker rmi ghcr.io/craigedmunds/uv:local || true
 
   push:
     desc: Push the UV Docker image to registry
     cmds:
-      - docker push craigedmunds/uv:local
+      - docker push ghcr.io/craigedmunds/uv:local
 
   run:
     desc: Run the UV image as a server (default mode)
     cmds:
-      - docker run -p 8000:8000 craigedmunds/uv:local
+      - docker run $UV_TASKFILE_DOCKER_ARGS -p 8081:8080 ghcr.io/craigedmunds/uv:local
+
+  run:nooverrides:
+    desc: Run the UV image as a server (default mode)
+    cmds:
+      - docker run -v ./example:/integration -p 8081:8080 ghcr.io/craigedmunds/uv:local
 
   run:script:
     desc: Run a script in the UV image (usage - task run:script SCRIPT=app.py ARGS="--help")
+    vars:
+      SCRIPT: '{{.SCRIPT | default "/src/app.py"}}'
+      SOURCE: '{{.SOURCE | default "./example"}}'
     cmds:
-      - docker run --rm craigedmunds/uv:local {{.SCRIPT}} {{.ARGS}}
+      - docker run --rm -v {{.SOURCE}}:/src ghcr.io/craigedmunds/uv:local {{.SCRIPT}} {{.ARGS}}
 
   shell:
     desc: Open a python shell inside the image
+    vars:
+      SOURCE: '{{.SOURCE | default "./example"}}'
     cmds:
-      - docker run -it --rm craigedmunds/uv:local python
+      - docker run $UV_TASKFILE_DOCKER_ARGS -it --entrypoint bash ghcr.io/craigedmunds/uv:local
 
-  test:analysis:
-    desc: Test running the image factory analysis tool
+  python:
+    desc: Open a python shell inside the image
     cmds:
-      - docker run --rm craigedmunds/uv:local python -c "print('Analysis tool test')"
+      - docker run $UV_TASKFILE_DOCKER_ARGS -it --entrypoint python ghcr.io/craigedmunds/uv:local
 
   test:entrypoint:
     desc: Test the entrypoint script directly
     cmds:
-      - docker run --rm craigedmunds/uv:local --help
+      - docker run $UV_TASKFILE_DOCKER_ARGS ghcr.io/craigedmunds/uv:local --help
 
   test:kubernetes:
     desc: Test the image in a Kubernetes job (similar to AnalysisTemplate)
     cmds:
-      - kubectl run uv-test --image=craigedmunds/uv:local --rm -i --tty --restart=Never -- python --version
+      - kubectl run uv-test --image=ghcr.io/craigedmunds/uv:local --rm -i --tty --restart=Never -- python --version
 
   test:paths:
     desc: Test what Python paths are available in the image
     cmds:
-      - docker run --rm craigedmunds/uv:local python -c "import sys; print('\n'.join(sys.path))"
+      - docker run $UV_TASKFILE_DOCKER_ARGS --entrypoint python ghcr.io/craigedmunds/uv:local -c "import sys; print('\n'.join(sys.path))"
 
   test:simple:
     desc: Test the UV image with a simple script
     cmds:
-      - docker run --rm craigedmunds/uv:local python -c "print('Hello from UV image')"
+      - docker run $UV_TASKFILE_DOCKER_ARGS --entrypoint python ghcr.io/craigedmunds/uv:local -c "print('Hello from UV image')"
+
+  env:
+    desc: Test the UV image with a simple script
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS --entrypoint env ghcr.io/craigedmunds/uv:local
