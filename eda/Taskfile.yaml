@@ -2,6 +2,18 @@ version: '3'
 
 tasks:
 
+  test:unit:
+    desc: Run unit tests for an EDA app (mesh or core service)
+    dir: '{{if eq .CATEGORY "services"}}services/{{.APP}}{{else}}mesh/{{.CATEGORY}}/{{.APP}}{{end}}'
+    cmds:
+      - test -d .venv || uv venv
+      - uv sync --all-groups
+      - .venv/bin/python -m pytest tests/
+    vars:
+      CATEGORY: '{{.CATEGORY | default "services"}}'
+    requires:
+      vars: [APP]
+
   logs:rabbitmq:
     desc: Follow RabbitMQ logs
     cmds:

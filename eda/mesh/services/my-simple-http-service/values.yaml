@@ -1,21 +1,21 @@
 fullnameOverride: http-service
 
 ingress:
-  enabled: enabled
-  className: traefik
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-  hosts:
-    - host: my-simple-http-service.127.0.0.1.nip.io
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: http-service
-              port:
-                name: http-service
+  enabled: false
+  # className: traefik
+  # annotations:
+  #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  #   traefik.ingress.kubernetes.io/router.tls: "true"
+  # hosts:
+  #   - host: my-simple-http-service.127.0.0.1.nip.io
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+  #         backend:
+  #           service:
+  #             name: http-service
+  #             port:
+  #               name: http-service
 
 args:
   - --verbose

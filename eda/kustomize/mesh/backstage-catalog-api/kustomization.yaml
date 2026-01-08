@@ -11,8 +11,13 @@ helmCharts:
     releaseName: backstage-catalog-api
     valuesFile: values.yaml
 
+configMapGenerator:
+  - name: backstage-catalog-api-api-config
+    files:
+      - app.py=../../../services/backstage-catalog-api/app.py
+      - pyproject.toml=../../../services/backstage-catalog-api/pyproject.toml
+
 resources:
 - namespace.yaml
-- configmap.yaml
 - clusterrole.yaml
 - clusterrolebinding.yaml
