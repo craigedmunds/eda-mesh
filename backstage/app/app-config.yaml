@@ -122,7 +122,7 @@ catalog:
     githubOrg:
       # Organization structure discovery (teams, users)
       id: production
-      orgUrl: 'https://github.com/ctoaas'
+      githubUrl: 'https://github.com/ctoaas'
       schedule:
         frequency: { hours: 1 }
         timeout: { minutes: 15 }
