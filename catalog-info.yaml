@@ -1,0 +1,21 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: argocd-eda
+  description: ArgoCD Event-Driven Architecture platform
+  annotations:
+    github.com/project-slug: ctoaas/argocd-eda
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - platform
+    - argocd
+    - kubernetes
+  links:
+    - url: https://argocd.lab.local.ctoaas.co
+      title: ArgoCD UI
+      icon: dashboard
+spec:
+  type: platform
+  lifecycle: production
+  owner: platform-team
+  system: infrastructure
