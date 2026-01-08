@@ -1,0 +1,26 @@
+# Auto-generated from .repo-metadata.yaml - DO NOT EDIT MANUALLY
+# Use 'task scripts:generate' to regenerate this file
+
+name: Backstage Manual Acceptance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'local'
+        type: choice
+        options:
+          - local
+          - staging
+          - production
+
+jobs:
+  acceptance-tests:
+    name: Run Backstage Acceptance Tests
+    uses: ./.github/workflows/_component-test-acceptance.yml
+    with:
+      component-path: 'backstage/app'
+      component-name: 'Backstage'
+      environment: ${{ inputs.environment }}

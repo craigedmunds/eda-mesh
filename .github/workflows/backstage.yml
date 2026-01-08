@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
+      - feature/backstage-events
     paths:
       - 'backstage/**'
       - '.github/workflows/backstage.yml'
-      - '.github/workflows/reusable-docker-build.yml'
+      - '.github/workflows/_docker-build.yml'
       - '!backstage/*.md'
       - '!backstage/Taskfile.yaml'
   
@@ -15,7 +16,7 @@ on:
     paths:
       - 'backstage/**'
       - '.github/workflows/backstage.yml'
-      - '.github/workflows/reusable-docker-build.yml'
+      - '.github/workflows/_docker-build.yml'
       - '!backstage/*.md'
       - '!backstage/Taskfile.yaml'
   
@@ -38,6 +39,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULE_PAT }}
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -56,10 +60,10 @@ jobs:
           sudo mv kustomize /usr/local/bin/
       
       - name: Install test dependencies
-        run: task ingress:test:install
+        run: task platform:ingress:test:install
       
       - name: Run Backstage ingress kustomize tests
-        run: task ingress:test:backstage
+        run: task platform:ingress:test:backstage
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -78,9 +82,9 @@ jobs:
   build-and-push:
     name: Build and Push Docker Image
     # Only run on main branch pushes and manual workflow dispatch
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    # if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     needs: kustomize-tests
-    uses: ./.github/workflows/reusable-docker-build.yml
+    uses: ./.github/workflows/_docker-build.yml
     with:
       app_name: 'Backstage'
       image_name: 'craigedmunds/backstage'

@@ -533,6 +533,13 @@ data:
     dev = [
         "pytest>=7.0",
     ]
+
+    [build-system]
+    requires = ["setuptools>=45", "wheel"]
+    build-backend = "setuptools.build_meta"
+
+    [tool.setuptools]
+    py-modules = ["app"]
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse

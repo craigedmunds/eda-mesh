@@ -1,220 +1,75 @@
 version: '3'
 
-vars:
-  IMAGE_NAME: ghcr.io/craigedmunds/uv
-  IMAGE_TAG: 
-    sh: cat VERSION
-  FULL_IMAGE: "{{.IMAGE_NAME}}:{{.IMAGE_TAG}}"
+env:
+  UV_TASKFILE_DOCKER_ARGS: -e PYTHON=/usr/local/bin/python --rm -v ./example:/integration
 
 tasks:
   build:
     desc: Build the UV Docker image
     cmds:
-      - echo "Building UV image {{.FULL_IMAGE}}"
-      - docker build -t {{.FULL_IMAGE}} .
-      - docker tag {{.FULL_IMAGE}} {{.IMAGE_NAME}}:latest
-
-  push:
-    desc: Push the UV Docker image to registry
-    deps: [build]
-    cmds:
-      - echo "Pushing UV image {{.FULL_IMAGE}}"
-      - docker push {{.FULL_IMAGE}}
-      - docker push {{.IMAGE_NAME}}:latest
-
-  run:
-    desc: Run the UV image as a server (default mode)
-    deps: [build]
-    cmds:
-      - echo "Running UV image as server on port 8080"
-      - docker run --rm -p 8080:8080 {{.FULL_IMAGE}}
-
-  run:script:
-    desc: Run a script in the UV image (usage - task run:script SCRIPT=app.py ARGS="--help")
-    deps: [build]
-    cmds:
-      - echo "Running script {{.SCRIPT | default "app.py"}} with args {{.ARGS}}"
-      - docker run --rm {{.FULL_IMAGE}} {{.SCRIPT | default "app.py"}} {{.ARGS}}
-
-  test:entrypoint:
-    desc: Test the entrypoint script directly
-    deps: [build]
-    cmds:
-      - echo "Testing entrypoint script"
-      - docker run --rm {{.FULL_IMAGE}} --help || echo "Help command failed"
-      - echo ""
-      - echo "Testing with app.py:"
-      - docker run --rm {{.FULL_IMAGE}} app.py --help || echo "App.py help failed"
-
-  shell:
-    desc: Open a python shell inside the image
-    cmds:
-      - echo $(pwd)
-      - docker run -it --rm --entrypoint="/usr/bin/python3" -v $(pwd):/workspace -w /workspace ghcr.io/craigedmunds/uv:0.1.13
-      
-  test:simple:
-    desc: Test the UV image with a simple script
-    cmds:
-      - echo "=== Testing UV image with simple script ==="
-      - echo ""
-      - echo "Creating test script..."
-      - mkdir -p ~/uv-test
-      - echo 'print("Hello from UV image!")' > ~/uv-test/test.py
-      - echo ""
-      - echo "Testing with volume mount to /integration and UV_PYTHON override:"
-      - docker run --rm -v $(pwd):/workspace -w /workspace -v ~/uv-test:/uv-test ghcr.io/craigedmunds/uv:0.1.16 /uv-test/test.py
-      
-
-  test:paths:
-    desc: Test what Python paths are available in the image
-    deps: [build]
-    cmds:
-      - echo "=== Testing Python paths in UV image ==="
-      - echo ""
-      - echo "1. Testing /usr/bin/python3:"
-      - docker run --rm {{.FULL_IMAGE}} /usr/bin/python3 --version || echo "❌ /usr/bin/python3 not found"
-      - echo ""
-      - echo "2. Testing /opt/venv/bin/python:"
-      - docker run --rm --entrypoint="" {{.FULL_IMAGE}} /opt/venv/bin/python --version || echo "❌ /opt/venv/bin/python not found"
-      - echo ""
-      - echo "3. Testing python3 (PATH lookup):"
-      - docker run --rm --entrypoint="" {{.FULL_IMAGE}} python3 --version || echo "❌ python3 not found in PATH"
-      - echo ""
-      - echo "4. Testing which python3:"
-      - docker run --rm --entrypoint="" {{.FULL_IMAGE}} which python3 || echo "❌ which command not available"
-      - echo ""
-      - echo "5. Listing /usr/bin/python*:"
-      - docker run --rm --entrypoint="" {{.FULL_IMAGE}} ls -la /usr/bin/python* || echo "❌ No python in /usr/bin"
-      - echo ""
-      - echo "6. Listing /opt/venv/bin/:"
-      - docker run --rm --entrypoint="" {{.FULL_IMAGE}} ls -la /opt/venv/bin/ || echo "❌ /opt/venv/bin not found"
-      - echo ""
-      - echo "7. Testing PATH environment:"
-      - docker run --rm --entrypoint="" {{.FULL_IMAGE}} printenv PATH || echo "❌ Cannot print PATH"
-
-  test:analysis:
-    desc: Test running the image factory analysis tool
-    deps: [build]
-    cmds:
-      - echo "=== Testing Image Factory Analysis ==="
-      - echo ""
-      - echo "Creating test workspace..."
-      - mkdir -p /tmp/uv-test-workspace
-      - echo ""
-      - echo "Testing analysis tool with minimal args:"
-      - |
-        docker run --rm \
-          -v /tmp/uv-test-workspace:/workspace \
-          {{.FULL_IMAGE}} app.py \
-          --image test-image \
-          --tag test-tag \
-          --digest sha256:test-digest \
-          --dockerfile test/Dockerfile \
-          --source-repo test/repo \
-          --source-provider github \
-          --git-repo https://github.com/test/repo.git \
-          --git-branch main \
-          --image-factory-dir /workspace || echo "❌ Analysis test failed"
-      - echo ""
-      - echo "Cleaning up test workspace..."
-      - rm -rf /tmp/uv-test-workspace
-
-  test:kubernetes:
-    desc: Test the image in a Kubernetes job (similar to AnalysisTemplate)
-    deps: [build]
-    cmds:
-      - echo "=== Testing UV image in Kubernetes Job ==="
-      - echo ""
-      - echo "Creating test job..."
-      - |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: batch/v1
-        kind: Job
-        metadata:
-          name: uv-test-job
-          namespace: default
-        spec:
-          template:
-            spec:
-              restartPolicy: Never
-              initContainers:
-              - name: git-clone
-                image: alpine/git:latest
-                command:
-                - sh
-                - -c
-                - |
-                  echo "Simulating git clone..."
-                  mkdir -p /workspace/repo/image-factory
-                  echo "# Test analysis tool" > /workspace/repo/image-factory/app.py
-                  echo "print('Hello from analysis tool')" >> /workspace/repo/image-factory/app.py
-                volumeMounts:
-                - name: workspace
-                  mountPath: /workspace
-              containers:
-              - name: analyzer
-                image: {{.FULL_IMAGE}}
-                command:
-                - /usr/bin/python3
-                - /usr/local/bin/entrypoint.py
-                - app.py
-                args:
-                - --image
-                - test-image
-                - --tag
-                - test-tag
-                - --digest
-                - sha256:test-digest
-                - --dockerfile
-                - test/Dockerfile
-                - --source-repo
-                - test/repo
-                - --source-provider
-                - github
-                - --git-repo
-                - https://github.com/test/repo.git
-                - --git-branch
-                - main
-                - --image-factory-dir
-                - /workspace/repo/image-factory
-                volumeMounts:
-                - name: workspace
-                  mountPath: /workspace
-              volumes:
-              - name: workspace
-                emptyDir: {}
-        EOF
-      - echo ""
-      - echo "Waiting for job to complete..."
-      - kubectl wait --for=condition=complete job/uv-test-job --timeout=120s || echo "❌ Job did not complete"
-      - echo ""
-      - echo "Job status:"
-      - kubectl get job uv-test-job -o wide
-      - echo ""
-      - echo "Pod logs:"
-      - kubectl logs job/uv-test-job || echo "❌ Could not get logs"
-      - echo ""
-      - echo "Cleaning up test job..."
-      - kubectl delete job uv-test-job || echo "❌ Could not delete job"
-
-  debug:shell:
-    desc: Get a shell in the UV image for debugging (if possible)
-    deps: [build]
-    cmds:
-      - echo "=== Attempting to get shell in UV image ==="
-      - echo "Note - This may fail with distroless images as they don't have shell"
-      - docker run --rm -it --entrypoint="" {{.FULL_IMAGE}} /bin/sh || echo "❌ /bin/sh not available"
-      - echo ""
-      - echo "Trying /bin/bash:"
-      - docker run --rm -it --entrypoint="" {{.FULL_IMAGE}} /bin/bash || echo "❌ /bin/bash not available"
-      - echo ""
-      - echo "Distroless images typically don't have shells. Use 'task test:paths' to debug paths."
+      - docker build -t ghcr.io/craigedmunds/uv:local .
 
   clean:
     desc: Clean up local UV images
     cmds:
-      - echo "Removing local UV images..."
-      - docker rmi {{.FULL_IMAGE}} || echo "❌ Could not remove {{.FULL_IMAGE}}"
-      - docker rmi {{.IMAGE_NAME}}:latest || echo "❌ Could not remove {{.IMAGE_NAME}}:latest"
-      - echo "Cleaning up dangling images..."
-      - docker image prune -f
+      - docker rmi ghcr.io/craigedmunds/uv:local || true
+
+  push:
+    desc: Push the UV Docker image to registry
+    cmds:
+      - docker push ghcr.io/craigedmunds/uv:local
+
+  run:
+    desc: Run the UV image as a server (default mode)
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS -p 8081:8080 ghcr.io/craigedmunds/uv:local
+
+  run:nooverrides:
+    desc: Run the UV image as a server (default mode)
+    cmds:
+      - docker run -v ./example:/integration -p 8081:8080 ghcr.io/craigedmunds/uv:local
+
+  run:script:
+    desc: Run a script in the UV image (usage - task run:script SCRIPT=app.py ARGS="--help")
+    vars:
+      SCRIPT: '{{.SCRIPT | default "/src/app.py"}}'
+      SOURCE: '{{.SOURCE | default "./example"}}'
+    cmds:
+      - docker run --rm -v {{.SOURCE}}:/src ghcr.io/craigedmunds/uv:local {{.SCRIPT}} {{.ARGS}}
+
+  shell:
+    desc: Open a python shell inside the image
+    vars:
+      SOURCE: '{{.SOURCE | default "./example"}}'
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS -it --entrypoint bash ghcr.io/craigedmunds/uv:local
+
+  python:
+    desc: Open a python shell inside the image
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS -it --entrypoint python ghcr.io/craigedmunds/uv:local
+
+  test:entrypoint:
+    desc: Test the entrypoint script directly
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS ghcr.io/craigedmunds/uv:local --help
+
+  test:kubernetes:
+    desc: Test the image in a Kubernetes job (similar to AnalysisTemplate)
+    cmds:
+      - kubectl run uv-test --image=ghcr.io/craigedmunds/uv:local --rm -i --tty --restart=Never -- python --version
+
+  test:paths:
+    desc: Test what Python paths are available in the image
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS --entrypoint python ghcr.io/craigedmunds/uv:local -c "import sys; print('\n'.join(sys.path))"
+
+  test:simple:
+    desc: Test the UV image with a simple script
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS --entrypoint python ghcr.io/craigedmunds/uv:local -c "print('Hello from UV image')"
+
+  env:
+    desc: Test the UV image with a simple script
+    cmds:
+      - docker run $UV_TASKFILE_DOCKER_ARGS --entrypoint env ghcr.io/craigedmunds/uv:local

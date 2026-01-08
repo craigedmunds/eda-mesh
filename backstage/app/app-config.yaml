@@ -106,6 +106,25 @@ catalog:
     pullRequestBranchName: backstage-integration
   rules:
     - allow: [Domain, Component, System, API, Resource, Location, Event, ManagedImage, BaseImage]
+  providers:
+    github:
+      # Organization-wide repository discovery
+      ctoaas:
+        organization: 'ctoaas'
+        catalogPath: '/catalog-info.yaml'
+        filters:
+          branch: 'main'
+          repository: '.*'
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
+    githubOrg:
+      # Organization structure discovery (teams, users)
+      id: production
+      githubUrl: 'https://github.com/ctoaas'
+      schedule:
+        frequency: { hours: 1 }
+        timeout: { minutes: 15 }
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file

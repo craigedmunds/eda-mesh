@@ -39,6 +39,11 @@ This specification defines the requirements for a Backstage developer portal pla
 - **Version_Comment**: HTML comment in the page source showing both the current image version and Backstage framework version
 - **Version_Verification**: Dedicated Kargo verification step that validates version information via HTTP request
 - **Homepage**: The main landing page of the Backstage platform that users see when first accessing the system
+- **GitHub_Repository**: A source code repository hosted on GitHub containing application code, configurations, or documentation
+- **Backstage_Plugin**: An installable extension that adds functionality to the Backstage_Platform
+- **Plugin_Configuration**: Settings and integration points required to enable and configure a Backstage_Plugin
+- **Community_Plugin**: A Backstage_Plugin maintained by the Backstage community or third-party developers
+- **Plugin_Integration**: The process of installing, configuring, and verifying a Backstage_Plugin works correctly
 
 ## Requirements
 
@@ -202,3 +207,32 @@ This specification defines the requirements for a Backstage developer portal pla
 4. WHEN version information is unavailable, THEN the system SHALL include HTML comments indicating which versions could not be determined
 5. WHEN the version verification fails, THEN the Kargo promotion SHALL fail with clear error messages indicating which version check failed
 
+### Requirement 14
+
+**User Story:** As a platform administrator, I want to install and configure Backstage plugins, so that I can extend the platform with additional functionality as needed.
+
+#### Currently Installed Plugins
+
+**Core Backstage Plugins:**
+- `@backstage/plugin-github-actions` - GitHub Actions workflow integration
+- `@backstage/plugin-catalog-backend-module-github` - GitHub repository discovery and catalog ingestion
+- `@backstage/plugin-catalog-backend-module-github-org` - GitHub organization structure discovery
+- `@backstage/plugin-kubernetes` - Kubernetes resources frontend
+- `@backstage/plugin-kubernetes-backend` - Kubernetes cluster integration
+
+**Custom Internal Plugins:**
+- `@internal/backstage-plugin-catalog-backend-module-eda` - Event-driven architecture catalog integration
+- `@internal/backstage-plugin-catalog-backend-module-image-factory` - Container image lifecycle management
+- `@internal/backstage-plugin-eda` - EDA plugin frontend
+- `@internal/backstage-plugin-eda-common` - Shared EDA utilities
+- `@internal/backstage-plugin-image-factory` - Image factory plugin frontend
+- `@internal/backstage-plugin-image-factory-backend` - Image factory backend services
+
+
+#### Acceptance Criteria
+
+1. WHEN installing a Community_Plugin, THEN the Backstage_Platform SHALL support adding the plugin via package manager and configuration
+2. WHEN a Backstage_Plugin is installed, THEN the system SHALL provide clear documentation of required Plugin_Configuration including environment variables, API tokens, and integration settings
+3. WHEN Plugin_Integration is complete, THEN the Backstage_Platform SHALL load the plugin successfully and make its features available to users
+4. WHEN plugin configuration is invalid, THEN the Backstage_Platform SHALL provide clear error messages indicating what configuration is missing or incorrect
+5. WHEN plugins require external API access, THEN the Backstage_Platform SHALL support proxy configuration for secure API communication

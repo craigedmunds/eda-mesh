@@ -1,0 +1,19 @@
+[project]
+name = "backstage-catalog-api"
+version = "0.1.0"
+description = "Backstage catalog API service"
+requires-python = ">=3.11"
+
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pyyaml",
+    "kubernetes",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "httpx",
+]

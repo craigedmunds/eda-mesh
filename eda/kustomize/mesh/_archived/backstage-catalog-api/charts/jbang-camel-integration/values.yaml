@@ -1,4 +1,0 @@
-name: dummy-service
-namespace: dummy-namespace
-configmap: dummy-config-map
-integrationFile: integration.yaml

@@ -19,7 +19,7 @@ spec:
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
-    name: eda-mesh
+    name: eda-mesh-rabbitmq
 
 ---
 apiVersion: rabbitmq.com/v1beta1
@@ -35,7 +35,7 @@ spec:
   autoDelete: false
   durable: true
   rabbitmqClusterReference:
-    name: eda-mesh
+    name: eda-mesh-rabbitmq
 
 ---
 apiVersion: rabbitmq.com/v1beta1
@@ -51,6 +51,6 @@ spec:
   destination: q.{{ $domain }}.{{ $subdomain }}.sample.{{ $event }} # an existing queue (the rabbit mq internal name)
   destinationType: queue # can be 'queue' or 'exchange'
   rabbitmqClusterReference:
-    name: eda-mesh
+    name: eda-mesh-rabbitmq
 
 {{- end }}

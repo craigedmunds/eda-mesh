@@ -1,0 +1,49 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: argocd-eda
+  description: ArgoCD Event-Driven Architecture platform
+  annotations:
+    github.com/project-slug: craigedmunds/argocd-eda
+  tags:
+    - platform
+    - argocd
+    - kubernetes
+    - eda
+  links:
+    - url: https://argocd.lab.local.ctoaas.co
+      title: ArgoCD UI
+      icon: dashboard
+    - url: https://backstage-catalog-api-uv.lab.local.ctoaas.co
+      title: Backstage Catalog API
+      icon: api
+spec:
+  type: platform
+  lifecycle: production
+  owner: platform-team
+  system: infrastructure
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backstage-catalog-api
+  description: Backstage Catalog API service - dynamic catalog provider
+  annotations:
+    github.com/project-slug: craigedmunds/argocd-eda
+    backstage.io/source-location: url:https://github.com/craigedmunds/argocd-eda/tree/feature/backstage-events/eda/services/backstage-catalog-api
+    backstage.io/kubernetes-id: backstage-catalog-api
+  tags:
+    - api
+    - backstage
+    - catalog
+    - python
+  links:
+    - url: https://backstage-catalog-api-uv.lab.local.ctoaas.co
+      title: API Endpoint
+      icon: api
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: infrastructure
+  subcomponentOf: argocd-eda

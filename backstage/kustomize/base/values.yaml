@@ -67,10 +67,14 @@ backstage:
         allow:
           # Could use "*.svc.cluster.local" if we end up with more
           - host: backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local
+          # Allow reading from GitHub for catalog locations (uses GitHub integration token)
+          - host: github.com
+          - host: raw.githubusercontent.com
     integrations:
       github:
         - host: github.com
           token: ${GITHUB_TOKEN}
+          apiBaseUrl: https://api.github.com
     proxy:
       endpoints:
         '/github-api':
@@ -151,7 +155,33 @@ backstage:
           # rules:
           #   - allow: [Domain, Component, System, Resource, API, Location, User, Group, Event]
           presence: required
+        
+        # Personal repositories catalog locations
+        - type: url
+          metadata:
+            name: personal-repos-locations
+          target: https://github.com/craigedmunds/k8s-lab/blob/main/backstage.yaml
+          # rules:
+          #   - allow: [Location]
       providers:
+        github:
+          # Organization repositories discovery
+          ctoaas-repos:
+            host: 'github.com'
+            organization: 'ctoaas'
+            catalogPath: '/catalog-info.yaml'
+            filters:
+              branch: 'main'
+            schedule:
+              frequency: { minutes: 30 }
+              timeout: { minutes: 3 }
+        githubOrg:
+          # Organization structure discovery (teams, users)
+          id: production
+          githubUrl: 'https://github.com/ctoaas'
+          schedule:
+            frequency: { hours: 1 }
+            timeout: { minutes: 15 }
         kubernetes:
           local-cluster:
             cluster: in-cluster

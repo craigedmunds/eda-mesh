@@ -1,6 +1,37 @@
 version: '3'
 
 tasks:
+  test:unit:setup:
+    desc: "Setup unit tests for platform ingress"
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Setting up platform ingress unit tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            pip install -r requirements.txt
+          else
+            .venv/bin/pip install -r requirements.txt
+          fi
+  test:unit:
+    desc: "Run unit tests for platform ingress"
+    dir: tests/unit
+    cmds:
+      - cmd: echo "🧪 Running platform ingress unit tests..."
+        silent: true
+      - cmd: |
+          if [ -n "$CI" ]; then
+            python -m pytest -v --tb=short
+          else
+            .venv/bin/python -m pytest -v --tb=short
+          fi
+      - cmd: echo "✅ All platform ingress unit tests passed"
+        silent: true
+
+  test:all:
+    desc: "Run all tests for platform ingress"
+    deps: [test:unit]
+
   status:
     desc: Check ingress status and troubleshoot connectivity issues
     vars:

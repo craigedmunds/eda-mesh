@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   labels:
     repo: argocd-eda
+    argocd-branch-targetrevision: "true"
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
@@ -42,3 +43,8 @@ spec:
       syncPolicy:
         syncOptions:
         - CreateNamespace=true
+
+        automated:
+          prune: true
+          selfHeal: true
+          enabled: true

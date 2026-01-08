@@ -33,7 +33,7 @@ data:
                   "specversion": "1.0",
                   "id": "${exchangeProperty.userId}",
                   "source": "urn:eda:eda-mesh-producer-demo-user-service",
-                  "type": "user.created",
+                  "type": "user.updated",
                   "time": "${exchangeProperty.updatedAt}",
                   "data": {
                     "userId": "${exchangeProperty.userId}",
@@ -45,6 +45,6 @@ data:
               json: {}
           - log: Enqueing message to kafka headers=${headers} body=${body}
           - to:
-              uri: "kafka:users-updated?brokers=kafka.confluent.svc.cluster.local:9092"
+              uri: "kafka:users?brokers=my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
           - log: "Message written"
                 

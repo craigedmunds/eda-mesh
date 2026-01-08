@@ -77,6 +77,67 @@ The Backstage platform consists of several key components:
 
 ## Components and Interfaces
 
+### Plugin Architecture
+
+Backstage uses a modular plugin architecture that allows extending the platform with additional functionality. Plugins can be:
+
+1. **Frontend Plugins**: React components that add UI functionality
+2. **Backend Plugins**: Node.js services that add API endpoints and business logic
+3. **Backend Modules**: Extensions to existing backend plugins (e.g., catalog providers)
+
+#### Plugin Installation Process
+
+Installing a new Backstage plugin involves:
+
+1. **Package Installation**: Add the plugin package via yarn/npm
+2. **Backend Integration**: Register the plugin in `packages/backend/src/index.ts`
+3. **Frontend Integration**: Import and use plugin components in `packages/app/src/App.tsx`
+4. **Configuration**: Add required configuration to `app-config.yaml`
+5. **Environment Variables**: Set up any required secrets or API tokens
+
+#### GitHub Catalog Integration Plugins
+
+For GitHub repository integration, two key plugins are needed:
+
+**`@backstage/plugin-catalog-backend-module-github`**
+- Discovers GitHub repositories and creates catalog entities
+- Supports organization-wide discovery with filtering
+- Configurable via `catalog.providers.github` in app-config.yaml
+- Requires GitHub token with appropriate permissions
+
+**`@backstage/plugin-catalog-backend-module-github-org`**
+- Discovers GitHub organization structure (teams, users)
+- Creates User and Group entities from GitHub data
+- Configurable via `catalog.providers.githubOrg` in app-config.yaml
+- Uses same GitHub token as repository discovery
+
+#### Configuration Example
+
+```yaml
+catalog:
+  providers:
+    github:
+      # Organization-wide repository discovery
+      myorg:
+        organization: 'my-github-org'
+        catalogPath: '/catalog-info.yaml'  # Optional: look for catalog files
+        filters:
+          branch: 'main'
+          repository: '.*'  # Regex pattern for repo names
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
+    
+    githubOrg:
+      # Organization structure discovery
+      default:
+        id: production
+        orgUrl: 'https://github.com/my-github-org'
+        schedule:
+          frequency: { hours: 1 }
+          timeout: { minutes: 15 }
+```
+
 ### Frontend Components
 
 - **Catalog Browser**: Interface for browsing and searching software entities
@@ -384,6 +445,18 @@ Based on the prework analysis, I'll consolidate related properties to eliminate 
 **Property 33: Version verification error handling**
 *For any* version verification failure, the Kargo promotion should fail with clear error messages indicating which specific version check failed
 **Validates: Requirements 13.4, 13.5**
+
+**Property 34: Plugin installation and configuration**
+*For any* Backstage plugin installation, the system should successfully load the plugin and make its features available when properly configured with required environment variables and settings
+**Validates: Requirements 14.1, 14.2, 14.3**
+
+**Property 35: Plugin configuration validation**
+*For any* invalid plugin configuration, the system should provide clear error messages indicating missing or incorrect configuration without preventing the platform from starting
+**Validates: Requirements 14.4**
+
+**Property 36: Plugin proxy configuration**
+*For any* plugin requiring external API access, the system should support proxy configuration through the backend proxy service with proper authentication headers
+**Validates: Requirements 14.5**
 
 ## Error Handling
 

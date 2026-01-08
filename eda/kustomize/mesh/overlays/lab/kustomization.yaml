@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - ../../base
   - ../../rabbitmq
+  - ../../backstage-catalog-api
 
 configMapGenerator:
   - name: argocd-branch-targetrevision
@@ -10,14 +11,6 @@ configMapGenerator:
     behavior: add
     literals:
       - targetRevision=feature/backstage-events
-
-patches:
-  - target:
-      group: argoproj.io
-      version: v1alpha1
-      kind: ApplicationSet
-      name: eda-mesh-lob-applications
-    path: patch-feature-branch.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -28,3 +21,49 @@ generatorOptions:
     
 components:
   - ../../../../../platform/kustomize/_common/components/argocd-branch-targetrevision
+
+
+helmGlobals:
+  chartHome: ../../../../../helm
+
+helmCharts:
+  # Multiple platform services using enhanced array-based format
+  - name: traefik-ingress
+    releaseName: platform-services
+    valuesInline:
+      # Global configuration
+      domains:
+        localDomainSuffix: lab.local.ctoaas.co
+        publicDomainSuffix: lab.ctoaas.co
+      tls:
+        enabled: true
+        issuer: letsencrypt-prod
+      
+      # Array of ingress configurations
+      ingresses:
+      
+        # Backstage Catalog API - internal access only
+        - service:
+            name: backstage-catalog-api-uv
+            namespace: backstage-catalog-api
+            port:
+              name: http
+          ingress:
+            name: backstage-catalog-api-ingress
+            accessPattern: internal
+          tls:
+            secretName: backstage-catalog-api-ctoaas-tls
+      
+        # RabbitMQ Management - internal access only
+        - service:
+            name: eda-mesh-rabbitmq
+            namespace: eda-mesh
+            port:
+              name: management
+          ingress:
+            name: rabbitmq-ingress
+            accessPattern: internal
+          # domains:
+          #   name: rabbitmq
+          tls:
+            secretName: rabbitmq-ctoaas-tls

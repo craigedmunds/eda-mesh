@@ -1,4 +1,0 @@
-name: api
-namespace: backstage-catalog-api
-configmap: backstage-catalog-api-api-jbang-config
-integrationFile: integration.java

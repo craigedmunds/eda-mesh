@@ -1,0 +1,3 @@
+[submodule "libs/dev-common"]
+	path = libs/dev-common
+	url = https://github.com/craigedmunds/dev-common.git

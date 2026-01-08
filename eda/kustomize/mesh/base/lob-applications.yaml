@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
   labels:
     repo: argocd-eda
+    argocd-branch-targetrevision: "true"
+    source-type: helm
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
@@ -29,10 +31,14 @@ spec:
           parameters:
             - name: name
               value: '{{.path.basename}}'
-            - name: argocd.lob_services.branch
+            - name: feature_branch
               value: main
       destination:
         server: https://kubernetes.default.svc
       syncPolicy:
         syncOptions:
         - CreateNamespace=true
+        automated:
+          prune: true
+          selfHeal: true
+          enabled: true

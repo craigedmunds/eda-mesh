@@ -1,0 +1,26 @@
+# Auto-generated from .repo-metadata.yaml - DO NOT EDIT MANUALLY
+# Use 'task scripts:generate' to regenerate this file
+
+name: Image Factory Manual Acceptance Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'local'
+        type: choice
+        options:
+          - local
+          - staging
+          - production
+
+jobs:
+  acceptance-tests:
+    name: Run Image Factory Acceptance Tests
+    uses: ./.github/workflows/_component-test-acceptance.yml
+    with:
+      component-path: 'image-factory'
+      component-name: 'Image Factory'
+      environment: ${{ inputs.environment }}

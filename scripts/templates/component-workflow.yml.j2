@@ -1,0 +1,40 @@
+# Auto-generated from .repo-metadata.yaml - DO NOT EDIT MANUALLY
+# Use 'task scripts:generate' to regenerate this file
+
+name: {{ component.name | title | replace('-', ' ') }} Tests
+
+on:
+  pull_request:
+    paths:
+{% for path in component.test_trigger_paths %}      - '{{ path }}'
+{% endfor %}      - '.github/workflows/{{ component.workflow_filename }}'
+      - '.github/workflows/_component-test-fast.yml'
+
+jobs:
+{% if component.has_unit_tests %}  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/_component-test-fast.yml
+    with:
+      component-path: '{{ component.path }}'
+      component-name: '{{ component.name | title | replace('-', ' ') }}'
+      test-type: 'unit'
+    secrets: inherit
+
+{% endif %}{% if component.has_integration_tests %}  integration-tests:
+    name: Integration Tests
+{% if component.has_unit_tests %}    needs: unit-tests
+{% endif %}    uses: ./.github/workflows/_component-test-fast.yml
+    with:
+      component-path: '{{ component.path }}'
+      component-name: '{{ component.name | title | replace('-', ' ') }}'
+      test-type: 'integration'
+    secrets: inherit
+
+{% endif %}{% if not component.has_unit_tests and not component.has_integration_tests %}  # No tests configured for this component
+  placeholder:
+    name: Component Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Component exists
+        run: echo "{{ component.name }} component workflow triggered"
+{% endif %}

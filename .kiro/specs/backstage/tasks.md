@@ -554,3 +554,79 @@
 2. **Promotion Execution**: Promotions created but not processed by controller
 3. **Manual Secret Creation**: Must stop creating secrets manually - use Kyverno only
 4. **Duplicate Test Executions**: Multiple artifact directories with different suffixes suggest retries or duplicate job creation
+
+
+## GitHub Repository Integration (Requirement 14)
+
+- [x] 33. Install GitHub catalog discovery plugins
+  - [x] 33.1 Install `@backstage/plugin-catalog-backend-module-github` package
+    - Add package to `packages/backend/package.json`
+    - Run `yarn install` to install dependencies
+    - _Requirements: 14.1_
+  
+  - [x] 33.2 Install `@backstage/plugin-catalog-backend-module-github-org` package
+    - Add package to `packages/backend/package.json`
+    - Run `yarn install` to install dependencies
+    - _Requirements: 14.1_
+  
+  - [x] 33.3 Register GitHub catalog provider in backend
+    - Import and register the GitHub catalog module in `packages/backend/src/index.ts`
+    - Import and register the GitHub org module in `packages/backend/src/index.ts`
+    - _Requirements: 14.3_
+  
+  - [x] 33.4 Configure GitHub repository discovery
+    - Add `catalog.providers.github` configuration to `app-config.yaml`
+    - Add same configuration to `backstage/kustomize/base/values.yaml` for Kubernetes deployment
+    - Configure organization name, filters, and schedule
+    - Set up catalog path for discovering catalog-info.yaml files
+    - _Requirements: 14.2_
+  
+  - [x] 33.5 Configure GitHub organization discovery
+    - Add `catalog.providers.githubOrg` configuration to `app-config.yaml`
+    - Add same configuration to `backstage/kustomize/base/values.yaml` for Kubernetes deployment
+    - Configure organization URL and schedule
+    - _Requirements: 14.2_
+  
+  - [x] 33.6 Verify GitHub token permissions
+    - Ensure `GITHUB_TOKEN` environment variable has required permissions
+    - Test token access to organization repositories
+    - Document required GitHub token scopes
+    - _Requirements: 14.2, 14.4_
+
+- [ ] 34. Test and validate GitHub integration
+  - [ ] 34.1 Test local development
+    - Start Backstage locally with `yarn dev`
+    - Verify GitHub catalog provider loads without errors
+    - Check logs for successful repository discovery
+    - _Requirements: 14.3, 14.4_
+  
+  - [ ] 34.2 Verify repository entities in catalog
+    - Browse catalog to see discovered GitHub repositories
+    - Verify repository metadata (name, description, owner, topics)
+    - Check that repository links work correctly
+    - _Requirements: 14.3_
+  
+  - [ ] 34.3 Test organization structure discovery
+    - Verify User and Group entities are created from GitHub org
+    - Check team membership relationships
+    - _Requirements: 14.3_
+  
+  - [ ] 34.4 Update container image and deploy
+    - Build new Backstage container image with GitHub plugins
+    - Push image to ghcr.io/craigedmunds/backstage
+    - Verify Kargo promotion and deployment
+    - _Requirements: 14.3_
+
+- [ ] 35. Document GitHub integration
+  - [ ] 35.1 Document plugin configuration
+    - Create documentation for GitHub token setup
+    - Document required token permissions/scopes
+    - Add examples of filtering and scheduling configuration
+    - _Requirements: 14.2_
+  
+  - [ ] 35.2 Document entity relationships
+    - Explain how to link ManagedImage entities to GitHub repositories
+    - Document how to link Event entities to repositories
+    - Provide examples of entity annotations for GitHub integration
+    - _Requirements: 14.2_
+

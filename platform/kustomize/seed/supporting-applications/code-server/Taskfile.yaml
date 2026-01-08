@@ -1,0 +1,70 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the code-server-dev Docker image
+    cmds:
+      - docker build -t craigedmunds/code-server-dev:local .
+
+  build-podman:
+    desc: Build the code-server-dev Docker image using podman (daemonless)
+    cmds:
+      - podman build -t craigedmunds/code-server-dev:local .
+
+  install-tools:
+    desc: Install development tools (local execution - for Docker build)
+    cmds:
+      - /home/coder/.code-server-config/scripts/install-tools.sh
+
+  install-tools-remote:
+    desc: Install development tools on remote code-server container (calls local task via kubectl exec)
+    cmds:
+      - kubectl exec -n code-server deployment/code-server -- /bin/bash -c "cd /home/coder/.code-server-config && task install-tools"
+
+  sync:
+    desc: Sync code-server workspaces and projects (local execution - reads from workspaces.yaml config)
+    cmds:
+      - /home/coder/.code-server-config/scripts/sync-workspaces.sh
+
+  sync-remote:
+    desc: Sync code-server workspaces and projects on remote container (calls local task via kubectl exec)
+    cmds:
+      - kubectl exec -n code-server deployment/code-server -- /bin/bash -c "cd /home/coder/.code-server-config && task sync"
+
+  status:
+    desc: Show code-server workspace status (local execution)
+    cmds:
+      - ls -la /home/coder/
+      - ls -la /home/coder/projects/ || echo "No projects directory"
+      - ls -la /home/coder/workspaces/ || echo "No workspaces directory"
+
+  status-remote:
+    desc: Show code-server workspace status on remote container (calls local task via kubectl exec)
+    cmds:
+      - kubectl exec -n code-server deployment/code-server -- /bin/bash -c "cd /home/coder/.code-server-config && task status"
+
+  shell:
+    desc: Get a shell in the code-server pod
+    cmds:
+      - kubectl exec -it -n code-server deployment/code-server -- /bin/bash
+
+  test-tools:
+    desc: Test installed development tools (local execution)
+    cmds:
+      - /home/coder/.code-server-config/scripts/test-tools.sh
+
+  test-tools-remote:
+    desc: Test installed development tools on remote container (calls local task via kubectl exec)
+    cmds:
+      - kubectl exec -n code-server deployment/code-server -- /bin/bash -c "cd /home/coder/.code-server-config && task test-tools"
+
+  sync-github:
+    desc: Sync GitHub repositories (requires SSH key to be added to GitHub)
+    cmds:
+      - |
+        echo "Note: This requires the SSH public key to be added to your GitHub account"
+        echo "Public key:"
+        kubectl exec -n code-server deployment/code-server -- cat /home/coder/.ssh/id_rsa.pub
+        echo ""
+        echo "Add this key to GitHub at: https://github.com/settings/ssh/new"
+        echo "Then run the sync-remote task to clone repositories"

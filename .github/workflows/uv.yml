@@ -4,11 +4,12 @@ on:
   push:
     branches:
       - main
-      - feature/backstage-events
+      # Feature branch builds enabled via .repo-metadata.yaml flag
+      - feature/*  # Enable builds from feature branches for infrastructure testing
     paths:
       - 'apps/uv/**'
       - '.github/workflows/uv.yml'
-      - '.github/workflows/reusable-docker-build.yml'
+      - '.github/workflows/_docker-build.yml'
       - '!apps/uv/*.md'
       - '!apps/uv/Taskfile.yaml'
 
@@ -27,7 +28,7 @@ on:
 
 jobs:
   build-and-push:
-    uses: ./.github/workflows/reusable-docker-build.yml
+    uses: ./.github/workflows/_docker-build.yml
     with:
       app_name: 'UV'
       image_name: 'craigedmunds/uv'

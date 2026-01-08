@@ -2,7 +2,7 @@ name: dummy-service
 namespace: dummy-namespace
 configmap: dummy-config-map
 integrationFile: app.py
-
+tag: 0.1.17
 # Ingress configuration
 ingress:
   enabled: true

@@ -1,0 +1,41 @@
+name: Build and Push Code Server Dev Image
+
+on:
+  push:
+    branches:
+      - main
+      # Feature branch builds enabled via .repo-metadata.yaml flag
+      - feature/*  # Enable builds from feature branches for infrastructure testing
+    paths:
+      - 'platform/kustomize/seed/supporting-applications/code-server/**'
+      - '.github/workflows/code-server-dev.yml'
+      - '.github/workflows/_docker-build.yml'
+      - '!platform/kustomize/seed/supporting-applications/code-server/*.md'
+
+  
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  build-and-push:
+    uses: ./.github/workflows/_docker-build.yml
+    with:
+      app_name: 'Code Server Dev'
+      image_name: 'craigedmunds/code-server-dev'
+      dockerfile: 'platform/kustomize/seed/supporting-applications/code-server/Dockerfile'
+      context: 'platform/kustomize/seed/supporting-applications/code-server'
+      version_file: 'platform/kustomize/seed/supporting-applications/code-server/VERSION'
+      version_type: 'file'
+      # No pre-build script needed for code-server-dev
+      # Pass through version_bump input if present
+      version_bump: ${{ inputs.version_bump || 'patch' }}
+    secrets: inherit

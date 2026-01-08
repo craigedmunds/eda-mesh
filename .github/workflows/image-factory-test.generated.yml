@@ -1,0 +1,34 @@
+# Auto-generated from .repo-metadata.yaml - DO NOT EDIT MANUALLY
+# Use 'task scripts:generate' to regenerate this file
+
+name: Image Factory Tests
+
+on:
+  pull_request:
+    paths:
+      - 'image-factory/**'
+      - '!image-factory/*.md'
+      - '!image-factory/Taskfile.yaml'
+      - '.github/workflows/image-factory-test.generated.yml'
+      - '.github/workflows/_component-test-fast.yml'
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/_component-test-fast.yml
+    with:
+      component-path: 'image-factory'
+      component-name: 'Image Factory'
+      test-type: 'unit'
+    secrets: inherit
+
+  integration-tests:
+    name: Integration Tests
+    needs: unit-tests
+    uses: ./.github/workflows/_component-test-fast.yml
+    with:
+      component-path: 'image-factory'
+      component-name: 'Image Factory'
+      test-type: 'integration'
+    secrets: inherit
+

@@ -1,6 +1,11 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: eda-mesh
+  name: eda-mesh-rabbitmq
   labels:
     backstage.io/kubernetes-id: eda-mesh-rabbit-mq-cluster
+spec:
+  tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule

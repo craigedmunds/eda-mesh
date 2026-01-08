@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """
 Python entrypoint script to replace run.sh for distroless compatibility.
 """
@@ -11,7 +10,7 @@ from pathlib import Path
 def main():
     # Configuration
     project_dir = Path("/app")
-    # src_dir = Path("/integration")
+    src_dir = Path("/integration")
     
     # Ensure project directory exists
     project_dir.mkdir(exist_ok=True)
@@ -28,6 +27,8 @@ def main():
         src_dir = Path(os.path.dirname(src_script))
 
         # src_script = script_name
+        print('Starting script', src_script)
+        print('Starting script dir', src_dir)
         if not os.path.exists(src_script):
             print(f"Error: Script {script_name} not found")
             sys.exit(1)
@@ -48,7 +49,8 @@ def main():
             subprocess.run(["uv", "sync"], check=True)
         
         # Run the script
-        cmd = ["uv", "run", "--python", "/usr/bin/python3", "python", str(project_dir / script_name)] + script_args
+        print('Running')
+        cmd = ["uv", "run", "python", str(project_dir / script_name)] + script_args
         os.execvp("uv", cmd)
     
     else:
@@ -63,13 +65,13 @@ def main():
         if not (project_dir / "pyproject.toml").exists():
             print("No pyproject.toml found — installing deps inline")
             subprocess.run([
-                "uv", "pip", "install", "--python", "/usr/bin/python3",
+                "uv", "pip", "install",
                 "fastapi", "uvicorn", "kubernetes", "pyyaml"
             ], check=True)
         
         # Run uvicorn
         cmd = [
-            "uv", "run", "--python", "/usr/bin/python3", "uvicorn",
+            "uv", "run", "uvicorn",
             "--app-dir", str(src_dir),
             "app:app",
             "--host", "0.0.0.0",

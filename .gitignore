@@ -4,9 +4,10 @@
 .backstage-acceptance-artifacts/verification.log
 __pycache__
 .pytest_cache
+*.egg-info*
 .hypothesis/
 node_modules
-
+.venv
 # Ignore the charts folder when we use helmCharts in kustomize
 # if we run kustomize locally
 platform/kustomize/seed/supporting-applications/**/charts

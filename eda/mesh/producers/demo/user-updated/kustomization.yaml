@@ -6,5 +6,4 @@ helmChartInflationGenerator:
     values: values.yaml
 
 resources:
-- confluent-topic.yaml
 - jbang-configmap.yaml

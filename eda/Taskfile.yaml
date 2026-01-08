@@ -1,20 +1,107 @@
 version: '3'
 
 tasks:
+
+  test:unit:
+    desc: Run unit tests for an EDA app (mesh or core service)
+    dir: '{{if eq .CATEGORY "services"}}services/{{.APP}}{{else}}mesh/{{.CATEGORY}}/{{.APP}}{{end}}'
+    cmds:
+      - test -d .venv || uv venv
+      - uv sync --all-groups
+      - .venv/bin/python -m pytest tests/
+    vars:
+      CATEGORY: '{{.CATEGORY | default "services"}}'
+    requires:
+      vars: [APP]
+
+  test:catalog-api:
+    desc: Test backstage-catalog-api endpoints
+    cmds:
+      - cmd: echo "Testing backstage-catalog-api root endpoint..."
+        silent: true
+      - cmd: |
+          INGRESS_HOST=$(kubectl get ingress backstage-catalog-api-ingress -n backstage-catalog-api -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "backstage-catalog-api-uv.lab.local.ctoaas.co")
+          echo "Using host: $INGRESS_HOST"
+          curl -s "https://$INGRESS_HOST/" | head -20
+      - cmd: echo -e "\n\nTesting backstage-catalog-api with a specific ConfigMap (if any exist)..."
+        silent: true
+      - cmd: |
+          # Get first configmap with the label if it exists
+          CM=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          NS=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null || echo "")
+          INGRESS_HOST=$(kubectl get ingress backstage-catalog-api-ingress -n backstage-catalog-api -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "backstage-catalog-api-uv.lab.local.ctoaas.co")
+          if [ -n "$CM" ] && [ -n "$NS" ]; then
+            echo "Found ConfigMap: $NS/$CM"
+            curl -s "https://$INGRESS_HOST/$NS/$CM" | head -20
+          else
+            echo "No ConfigMaps with label eda.io/backstage-catalog=true found"
+          fi
+
+  test:catalog-api:internal:
+    desc: Test backstage-catalog-api endpoints from within the cluster (internal service)
+    cmds:
+      - cmd: echo "Testing backstage-catalog-api root endpoint (internal)..."
+        silent: true
+      - kubectl run test-catalog-api --image=curlimages/curl:latest --rm -i --restart=Never -n backstage-catalog-api -- curl -s http://backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local/
+      - cmd: echo -e "\n\nTesting backstage-catalog-api with a specific ConfigMap (if any exist)..."
+        silent: true
+      - cmd: |
+          # Get first configmap with the label if it exists
+          CM=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          NS=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null || echo "")
+          if [ -n "$CM" ] && [ -n "$NS" ]; then
+            echo "Found ConfigMap: $NS/$CM"
+            kubectl run test-catalog-api-cm --image=curlimages/curl:latest --rm -i --restart=Never -n backstage-catalog-api -- curl -s "http://backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local/$NS/$CM"
+          else
+            echo "No ConfigMaps with label eda.io/backstage-catalog=true found"
+          fi
+
+  logs:catalog-api:
+    desc: Follow backstage-catalog-api logs
+    cmds:
+      - kubectl logs -f -n backstage-catalog-api -l app.kubernetes.io/name=backstage-catalog-api
+
+  status:catalog-api:
+    desc: Show backstage-catalog-api status
+    cmds:
+      - cmd: echo "=== Backstage Catalog API Pods ==="
+        silent: true
+      - kubectl get pods -n backstage-catalog-api
+      - cmd: echo -e "\n=== Backstage Catalog API Service ==="
+        silent: true
+      - kubectl get service -n backstage-catalog-api
+      - cmd: echo -e "\n=== Backstage Catalog API ConfigMap ==="
+        silent: true
+      - kubectl get configmap -n backstage-catalog-api -l kustomize.toolkit.fluxcd.io/name
+
   logs:rabbitmq:
     desc: Follow RabbitMQ logs
     cmds:
-      - kubectl logs deployment/eda-mesh -n eda-mesh -f
+      - kubectl logs -f eda-mesh-rabbitmq-server-0 -n eda-mesh
 
   passwords:rabbitmq:
     desc: Get RabbitMQ admin credentials
     cmds:
       - cmd: echo "RabbitMQ Username:"
         silent: true
-      - kubectl get secret eda-mesh-default-user -n eda-mesh -o json | jq '.data.username' -r | base64 -D 2>/dev/null || echo "RabbitMQ secret not found"
-      - cmd: echo "RabbitMQ Password:"
+      - kubectl get secret eda-mesh-rabbitmq-default-user -n eda-mesh -o jsonpath='{.data.username}' | base64 -d
+      - cmd: echo -e "\nRabbitMQ Password:"
         silent: true
-      - kubectl get secret eda-mesh-default-user -n eda-mesh -o json | jq '.data.password' -r | base64 -D 2>/dev/null || echo "RabbitMQ secret not found"
+      - kubectl get secret eda-mesh-rabbitmq-default-user -n eda-mesh -o jsonpath='{.data.password}' | base64 -d
+      - cmd: echo -e "\nRabbitMQ Management URL:"
+        silent: true
+      - cmd: echo "https://$(kubectl get ingress rabbitmq-ingress -n eda-mesh -o jsonpath='{.spec.rules[0].host}')/"
+      
+  ui:rabbitmq:
+    desc: Open RabbitMQ Management UI in browser
+    cmds:
+      - cmd: echo "Opening RabbitMQ Management UI..."
+        silent: true
+      - cmd: |
+          RABBITMQ_URL="https://$(kubectl get ingress rabbitmq-ingress -n eda-mesh -o jsonpath='{.spec.rules[0].host}')/"
+          echo "URL - $RABBITMQ_URL"
+          echo "Use task eda:passwords:rabbitmq to get credentials"
+          open "$RABBITMQ_URL"
 
   status:
     desc: Show EDA mesh application and component status
@@ -25,18 +112,47 @@ tasks:
       - cmd: echo -e "\n=== EDA Mesh Pods ==="
         silent: true
       - kubectl get pods -n eda-mesh
-      - cmd: echo -e "\n=== RabbitMQ Status ==="
+      - cmd: echo -e "\n=== RabbitMQ Cluster Status ==="
         silent: true
-      - kubectl get pods -n eda-mesh -l app.kubernetes.io/name=rabbitmq
+      - kubectl get rabbitmqcluster eda-mesh-rabbitmq -n eda-mesh
+      - cmd: echo -e "\n=== RabbitMQ Services ==="
+        silent: true
+      - kubectl get services -n eda-mesh
+      - cmd: echo -e "\n=== RabbitMQ Ingress ==="
+        silent: true
+      - kubectl get ingress -n eda-mesh
 
-  apply:
-    desc: Apply EDA mesh kustomize configuration directly
+  build:
+    desc: Build EDA mesh kustomize configuration
+    dir: kustomize/mesh/overlays/lab
     cmds:
-      - kubectl apply -k kustomize/mesh/base/
+      - kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone .
+
+  kustomize:
+    desc: Build EDA mesh application kustomize configuration
+    vars:
+      APP: mesh/services/example-destination-service-wiremock
+    cmds:
+      - kustomize build --enable-helm --load-restrictor=LoadRestrictionsNone {{.APP}}
+  
+  apply:
+    desc: Apply EDA mesh kustomize configuration
+    dir: kustomize/mesh/overlays/lab
+    cmds:
+      - kubectl apply -k .
       - cmd: echo "Applied EDA mesh configuration"
         silent: true
 
   diff:
     desc: Show diff between local changes and cluster state
+    dir: kustomize/mesh/overlays/lab
     cmds:
-      - kubectl diff -k kustomize/mesh/base/
+      - kubectl diff -k .
+
+
+  demo:consumer:
+    desc: Run Kafka console consumer
+    vars:
+      TOPIC: '{{.TOPIC | default "users"}}'
+    cmds:
+      - kubectl run demo-kafka-consumer -n kafka --image=quay.io/strimzi/kafka:0.49.1-kafka-4.1.1 --rm=true --restart=Never -ti -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic {{.TOPIC}} --from-beginning

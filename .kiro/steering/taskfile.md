@@ -2,11 +2,182 @@
 
 This repository uses Taskfile for task automation and development workflows. Understanding and using these tasks is essential for effective development and troubleshooting.
 
+## Updating This File
+
+This file should be regenerated when new tasks are added. Run `task docs:taskfile` to update it with the latest task list.
+
 ## Key Development Principles
 
-1. **Use tasks instead of raw commands** - If you regularly execute a command, it should be in a Taskfile
-2. **Leverage existing workflows** - Many common operations already have tasks defined
-3. **Follow the ArgoCD development workflow** - Pause ArgoCD sync for local testing, then resume when ready
+1. **MUST Use tasks instead of raw commands** - If you regularly execute a command, it should be in a Taskfile
+2. **MUST Leverage existing workflows** - Many common operations already have tasks defined
+3. **MUST Follow the ArgoCD development workflow** - Pause ArgoCD sync for local testing, then resume when ready
+4. **MUST Refactor and reuse** - Identify duplication and refactor, including into the dev-common shared tasks
+
+## Common Command Mappings
+
+**❌ NEVER run these raw commands - use tasks instead:**
+
+| Raw Command | ✅ Use Task Instead |
+|-------------|---------------------|
+| `kubectl apply -k path/` | `task infra:apply` |
+| `kubectl logs -f deployment/X` | `task infra:logs` |
+| `docker build -t image .` | `task infra:build` |
+| `pytest` or `python -m pytest` | `task test` or `task metrics:test` |
+| `python script.py` | Check for `task <component>:<action>` |
+
+**Before running ANY command, check if a task exists for it.**
+
+## Available Tasks
+
+The following tasks are available in this repository. Use `task --list` to see the most current list:
+
+| Name | Description |
+| -------- | ------- |
+| pods | Show pods that are not running|
+| status | Run all the status' methods|
+| argocd:apps:pause | Pause ArgoCD sync for an application (usage - task argocd:apps:pause APP=<app-name>)|
+| argocd:apps:resume | Resume ArgoCD sync for an application (usage - task argocd:apps:resume APP=<app-name>)|
+| argocd:apps:status | Show all ArgoCD applications with detailed status|
+| argocd:apps:sync | Sync a specific application (usage - task argocd:apps:sync APP=<app-name>)|
+| argocd:ingress | Print ingress for ArgoCD|
+| argocd:logs | Get the logs from argocd|
+| argocd:password | Get ArgoCD admin password|
+| argocd:restart | Restarts all argocd components|
+| argocd:status | Print status for ArgoCD|
+| argocd:troubleshoot | Show detailed status for all applications with issues|
+| argocd:ui | Open ArgoCD UI (requires port-forward)|
+| backstage:apply | Apply Backstage kustomize configuration directly|
+| backstage:diff | Show diff between local changes and cluster state|
+| backstage:kargo:artifacts | Show verification artifacts (logs from host path)|
+| backstage:kargo:cleanup | Clean up failed verification runs|
+| backstage:kargo:history | Show promotion and verification history|
+| backstage:kargo:logs | Show logs from the latest verification run|
+| backstage:kargo:logs:follow | Follow logs from the currently running verification|
+| backstage:kargo:refresh | Force refresh of Kargo stage and ArgoCD application|
+| backstage:kargo:status | Show Kargo stage and verification status|
+| backstage:kargo:verification | Show current verification runs and status|
+| backstage:kargo:watch | Watch Kargo resources in real-time|
+| backstage:kustomize:build | Build Backstage kustomize configuration|
+| backstage:logs | Follow Backstage logs|
+| backstage:status | Show Backstage application and pod status|
+| backstage:test:kargo:acceptance | Run Kargo acceptance test for Backstage promotion pipeline|
+| backstage:ui | Open Backstage UI (requires port-forward)|
+| cluster:info | Show cluster and context information|
+| dev-common:docs:taskfile | Generate/update the taskfile steering documentation|
+| dev:apply | Apply kustomize directly (bypassing ArgoCD) for development|
+| dev:diff | Show diff between local changes and cluster state|
+| docs:taskfile | Generate/update the taskfile steering documentation|
+| docs:update | Update all auto-generated documentation|
+| eda:apply | Apply EDA mesh kustomize configuration|
+| eda:build | Build EDA mesh kustomize configuration|
+| eda:demo:consumer | Run Kafka console consumer|
+| eda:diff | Show diff between local changes and cluster state|
+| eda:kustomize | Build EDA mesh application kustomize configuration|
+| eda:logs:catalog-api | Follow backstage-catalog-api logs|
+| eda:logs:rabbitmq | Follow RabbitMQ logs|
+| eda:passwords:rabbitmq | Get RabbitMQ admin credentials|
+| eda:status | Show EDA mesh application and component status|
+| eda:status:catalog-api | Show backstage-catalog-api status|
+| eda:test:catalog-api | Test backstage-catalog-api endpoints|
+| eda:test:catalog-api:internal | Test backstage-catalog-api endpoints from within the cluster (internal service)|
+| eda:test:unit | Run unit tests for an EDA app (mesh or core service)|
+| eda:ui:rabbitmq | Open RabbitMQ Management UI in browser|
+| images:app:setup | Set up Image Factory app component|
+| images:app:test:unit | Run unit tests for Image Factory app component|
+| images:cdk8s:deploy | Deploy CDK8s manifests to cluster|
+| images:cdk8s:setup | Set up Image Factory CDK8s component|
+| images:cdk8s:synth | Synthesize CDK8s manifests|
+| images:cdk8s:test:unit | Run unit tests for Image Factory CDK8s component|
+| images:clean:failed | Clean up failed jobs and pods|
+| images:debug:secrets | Debug secret configuration and availability|
+| images:debug:stage | Debug a specific stage|
+| images:logs | Show logs from all running Image Factory components|
+| images:logs:analysis | Show logs from the most recent AnalysisRun|
+| images:logs:promotion | Show logs from the most recent promotion|
+| images:status | Show comprehensive status of Image Factory components|
+| images:test:acceptance | Run acceptance tests for Image Factory|
+| images:test:all | Run all tests for Image Factory|
+| images:test:integration | Run integration tests for Image Factory|
+| images:test:integration:setup | Set up integration test|
+| images:test:unit | Run unit tests for Image Factory|
+| images:test:unit:setup | Set up Image Factory development environment|
+| images:tool:run | Run the image factory analysis tool|
+| images:tool:run:backstage | Run analysis tool for Backstage image (local testing)|
+| images:tool:run:uv | Run analysis tool for UV image (local testing)|
+| images:watch | Watch Image Factory resources in real-time|
+| kafka:consumer | Run Kafka console consumer|
+| kafka:producer | Run Kafka console producer (interactive)|
+| kafka:topics | List Kafka topics|
+| platform:branch-targeting:test:all | Run all tests for branch targeting component|
+| platform:branch-targeting:test:unit | Run unit tests for branch targeting component|
+| platform:branch-targeting:test:unit:setup | Setup unit tests|
+| platform:cert:debug | Debug certificate issues for a specific certificate|
+| platform:headlamp:status | Show Headlamp status|
+| platform:headlamp:token | Get Headlamp admin service account token|
+| platform:headlamp:ui | Open Headlamp UI (requires port-forward)|
+| platform:ingress:cert:debug | Debug certificate issues for a specific certificate|
+| platform:ingress:ssl:check | Check SSL certificate status for a given host|
+| platform:ingress:status | Check ingress status and troubleshoot connectivity issues|
+| platform:ingress:test | Run all kustomize ingress build tests|
+| platform:ingress:test:all | Run all tests for platform ingress|
+| platform:ingress:test:argocd | Run ArgoCD ingress build tests|
+| platform:ingress:test:backstage | Run Backstage ingress build tests|
+| platform:ingress:test:install | Install dependencies for kustomize ingress tests|
+| platform:ingress:test:kargo | Run Kargo ingress build tests|
+| platform:ingress:test:sample | Run sample ReplacementTransformer component tests with IngressRoute generation|
+| platform:ingress:test:sample:build | Run sample generation|
+| platform:ingress:test:unit | Run unit tests for platform ingress|
+| platform:ingress:test:unit:setup | Setup unit tests for platform ingress|
+| platform:kargo:apply | Apply Kargo kustomize configuration directly|
+| platform:kargo:logs | Follow Kargo controller logs|
+| platform:kargo:logs:api | Follow Kargo API logs|
+| platform:kargo:password | Show Kargo admin password|
+| platform:kargo:status | Show Kargo status|
+| platform:kargo:ui | Open Kargo UI (requires port-forward)|
+| platform:secrets:apply | Apply central secret store configuration|
+| platform:secrets:diff | Show diff between local changes and cluster state|
+| platform:secrets:logs | Show ESO controller logs|
+| platform:secrets:status | Check ESO and secret status across all namespaces|
+| platform:ssl:check | Check SSL certificate status for a given host|
+| platform:status | Check ingress status and troubleshoot connectivity issues|
+| platform:test:all | Run all tests for platform components|
+| platform:test:unit | Run unit tests for platform components (ingress + branch targeting)|
+| platform:test:unit:setup | Setup unit tests for platform components (ingress + branch targeting)|
+| seed:_init | Apply _init seed|
+| seed:app | Print status for the seed app|
+| seed:app:refresh | Trigger a refresh|
+| seed:app:sync | Force sync of the ArgoCD application|
+| seed:apply | Apply seed|
+| seed:build | Build seed|
+| seed:passwords | Ensure initial passwords exist and create them|
+| seed:status | Print status for the seed component|
+| test:changed | Run tests for components that have changed compared to main|
+| test:changed:acceptance | Run acceptance tests for components that have changed|
+| test:changed:integration | Run integration tests for components that have changed|
+| test:changed:unit | Run unit tests for components that have changed|
+| uv:build | Build the UV Docker image|
+| uv:clean | Clean up local UV images|
+| uv:env | Test the UV image with a simple script|
+| uv:push | Push the UV Docker image to registry|
+| uv:python | Open a python shell inside the image|
+| uv:run | Run the UV image as a server (default mode)|
+| uv:run:nooverrides | Run the UV image as a server (default mode)|
+| uv:run:script | Run a script in the UV image (usage - task run:script SCRIPT=app.py ARGS="--help")|
+| uv:shell | Open a python shell inside the image|
+| uv:test:entrypoint | Test the entrypoint script directly|
+| uv:test:kubernetes | Test the image in a Kubernetes job (similar to AnalysisTemplate)|
+| uv:test:paths | Test what Python paths are available in the image|
+| uv:test:simple | Test the UV image with a simple script|
+| validate:ci-sync | Validate that all GitHub Actions use task commands exclusively|
+
+## Best Practices
+
+1. **Always check status first** - Use `task status` or component-specific status tasks
+2. **Use the development workflow** - Pause ArgoCD, apply directly, test, then resume
+3. **Run tests before committing** - Use appropriate test tasks for your changes
+4. **Leverage existing tasks** - Don't reinvent commands that already exist
+5. **Update tasks when needed** - If you find yourself running the same commands repeatedly, add them to a Taskfile
+
 
 ## Essential Daily Tasks
 
@@ -23,111 +194,11 @@ This repository uses Taskfile for task automation and development workflows. Und
 - `task images:status` - Show comprehensive status of Image Factory components
 
 ### Testing
-- `task test:ingress` - Run all kustomize ingress build tests
-- `task images:test:all` - Run all tests (unit + integration)
-- `task backstage:test:kargo:acceptance` - Run Kargo acceptance test for Backstage
-
-## Available Tasks
-
-The following tasks are available in this repository. Use `task --list` to see the most current list:
-
-task: Available tasks for this project:
-* pods:                                   Show pods that are not running
-* status:                                 Run all the status' methods
-* argocd:apps:pause:                      Pause ArgoCD sync for an application (usage - task argocd:apps:pause APP=<app-name>)
-* argocd:apps:resume:                     Resume ArgoCD sync for an application (usage - task argocd:apps:resume APP=<app-name>)
-* argocd:apps:status:                     Show all ArgoCD applications with detailed status
-* argocd:apps:sync:                       Sync a specific application (usage - task argocd:apps:sync APP=<app-name>)
-* argocd:logs:                            Get the logs from argocd
-* argocd:password:                        Get ArgoCD admin password
-* argocd:status:                          Print status for ArgoCD
-* argocd:troubleshoot:                    Show detailed status for all applications with issues
-* argocd:ui:                              Open ArgoCD UI (requires port-forward)
-* backstage:apply:                        Apply Backstage kustomize configuration directly
-* backstage:diff:                         Show diff between local changes and cluster state
-* backstage:kargo:artifacts:              Show verification artifacts (logs from host path)
-* backstage:kargo:cleanup:                Clean up failed verification runs
-* backstage:kargo:history:                Show promotion and verification history
-* backstage:kargo:logs:                   Show logs from the latest verification run
-* backstage:kargo:logs:follow:            Follow logs from the currently running verification
-* backstage:kargo:refresh:                Force refresh of Kargo stage and ArgoCD application
-* backstage:kargo:status:                 Show Kargo stage and verification status
-* backstage:kargo:verification:           Show current verification runs and status
-* backstage:kargo:watch:                  Watch Kargo resources in real-time
-* backstage:kustomize:build:              Build Backstage kustomize configuration
-* backstage:logs:                         Follow Backstage logs
-* backstage:status:                       Show Backstage application and pod status
-* backstage:test:kargo:acceptance:        Run Kargo acceptance test for Backstage promotion pipeline
-* backstage:ui:                           Open Backstage UI (requires port-forward)
-* cluster:info:                           Show cluster and context information
-* dev:apply:                              Apply kustomize directly (bypassing ArgoCD) for development
-* dev:diff:                               Show diff between local changes and cluster state
-* docs:taskfile:                          Generate/update the taskfile steering documentation
-* eda:apply:                              Apply EDA mesh kustomize configuration directly
-* eda:diff:                               Show diff between local changes and cluster state
-* eda:logs:rabbitmq:                      Follow RabbitMQ logs
-* eda:passwords:rabbitmq:                 Get RabbitMQ admin credentials
-* eda:status:                             Show EDA mesh application and component status
-* images:cdk8s:deploy:                    Deploy CDK8s manifests to cluster
-* images:cdk8s:synth:                     Synthesize CDK8s manifests
-* images:clean:failed:                    Clean up failed jobs and pods
-* images:debug:secrets:                   Debug secret configuration and availability
-* images:debug:stage:                     Debug a specific stage
-* images:logs:                            Show logs from all running Image Factory components
-* images:logs:analysis:                   Show logs from the most recent AnalysisRun
-* images:logs:promotion:                  Show logs from the most recent promotion
-* images:status:                          Show comprehensive status of Image Factory components
-* images:test:all:                        Run all tests (unit + integration)
-* images:test:integration:                Run Kargo integration test for Image Factory
-* images:test:unit:                       Run unit tests for Image Factory
-* images:tool:run:                        Run the image factory analysis tool
-* images:tool:run:backstage:              Run analysis tool for Backstage image (local testing)
-* images:tool:run:uv:                     Run analysis tool for UV image (local testing)
-* images:watch:                           Watch Image Factory resources in real-time
-* ingress:cert:debug:                     Debug certificate issues for a specific certificate
-* ingress:ssl:check:                      Check SSL certificate status for a given host
-* ingress:status:                         Check ingress status and troubleshoot connectivity issues
-* ingress:test:                           Run all kustomize ingress build tests
-* ingress:test:argocd:                    Run ArgoCD ingress build tests
-* ingress:test:backstage:                 Run Backstage ingress build tests
-* ingress:test:install:                   Install dependencies for kustomize ingress tests
-* ingress:test:kargo:                     Run Kargo ingress build tests
-* ingress:test:sample:                    Run sample ReplacementTransformer component tests with IngressRoute generation
-* ingress:test:sample:build:              Run sample generation
-* kargo:apply:                            Apply Kargo kustomize configuration directly
-* kargo:logs:                             Follow Kargo controller logs
-* kargo:logs:api:                         Follow Kargo API logs
-* kargo:password:                         Show Kargo admin password
-* kargo:status:                           Show Kargo status
-* kargo:ui:                               Open Kargo UI (requires port-forward)
-* secrets:apply:                          Apply central secret store configuration
-* secrets:diff:                           Show diff between local changes and cluster state
-* secrets:logs:                           Show ESO controller logs
-* secrets:status:                         Check ESO and secret status across all namespaces
-* seed:_init:                             Apply _init seed
-* seed:app:                               Print status for the seed app
-* seed:app:refresh:                       Trigger a refresh
-* seed:app:sync:                          Force sync of the ArgoCD application
-* seed:apply:                             Apply seed
-* seed:build:                             Build seed
-* seed:passwords:                         Ensure initial passwords exist and create them
-* seed:status:                            Print status for the seed component
-* test:ingress:                 Run all kustomize ingress build tests
-* test:ingress:argocd:          Run ArgoCD ingress build tests
-* test:ingress:backstage:       Run Backstage ingress build tests
-* test:ingress:kargo:           Run Kargo ingress build tests
-* uv:build:                               Build the UV Docker image
-* uv:clean:                               Clean up local UV images
-* uv:debug:shell:                         Get a shell in the UV image for debugging (if possible)
-* uv:push:                                Push the UV Docker image to registry
-* uv:run:                                 Run the UV image as a server (default mode)
-* uv:run:script:                          Run a script in the UV image (usage - task run:script SCRIPT=app.py ARGS="--help")
-* uv:shell:                               Open a python shell inside the image
-* uv:test:analysis:                       Test running the image factory analysis tool
-* uv:test:entrypoint:                     Test the entrypoint script directly
-* uv:test:kubernetes:                     Test the image in a Kubernetes job (similar to AnalysisTemplate)
-* uv:test:paths:                          Test what Python paths are available in the image
-* uv:test:simple:                         Test the UV image with a simple script
+- Use component-specific test tasks (e.g., `task backstage:test:all`, `task images:test:all`)
+- `task test:changed` - Run tests for components that have changed
+- `task test:changed:unit` - Run unit tests for changed components
+- `task test:changed:integration` - Run integration tests for changed components
+- `task test:changed:acceptance` - Run acceptance tests for changed components
 
 ## Task Categories
 
@@ -161,6 +232,3 @@ task: Available tasks for this project:
 4. **Leverage existing tasks** - Don't reinvent commands that already exist
 5. **Update tasks when needed** - If you find yourself running the same commands repeatedly, add them to a Taskfile
 
-## Updating This File
-
-This file should be regenerated when new tasks are added. Run `task docs:taskfile` to update it with the latest task list.

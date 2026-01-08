@@ -32,7 +32,7 @@ Tests are organized using pytest markers:
 
 1. Install dependencies:
    ```bash
-   task ingress:test:install
+   task platform:ingress:test:install
    ```
 
 2. Ensure kustomize is installed:
@@ -44,14 +44,14 @@ Tests are organized using pytest markers:
 
 Run all tests:
 ```bash
-task test:ingress
+task ingress:test
 ```
 
 Run specific test suites:
 ```bash
-task test:ingress:argocd    # ArgoCD ingress tests
-task test:ingress:backstage # Backstage ingress tests
-task test:ingress:kargo     # Kargo ingress tests
+task ingress:test:argocd    # ArgoCD ingress tests
+task ingress:test:backstage # Backstage ingress tests
+task ingress:test:kargo     # Kargo ingress tests
 ```
 
 Run tests with specific markers:
@@ -200,7 +200,7 @@ Individual Test Results:
 
 Troubleshooting:
 1. Check the test artifacts for detailed failure information
-2. Run tests locally: `task test:ingress`
+2. Run tests locally: `task ingress:test`
 3. Check kustomize build output: `kustomize build platform/kustomize/seed/overlays/local/lab`
 4. Verify ingress management component configuration
 ```

@@ -9,7 +9,6 @@ app = FastAPI()
 def get(request: Request):
     
     body = {
-        
     }
 
     return PlainTextResponse(

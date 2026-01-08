@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalog-component-eda-mesh-service-example-destination-service-wiremock
+  namespace: backstage 
+  
+  labels:
+    eda.io/backstage-catalog: "true"
+data:
+
+  catalog: |
+    apiVersion: backstage.io/v1alpha1
+    kind: System
+    metadata:
+      name: example-destination-service-wiremock
+      description: The example-destination-service-wiremock service
+      annotations:
+        github.com/project-slug: craigedmunds/argocd-eda
+        backstage.io/source-location: url:https://github.com/craigedmunds/argocd-eda/tree/main/eda/mesh/services/example-destination-service-wiremock
+    spec:
+      owner: demo-consumer
+      domain: example-destination
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: example-destination-service-wiremock
+      annotations:
+        backstage.io/kubernetes-id: eda-mesh-service-example-destination-service-wiremock
+        github.com/project-slug: craigedmunds/argocd-eda
+        backstage.io/source-location: url:https://github.com/craigedmunds/argocd-eda/tree/main/eda/mesh/services/example-destination-service-wiremock
+    spec:
+      type: service
+      lifecycle: production
+      owner: demo-consumer
+      domain: example-destination
+      system: example-destination-service-wiremock
+      providesApis:
+        - example-destination-service-wiremock
+      partOf: component:default/argocd-eda
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: API
+    metadata:
+      name: example-destination-service-wiremock
+      description: Does stuff
+      annotations:
+        github.com/project-slug: craigedmunds/argocd-eda
+        backstage.io/source-location: url:https://github.com/craigedmunds/argocd-eda/tree/main/eda/mesh/services/example-destination-service-wiremock
+    spec:
+      type: openapi
+      lifecycle: production
+      owner: demo-consumer
+      domain: example-destination
+      system: example-destination-service-wiremock
+      definition: |
+        swagger: '2.0'
+        info:
+          title: Simple API overview
+          version: v2

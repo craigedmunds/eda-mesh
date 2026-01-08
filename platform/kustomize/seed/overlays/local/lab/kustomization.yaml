@@ -14,6 +14,7 @@ resources:
   # - ../../../seed-app
   # - patch-seed-application.yaml
   - letsencrypt-issuer.yaml
+  - remove-control-plane-taint-job.yaml
 
 components:
   - ../../../../_common/components/argocd-branch-targetrevision
@@ -61,7 +62,7 @@ helmCharts:
         
         # RabbitMQ Management - internal access only
         - service:
-            name: eda-mesh
+            name: eda-mesh-rabbitmq
             namespace: eda-mesh
             port:
               name: management
@@ -97,6 +98,48 @@ helmCharts:
             name: kargo
           tls:
             secretName: kargo-ctoaas-tls
+
+        # # Rabbitmq - internal access only (based on test expectations)
+        # - service:
+        #     name: eda-mesh-rabbitmq
+        #     namespace: eda-mesh
+        #     port:
+        #       name: management
+        #   ingress:
+        #     # name: rabbit
+        #     accessPattern: internal
+        #   domains:
+        #     # name: headlamp
+        #   tls:
+        #     secretName: eda-mesh-rabbitmq-ctoaas-tls
+
+        # Headlamp - internal access only (based on test expectations)
+        - service:
+            name: cluster-headlamp
+            namespace: headlamp
+            port:
+              name: http
+          ingress:
+            name: headlamp
+            accessPattern: internal
+          domains:
+            name: headlamp
+          tls:
+            secretName: headlamp-ctoaas-tls
+
+        # Code Server - internal access only
+        - service:
+            name: code-server
+            namespace: code-server
+            port:
+              number: 8080
+          ingress:
+            name: code-server
+            accessPattern: internal
+          domains:
+            name: code-server
+          tls:
+            secretName: code-server-ctoaas-tls
 
 generatorOptions:
   disableNameSuffixHash: true

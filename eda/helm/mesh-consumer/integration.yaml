@@ -18,7 +18,7 @@
     from:
       uri: "kamelet:spring-rabbitmq-source"
       parameters:
-        host: "eda-mesh.eda-mesh.svc.cluster.local"
+        host: "eda-mesh-rabbitmq.eda-mesh.svc.cluster.local"
         port: 5672
         # TODO : we shouldn't need exchange name; must be mandatory in the kamelet...
         exchangeName: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}

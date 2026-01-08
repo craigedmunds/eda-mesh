@@ -52,3 +52,15 @@
     workflow: e2e-runner.yml
   rebuildDelay: 7d
   autoRebuild: true
+
+- name: code-server-dev
+  registry: ghcr.io
+  repository: craigedmunds/code-server-dev
+  source:
+    provider: github
+    repo: craigedmunds/argocd-eda
+    branch: feature/backstage-events
+    dockerfile: platform/kustomize/seed/supporting-applications/code-server/Dockerfile
+    workflow: code-server-dev.yml
+  rebuildDelay: 7d
+  autoRebuild: true
