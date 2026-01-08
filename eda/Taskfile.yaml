@@ -14,6 +14,66 @@ tasks:
     requires:
       vars: [APP]
 
+  test:catalog-api:
+    desc: Test backstage-catalog-api endpoints
+    cmds:
+      - cmd: echo "Testing backstage-catalog-api root endpoint..."
+        silent: true
+      - cmd: |
+          INGRESS_HOST=$(kubectl get ingress backstage-catalog-api-ingress -n backstage-catalog-api -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "backstage-catalog-api-uv.lab.local.ctoaas.co")
+          echo "Using host: $INGRESS_HOST"
+          curl -s "https://$INGRESS_HOST/" | head -20
+      - cmd: echo -e "\n\nTesting backstage-catalog-api with a specific ConfigMap (if any exist)..."
+        silent: true
+      - cmd: |
+          # Get first configmap with the label if it exists
+          CM=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          NS=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null || echo "")
+          INGRESS_HOST=$(kubectl get ingress backstage-catalog-api-ingress -n backstage-catalog-api -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "backstage-catalog-api-uv.lab.local.ctoaas.co")
+          if [ -n "$CM" ] && [ -n "$NS" ]; then
+            echo "Found ConfigMap: $NS/$CM"
+            curl -s "https://$INGRESS_HOST/$NS/$CM" | head -20
+          else
+            echo "No ConfigMaps with label eda.io/backstage-catalog=true found"
+          fi
+
+  test:catalog-api:internal:
+    desc: Test backstage-catalog-api endpoints from within the cluster (internal service)
+    cmds:
+      - cmd: echo "Testing backstage-catalog-api root endpoint (internal)..."
+        silent: true
+      - kubectl run test-catalog-api --image=curlimages/curl:latest --rm -i --restart=Never -n backstage-catalog-api -- curl -s http://backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local/
+      - cmd: echo -e "\n\nTesting backstage-catalog-api with a specific ConfigMap (if any exist)..."
+        silent: true
+      - cmd: |
+          # Get first configmap with the label if it exists
+          CM=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+          NS=$(kubectl get configmap -A -l eda.io/backstage-catalog=true -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null || echo "")
+          if [ -n "$CM" ] && [ -n "$NS" ]; then
+            echo "Found ConfigMap: $NS/$CM"
+            kubectl run test-catalog-api-cm --image=curlimages/curl:latest --rm -i --restart=Never -n backstage-catalog-api -- curl -s "http://backstage-catalog-api-uv.backstage-catalog-api.svc.cluster.local/$NS/$CM"
+          else
+            echo "No ConfigMaps with label eda.io/backstage-catalog=true found"
+          fi
+
+  logs:catalog-api:
+    desc: Follow backstage-catalog-api logs
+    cmds:
+      - kubectl logs -f -n backstage-catalog-api -l app.kubernetes.io/name=backstage-catalog-api
+
+  status:catalog-api:
+    desc: Show backstage-catalog-api status
+    cmds:
+      - cmd: echo "=== Backstage Catalog API Pods ==="
+        silent: true
+      - kubectl get pods -n backstage-catalog-api
+      - cmd: echo -e "\n=== Backstage Catalog API Service ==="
+        silent: true
+      - kubectl get service -n backstage-catalog-api
+      - cmd: echo -e "\n=== Backstage Catalog API ConfigMap ==="
+        silent: true
+      - kubectl get configmap -n backstage-catalog-api -l kustomize.toolkit.fluxcd.io/name
+
   logs:rabbitmq:
     desc: Follow RabbitMQ logs
     cmds:

@@ -42,6 +42,18 @@ helmCharts:
       # Array of ingress configurations
       ingresses:
       
+        # Backstage Catalog API - internal access only
+        - service:
+            name: backstage-catalog-api-uv
+            namespace: backstage-catalog-api
+            port:
+              name: http
+          ingress:
+            name: backstage-catalog-api-ingress
+            accessPattern: internal
+          tls:
+            secretName: backstage-catalog-api-ctoaas-tls
+      
         # RabbitMQ Management - internal access only
         - service:
             name: eda-mesh-rabbitmq

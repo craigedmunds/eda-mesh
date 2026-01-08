@@ -109,13 +109,12 @@ catalog:
   providers:
     github:
       # Organization-wide repository discovery
-      # Note: Update 'organization' to match your GitHub organization
       ctoaas:
         organization: 'ctoaas'
-        catalogPath: '/catalog-info.yaml'  # Optional: look for catalog files in repositories
+        catalogPath: '/catalog-info.yaml'
         filters:
           branch: 'main'
-          repository: '.*'  # Discover all repositories
+          repository: '.*'
         schedule:
           frequency: { minutes: 30 }
           timeout: { minutes: 3 }
