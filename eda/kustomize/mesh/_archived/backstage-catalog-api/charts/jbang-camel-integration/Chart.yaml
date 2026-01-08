@@ -1,5 +1,0 @@
-apiVersion: v2
-name: jbang-camel-integration
-description: A Helm chart for creating a camel application with jbang
-type: application
-version: 0.1.0

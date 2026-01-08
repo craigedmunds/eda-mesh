@@ -1,3 +1,4 @@
 name: backstage-catalog-api
 namespace: backstage-catalog-api
 configmap: backstage-catalog-api-api-config
+tag: 0.1.18-draft-backstage-events

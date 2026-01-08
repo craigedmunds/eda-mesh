@@ -11,7 +11,7 @@ from pathlib import Path
 def main():
     # Configuration
     project_dir = Path("/app")
-    # src_dir = Path("/integration")
+    src_dir = Path("/integration")
     
     # Ensure project directory exists
     project_dir.mkdir(exist_ok=True)

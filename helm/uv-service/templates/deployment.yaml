@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: integration
-        image: ghcr.io/craigedmunds/uv
+        image: ghcr.io/craigedmunds/uv:{{ .Values.tag }}
         workingDir: /app
         ports:
         - containerPort: 8080

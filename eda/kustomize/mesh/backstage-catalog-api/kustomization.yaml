@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: backstage-catalog-api
 
 helmGlobals:
-  chartHome: ../../helm
+  chartHome: ../../../../helm
 
 helmCharts:
   - name: uv-service
