@@ -106,6 +106,34 @@ catalog:
     pullRequestBranchName: backstage-integration
   rules:
     - allow: [Domain, Component, System, API, Resource, Location, Event, ManagedImage, BaseImage]
+  providers:
+    github:
+      # Organization repositories discovery
+      ctoaas-repos:
+        host: 'github.com'
+        organization: 'ctoaas'
+        catalogPath: '/catalog-info.yaml'
+        filters:
+          branch: 'main'
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
+      # Personal repositories discovery
+      personal-repos:
+        host: 'github.com'
+        catalogPath: '/catalog-info.yaml'
+        filters:
+          branch: 'main'
+          repository: '^craigedmunds/.*'
+        schedule:
+          frequency: { minutes: 30 }
+          timeout: { minutes: 3 }
+    githubOrg:
+      id: ctoaas
+      githubUrl: 'https://github.com/ctoaas'
+      schedule:
+        frequency: { hours: 1 }
+        timeout: { minutes: 3 }
   locations:
     # Local example data, file locations are relative to the backend process, typically `packages/backend`
     - type: file
