@@ -16,7 +16,7 @@
       - to:
           uri: "kamelet:spring-rabbitmq-sink"
           parameters:
-            host: "eda-mesh.eda-mesh.svc.cluster.local"
+            host: "eda-mesh-rabbitmq.eda-mesh.svc.cluster.local"
             port: 5672
             exchangeName: ex.{{ $domain }}.{{ $subdomain }}.{{ $event }}
             username: "{{`{{secret:eda-mesh-rabbit-user/username}}`}}"
