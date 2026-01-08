@@ -25,6 +25,7 @@ spec:
     automated:
       prune: true
       selfHeal: true
+      enabled: true
   ignoreDifferences:
     # Ignore differences in the seed application itself to prevent infinite loops
     - group: argoproj.io

@@ -18,6 +18,13 @@ tasks:
       - cmd: echo -e "\n=== Backstage Services ==="
         silent: true
       - kubectl get services -n backstage
+      - cmd: echo -e "\n=== Backstage Ingress ==="
+        silent: true
+      - kubectl get ingress -n backstage
+      - kubectl get ingress -n backstage-catalog-api 
+      - cmd: echo -e "\n=== Backstage Namespaces ==="
+        silent: true
+      - kubectl get ns | grep backstage
 
   ui:
     desc: Open Backstage UI (requires port-forward)
