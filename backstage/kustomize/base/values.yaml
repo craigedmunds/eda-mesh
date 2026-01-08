@@ -167,6 +167,7 @@ backstage:
         githubOrg:
           # Organization structure discovery (teams, users)
           production:
+            id: production
             orgUrl: 'https://github.com/ctoaas'
             schedule:
               frequency: { hours: 1 }
