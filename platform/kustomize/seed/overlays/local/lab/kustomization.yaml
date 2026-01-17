@@ -37,19 +37,6 @@ helmCharts:
       
       # Array of ingress configurations
       ingresses:
-        # ArgoCD - internal access only (based on test expectations)
-        # - service:
-        #     name: argocd-server
-        #     namespace: argocd
-        #     port:
-        #       name: http
-        #   ingress:
-        #     name: argocd-server-ingress
-        #     accessPattern: internal
-        #   domains:
-        #     name: argocd
-        #   tls:
-        #     secretName: argocd-ctoaas-tls
         
         # RabbitMQ Management - internal access only
         - service:
@@ -65,73 +52,6 @@ helmCharts:
           tls:
             secretName: rabbitmq-ctoaas-tls
         
-        # Kargo - public access with multiple paths
-        # - service:
-        #     name: kargo-api  # Default service (not used when paths are specified)
-        #     namespace: kargo
-        #   ingress:
-        #     name: kargo-ingress
-        #     accessPattern: public
-        #     paths:
-        #     - path: /
-        #       pathType: Prefix
-        #       service:
-        #         name: kargo-api
-        #         port:
-        #           number: 80
-        #     - path: /webhooks
-        #       pathType: Prefix
-        #       service:
-        #         name: kargo-external-webhooks-server
-        #         port:
-        #           number: 80
-        #   domains:
-        #     name: kargo
-        #   tls:
-        #     secretName: kargo-ctoaas-tls
-
-        # # Rabbitmq - internal access only (based on test expectations)
-        # - service:
-        #     name: eda-mesh-rabbitmq
-        #     namespace: eda-mesh
-        #     port:
-        #       name: management
-        #   ingress:
-        #     # name: rabbit
-        #     accessPattern: internal
-        #   domains:
-        #     # name: headlamp
-        #   tls:
-        #     secretName: eda-mesh-rabbitmq-ctoaas-tls
-
-        # Headlamp - internal access only (based on test expectations)
-        - service:
-            name: cluster-headlamp
-            namespace: headlamp
-            port:
-              name: http
-          ingress:
-            name: headlamp
-            accessPattern: internal
-          domains:
-            name: headlamp
-          tls:
-            secretName: headlamp-ctoaas-tls
-
-        # # Code Server - internal access only
-        # - service:
-        #     name: code-server
-        #     namespace: code-server
-        #     port:
-        #       number: 8080
-        #   ingress:
-        #     name: code-server
-        #     accessPattern: internal
-        #   domains:
-        #     name: code-server
-        #   tls:
-        #     secretName: code-server-ctoaas-tls
-
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

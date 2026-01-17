@@ -33,19 +33,9 @@ The following tasks are available in this repository. Use `task --list` to see t
 
 | Name | Description |
 | -------- | ------- |
+| docs | Generate/update the taskfile steering documentation|
 | pods | Show pods that are not running|
 | status | Run all the status' methods|
-| argocd:apps:pause | Pause ArgoCD sync for an application (usage - task argocd:apps:pause APP=<app-name>)|
-| argocd:apps:resume | Resume ArgoCD sync for an application (usage - task argocd:apps:resume APP=<app-name>)|
-| argocd:apps:status | Show all ArgoCD applications with detailed status|
-| argocd:apps:sync | Sync a specific application (usage - task argocd:apps:sync APP=<app-name>)|
-| argocd:ingress | Print ingress for ArgoCD|
-| argocd:logs | Get the logs from argocd|
-| argocd:password | Get ArgoCD admin password|
-| argocd:restart | Restarts all argocd components|
-| argocd:status | Print status for ArgoCD|
-| argocd:troubleshoot | Show detailed status for all applications with issues|
-| argocd:ui | Open ArgoCD UI (requires port-forward)|
 | backstage:apply | Apply Backstage kustomize configuration directly|
 | backstage:diff | Show diff between local changes and cluster state|
 | backstage:kargo:artifacts | Show verification artifacts (logs from host path)|
@@ -63,10 +53,8 @@ The following tasks are available in this repository. Use `task --list` to see t
 | backstage:test:kargo:acceptance | Run Kargo acceptance test for Backstage promotion pipeline|
 | backstage:ui | Open Backstage UI (requires port-forward)|
 | cluster:info | Show cluster and context information|
-| dev-common:docs:taskfile | Generate/update the taskfile steering documentation|
 | dev:apply | Apply kustomize directly (bypassing ArgoCD) for development|
 | dev:diff | Show diff between local changes and cluster state|
-| docs:taskfile | Generate/update the taskfile steering documentation|
 | docs:update | Update all auto-generated documentation|
 | eda:apply | Apply EDA mesh kustomize configuration|
 | eda:build | Build EDA mesh kustomize configuration|
@@ -108,13 +96,7 @@ The following tasks are available in this repository. Use `task --list` to see t
 | kafka:consumer | Run Kafka console consumer|
 | kafka:producer | Run Kafka console producer (interactive)|
 | kafka:topics | List Kafka topics|
-| platform:branch-targeting:test:all | Run all tests for branch targeting component|
-| platform:branch-targeting:test:unit | Run unit tests for branch targeting component|
-| platform:branch-targeting:test:unit:setup | Setup unit tests|
 | platform:cert:debug | Debug certificate issues for a specific certificate|
-| platform:headlamp:status | Show Headlamp status|
-| platform:headlamp:token | Get Headlamp admin service account token|
-| platform:headlamp:ui | Open Headlamp UI (requires port-forward)|
 | platform:ingress:cert:debug | Debug certificate issues for a specific certificate|
 | platform:ingress:ssl:check | Check SSL certificate status for a given host|
 | platform:ingress:status | Check ingress status and troubleshoot connectivity issues|
@@ -128,22 +110,11 @@ The following tasks are available in this repository. Use `task --list` to see t
 | platform:ingress:test:sample:build | Run sample generation|
 | platform:ingress:test:unit | Run unit tests for platform ingress|
 | platform:ingress:test:unit:setup | Setup unit tests for platform ingress|
-| platform:kargo:apply | Apply Kargo kustomize configuration directly|
-| platform:kargo:logs | Follow Kargo controller logs|
-| platform:kargo:logs:api | Follow Kargo API logs|
-| platform:kargo:password | Show Kargo admin password|
-| platform:kargo:status | Show Kargo status|
-| platform:kargo:ui | Open Kargo UI (requires port-forward)|
-| platform:secrets:apply | Apply central secret store configuration|
-| platform:secrets:diff | Show diff between local changes and cluster state|
-| platform:secrets:logs | Show ESO controller logs|
-| platform:secrets:status | Check ESO and secret status across all namespaces|
 | platform:ssl:check | Check SSL certificate status for a given host|
 | platform:status | Check ingress status and troubleshoot connectivity issues|
 | platform:test:all | Run all tests for platform components|
 | platform:test:unit | Run unit tests for platform components (ingress + branch targeting)|
 | platform:test:unit:setup | Setup unit tests for platform components (ingress + branch targeting)|
-| seed:_init | Apply _init seed|
 | seed:app | Print status for the seed app|
 | seed:app:refresh | Trigger a refresh|
 | seed:app:sync | Force sync of the ArgoCD application|
@@ -169,6 +140,7 @@ The following tasks are available in this repository. Use `task --list` to see t
 | uv:test:paths | Test what Python paths are available in the image|
 | uv:test:simple | Test the UV image with a simple script|
 | validate:ci-sync | Validate that all GitHub Actions use task commands exclusively|
+| workspace-shared:docs:taskfile | Generate/update the taskfile steering documentation|
 
 ## Best Practices
 

@@ -4,19 +4,13 @@ includes:
   ingress:
     taskfile: ./ingress/Taskfile.yaml
     dir: ./ingress
-  branch-targeting:
-    taskfile: ./kustomize/_common/components/argocd-branch-targetrevision/Taskfile.yaml
-    dir: ./kustomize/_common/components/argocd-branch-targetrevision
-  secrets:
-    taskfile: ./kustomize/central-secret-store/Taskfile.yaml
-    dir: ./kustomize/central-secret-store
-  # kargo:
-  #   taskfile: ./kustomize/seed/supporting-applications/kargo/Taskfile.yaml
-  #   dir: ./kustomize/seed/supporting-applications/kargo
-  # headlamp:
-  #   taskfile: ./kustomize/seed/supporting-applications/headlamp/Taskfile.yaml
-  #   dir: ./kustomize/seed/supporting-applications/headlamp
-
+  # branch-targeting:
+  #   taskfile: ./kustomize/_common/components/argocd-branch-targetrevision/Taskfile.yaml
+  #   dir: ./kustomize/_common/components/argocd-branch-targetrevision
+  # secrets:
+  #   taskfile: ./kustomize/central-secret-store/Taskfile.yaml
+  #   dir: ./kustomize/central-secret-store
+  
 tasks:
   test:unit:setup:
     desc: "Setup unit tests for platform components (ingress + branch targeting)"

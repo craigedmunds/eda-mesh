@@ -175,7 +175,7 @@ tasks:
   # IMPORTANT: This only works because we import
   # dev-common/Taskfile.yaml without setting dir
   # If we find we need to set dir, we'll need to reconsider this 
-  docs:taskfile:
+  docs:
     desc: Generate/update the taskfile steering documentation
     cmds:
       - task: workspace-shared:docs:taskfile
