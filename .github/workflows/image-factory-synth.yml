@@ -1,0 +1,60 @@
+name: Image Factory CDK8s Synth Check
+
+on:
+  pull_request:
+    paths:
+      - 'image-factory/images.yaml'
+      - 'image-factory/cdk8s/**'
+      - '.github/workflows/image-factory-synth.yml'
+  
+  workflow_dispatch:
+
+jobs:
+  check-synth:
+    name: Synthesize Kargo Resources with Cdk8s 
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Task
+        uses: pnorton5432/setup-task@v1
+      
+      - name: Setup CDK8s environment
+        run: task cdk8s:setup
+        working-directory: image-factory
+      
+      - name: Synthesize Kargo manifests
+        run: task cdk8s:synth
+        working-directory: image-factory
+      
+      - name: Check if dist/image-factory.k8s.yaml is up to date
+        id: check_synth
+        run: |
+          if git diff --quiet image-factory/cdk8s/dist/image-factory.k8s.yaml; then
+            echo "status=ok" >> $GITHUB_OUTPUT
+            echo "✅ Kargo resources are up to date"
+          else
+            echo "status=needs_synth" >> $GITHUB_OUTPUT
+            echo "❌ Kargo resources are OUT OF SYNC"
+            echo ""
+            echo "Please run the following commands and commit the changes:"
+            echo "  cd image-factory && task cdk8s:synth"
+            echo "  git add cdk8s/dist/image-factory.k8s.yaml state/images/"
+            echo ""
+            echo "Changes needed:"
+            git diff --stat image-factory/cdk8s/dist/image-factory.k8s.yaml
+            exit 1
+          fi
+      
+      - name: Show what would change (on failure)
+        if: failure()
+        run: |
+          echo "=== Diff of synthesized Kargo resources ==="
+          git diff image-factory/cdk8s/dist/image-factory.k8s.yaml
