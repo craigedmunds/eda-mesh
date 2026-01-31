@@ -1,0 +1,92 @@
+name: Image Factory CDK8s Synth
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'image-factory/images.yaml'
+      - 'image-factory/cdk8s/**'
+      - '.github/workflows/image-factory-synth.yml'
+  
+  pull_request:
+    paths:
+      - 'image-factory/images.yaml'
+      - 'image-factory/cdk8s/**'
+      - '.github/workflows/image-factory-synth.yml'
+  
+  workflow_dispatch:
+
+jobs:
+  synth-and-commit:
+    name: Synthesize Kargo Resources
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Task
+        uses: pnorton5432/setup-task@v1
+      
+      - name: Setup CDK8s environment
+        run: task cdk8s:setup
+        working-directory: image-factory
+      
+      - name: Synthesize Kargo manifests
+        run: task cdk8s:synth
+        working-directory: image-factory
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet image-factory/.output/; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected in synthesized manifests"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in synthesized manifests"
+          fi
+      
+      - name: Commit synthesized manifests
+        if: steps.check_changes.outputs.has_changes == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add image-factory/.output/
+          git commit -m "Auto-synth: Regenerate Kargo resources from images.yaml
+
+Generated from commit ${{ github.sha }}
+
+Changes:
+$(git diff HEAD~1 image-factory/images.yaml --stat || echo 'New enrollment')"
+          git push
+      
+      - name: Upload synthesized manifests (PR)
+        if: steps.check_changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthesized-kargo-manifests
+          path: image-factory/.output/
+      
+      - name: Comment on PR
+        if: steps.check_changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Kargo resources synthesized successfully. New manifests will be auto-committed when merged to main.'
+            })
