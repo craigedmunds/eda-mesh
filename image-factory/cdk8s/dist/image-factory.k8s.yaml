@@ -614,6 +614,29 @@ spec:
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
+  name: metrics-service
+  namespace: image-factory-kargo
+spec:
+  interval: 5m
+  subscriptions:
+    - image:
+        discoveryLimit: 10
+        repoURL: ghcr.io/craigedmunds/market-making/metrics-service
+        semverConstraint: ">=0.1.0"
+        strictSemvers: false
+    - git:
+        branch: main
+        commitSelectionStrategy: NewestFromBranch
+        discoveryLimit: 5
+        includePaths:
+          - metrics-service/
+          - image-factory/
+        repoURL: https://github.com/craigedmunds/market-making.git
+        strictSemvers: false
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
   name: distroless-python3-debian12-latest
   namespace: image-factory-kargo
 spec:
@@ -846,6 +869,35 @@ spec:
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
 metadata:
+  name: rebuild-trigger-metrics-service-from-python-3.12-slim
+  namespace: image-factory-kargo
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: python-3.12-slim
+      sources:
+        direct: true
+  promotionTemplate:
+    spec:
+      steps:
+        - uses: http
+          as: trigger-metrics-service
+          config:
+            url: https://api.github.com/repos/craigedmunds/market-making/actions/workflows/metrics-service.yml/dispatches
+            method: POST
+            headers:
+              - name: Accept
+                value: application/vnd.github.v3+json
+              - name: Authorization
+                value: Bearer ${{ secret('github-workflow-token').token }}
+              - name: Content-Type
+                value: application/json
+            body: '{"ref": "main", "inputs": {"version_bump": "patch"}}'
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
   name: rebuild-trigger-e2e-test-runner-from-mcr.microsoft.com-playwright-v1.40.0-focal
   namespace: image-factory-kargo
 spec:
@@ -995,5 +1047,47 @@ spec:
         value: github
       - name: gitRepo
         value: https://github.com/craigedmunds/argocd-eda.git
+      - name: gitBranch
+        value: main
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: analyze-dockerfile-metrics-service
+  namespace: image-factory-kargo
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: metrics-service
+      sources:
+        direct: true
+  promotionTemplate:
+    spec:
+      steps:
+        - uses: git-clone
+          config:
+            repoURL: https://github.com/craigedmunds/market-making.git
+            checkout:
+              - branch: main
+                path: ./repo
+  verification:
+    analysisTemplates:
+      - name: analyze-dockerfile
+    args:
+      - name: imageName
+        value: metrics-service
+      - name: imageTag
+        value: ${{ imageFrom("ghcr.io/craigedmunds/market-making/metrics-service").Tag }}
+      - name: imageDigest
+        value: ${{ imageFrom("ghcr.io/craigedmunds/market-making/metrics-service").Digest }}
+      - name: dockerfile
+        value: metrics-service/Dockerfile
+      - name: sourceRepo
+        value: craigedmunds/market-making
+      - name: sourceProvider
+        value: github
+      - name: gitRepo
+        value: https://github.com/craigedmunds/market-making.git
       - name: gitBranch
         value: main
