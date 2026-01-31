@@ -58,6 +58,12 @@ jobs:
             echo "Changes detected in synthesized manifests"
           fi
       
+      - name: Show changes (for review)
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          echo "=== Changes in synthesized Kargo resources ==="
+          git diff image-factory/.output/ || true
+      
       - name: Commit synthesized manifests
         if: steps.check_changes.outputs.has_changes == 'true' && github.ref == 'refs/heads/main'
         run: |
