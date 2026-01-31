@@ -44,7 +44,9 @@ jobs:
       - name: Check if synthesis generated changes
         id: check_changes
         run: |
-          if git diff --quiet image-factory/cdk8s/dist/image-factory.k8s.yaml; then
+          # Check both unstaged changes AND untracked files
+          if git diff --quiet image-factory/cdk8s/dist/ && \
+             ! git ls-files --others --exclude-standard image-factory/cdk8s/dist/ | grep -q .; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "✅ Kargo resources are already up to date"
           else
@@ -52,7 +54,8 @@ jobs:
             echo "📝 Synthesis generated new Kargo resources"
             echo ""
             echo "Changes:"
-            git diff --stat image-factory/cdk8s/dist/image-factory.k8s.yaml
+            git status --short image-factory/cdk8s/dist/
+            git diff --stat image-factory/cdk8s/dist/ || true
           fi
       
       - name: Commit synthesized resources to PR branch
@@ -60,7 +63,7 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add image-factory/cdk8s/dist/image-factory.k8s.yaml
+          git add image-factory/cdk8s/dist/
           git commit -m "Auto-synth: Regenerate Kargo resources from images.yaml" \
             -m "Synthesized by GitHub Actions" \
             -m "Commit: ${{ github.event.pull_request.head.sha }}" \
