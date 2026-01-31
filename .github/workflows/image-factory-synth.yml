@@ -1,14 +1,6 @@
-name: Image Factory CDK8s Synth
+name: Image Factory CDK8s Synth Check
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'image-factory/images.yaml'
-      - 'image-factory/cdk8s/**'
-      - '.github/workflows/image-factory-synth.yml'
-  
   pull_request:
     paths:
       - 'image-factory/images.yaml'
@@ -18,18 +10,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  synth-and-commit:
-    name: Synthesize Kargo Resources
+  check-synth:
+    name: Validate Kargo Resources are Synthesized
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -47,52 +34,26 @@ jobs:
         run: task cdk8s:synth
         working-directory: image-factory
       
-      - name: Check for changes
-        id: check_changes
+      - name: Check if .output/ is up to date
+        id: check_synth
         run: |
           if git diff --quiet image-factory/.output/; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No changes detected in synthesized manifests"
+            echo "status=ok" >> $GITHUB_OUTPUT
+            echo "✅ Kargo resources are up to date"
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Changes detected in synthesized manifests"
+            echo "status=needs_synth" >> $GITHUB_OUTPUT
+            echo "❌ Kargo resources are OUT OF SYNC"
+            echo ""
+            echo "Please run the following command and commit the changes:"
+            echo "  cd image-factory && task cdk8s:synth"
+            echo ""
+            echo "Changes needed:"
+            git diff --stat image-factory/.output/
+            exit 1
           fi
       
-      - name: Show changes (for review)
-        if: steps.check_changes.outputs.has_changes == 'true'
+      - name: Show what would change (on failure)
+        if: failure()
         run: |
-          echo "=== Changes in synthesized Kargo resources ==="
-          git diff image-factory/.output/ || true
-      
-      - name: Commit synthesized manifests
-        if: steps.check_changes.outputs.has_changes == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add image-factory/.output/
-          git commit -m "Auto-synth: Regenerate Kargo resources from images.yaml
-
-Generated from commit ${{ github.sha }}
-
-Changes:
-$(git diff HEAD~1 image-factory/images.yaml --stat || echo 'New enrollment')"
-          git push
-      
-      - name: Upload synthesized manifests (PR)
-        if: steps.check_changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: synthesized-kargo-manifests
-          path: image-factory/.output/
-      
-      - name: Comment on PR
-        if: steps.check_changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Kargo resources synthesized successfully. New manifests will be auto-committed when merged to main.'
-            })
+          echo "=== Diff of synthesized Kargo resources ==="
+          git diff image-factory/.output/
