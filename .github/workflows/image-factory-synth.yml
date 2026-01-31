@@ -1,22 +1,29 @@
-name: Image Factory CDK8s Synth Check
+name: Image Factory CDK8s Synth
 
 on:
   pull_request:
     paths:
       - 'image-factory/images.yaml'
       - 'image-factory/cdk8s/**'
+      - 'image-factory/state/**'
       - '.github/workflows/image-factory-synth.yml'
   
   workflow_dispatch:
 
 jobs:
-  check-synth:
-    name: Validate Kargo Resources are Synthesized
+  auto-synth:
+    name: Auto-synthesize Kargo Resources
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     
     steps:
-      - name: Checkout code
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -34,27 +41,41 @@ jobs:
         run: task cdk8s:synth
         working-directory: image-factory
       
-      - name: Check if dist/image-factory.k8s.yaml is up to date
-        id: check_synth
+      - name: Check if synthesis generated changes
+        id: check_changes
         run: |
           if git diff --quiet image-factory/cdk8s/dist/image-factory.k8s.yaml; then
-            echo "status=ok" >> $GITHUB_OUTPUT
-            echo "✅ Kargo resources are up to date"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ Kargo resources are already up to date"
           else
-            echo "status=needs_synth" >> $GITHUB_OUTPUT
-            echo "❌ Kargo resources are OUT OF SYNC"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "📝 Synthesis generated new Kargo resources"
             echo ""
-            echo "Please run the following commands and commit the changes:"
-            echo "  cd image-factory && task cdk8s:synth"
-            echo "  git add cdk8s/dist/image-factory.k8s.yaml state/images/"
-            echo ""
-            echo "Changes needed:"
+            echo "Changes:"
             git diff --stat image-factory/cdk8s/dist/image-factory.k8s.yaml
-            exit 1
           fi
       
-      - name: Show what would change (on failure)
-        if: failure()
+      - name: Commit synthesized resources to PR branch
+        if: steps.check_changes.outputs.has_changes == 'true'
         run: |
-          echo "=== Diff of synthesized Kargo resources ==="
-          git diff image-factory/cdk8s/dist/image-factory.k8s.yaml
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add image-factory/cdk8s/dist/image-factory.k8s.yaml
+          git commit -m "Auto-synth: Regenerate Kargo resources from images.yaml
+
+Synthesized by GitHub Actions from:
+- Commit: ${{ github.event.pull_request.head.sha }}
+- PR: #${{ github.event.pull_request.number }}"
+          git push
+      
+      - name: Comment on PR
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Kargo resources automatically synthesized and committed to this PR branch.'
+            })
