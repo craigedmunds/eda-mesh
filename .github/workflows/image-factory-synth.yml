@@ -34,21 +34,22 @@ jobs:
         run: task cdk8s:synth
         working-directory: image-factory
       
-      - name: Check if .output/ is up to date
+      - name: Check if dist/image-factory.k8s.yaml is up to date
         id: check_synth
         run: |
-          if git diff --quiet image-factory/.output/; then
+          if git diff --quiet image-factory/cdk8s/dist/image-factory.k8s.yaml; then
             echo "status=ok" >> $GITHUB_OUTPUT
             echo "✅ Kargo resources are up to date"
           else
             echo "status=needs_synth" >> $GITHUB_OUTPUT
             echo "❌ Kargo resources are OUT OF SYNC"
             echo ""
-            echo "Please run the following command and commit the changes:"
+            echo "Please run the following commands and commit the changes:"
             echo "  cd image-factory && task cdk8s:synth"
+            echo "  git add cdk8s/dist/image-factory.k8s.yaml state/images/"
             echo ""
             echo "Changes needed:"
-            git diff --stat image-factory/.output/
+            git diff --stat image-factory/cdk8s/dist/image-factory.k8s.yaml
             exit 1
           fi
       
@@ -56,4 +57,4 @@ jobs:
         if: failure()
         run: |
           echo "=== Diff of synthesized Kargo resources ==="
-          git diff image-factory/.output/
+          git diff image-factory/cdk8s/dist/image-factory.k8s.yaml
