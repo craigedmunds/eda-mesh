@@ -64,3 +64,20 @@
     workflow: code-server-dev.yml
   rebuildDelay: 7d
   autoRebuild: true
+
+- name: metrics-service
+  registry: ghcr.io
+  repository: craigedmunds/market-making/metrics-service
+  source:
+    provider: github
+    repo: craigedmunds/market-making
+    branch: main
+    dockerfile: metrics-service/Dockerfile
+    workflow: metrics-service.yml
+  rebuildDelay: 7d
+  autoRebuild: true
+  updates:
+    - repo: craigedmunds/market-making
+      path: infra/kustomization.yaml
+      type: kustomize-set-image
+      # Will automatically update image tag when new version is built
