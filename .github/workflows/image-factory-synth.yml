@@ -61,11 +61,10 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add image-factory/cdk8s/dist/image-factory.k8s.yaml
-          git commit -m "Auto-synth: Regenerate Kargo resources from images.yaml
-
-Synthesized by GitHub Actions from:
-- Commit: ${{ github.event.pull_request.head.sha }}
-- PR: #${{ github.event.pull_request.number }}"
+          git commit -m "Auto-synth: Regenerate Kargo resources from images.yaml" \
+            -m "Synthesized by GitHub Actions" \
+            -m "Commit: ${{ github.event.pull_request.head.sha }}" \
+            -m "PR: #${{ github.event.pull_request.number }}"
           git push
       
       - name: Comment on PR
