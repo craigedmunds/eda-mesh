@@ -4,14 +4,14 @@ metadata:
   name: image-factory
   namespace: argocd
   labels:
-    repo: argocd-eda
+    repo: image-factory-state
     capability: image-factory
     argocd-branch-targetrevision: "true"
 spec:
   project: sdlc
   source:
-    repoURL: https://github.com/craigedmunds/argocd-eda.git
-    path: image-factory/cdk8s/dist
+    repoURL: https://github.com/craigedmunds/image-factory-state.git
+    path: dist
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc
