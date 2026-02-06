@@ -1,0 +1,16 @@
+# Ignore files not needed in builder image
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+*.egg-info/
+dist/
+build/
+node_modules/
+.git/
+.github/
+*.md
+!README.md

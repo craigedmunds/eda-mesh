@@ -5,6 +5,7 @@ resources:
   - eda
   - backstage
   - image-factory
+  - arc
   
 generatorOptions:
   disableNameSuffixHash: true

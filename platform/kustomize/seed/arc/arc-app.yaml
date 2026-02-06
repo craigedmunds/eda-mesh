@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc
+  namespace: argocd
+  labels:
+    repo: argocd-eda
+    capability: arc
+    argocd-branch-targetrevision: "true"
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/craigedmunds/argocd-eda.git
+    targetRevision: main
+    path: platform/kustomize/seed/arc/overlays/lab
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-systems
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
+      enabled: true

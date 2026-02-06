@@ -1,0 +1,78 @@
+apiVersion: actions.github.com/v1alpha1
+kind: AutoscalingRunnerSet
+metadata:
+  name: arc-runner-set
+  namespace: arc-systems
+spec:
+  # GitHub configuration - organization level
+  # Change this to your org or repo URL
+  githubConfigUrl: "https://github.com/craigedmunds"
+  githubConfigSecret: github-arc-secret
+  
+  # Runner scale set name (use in workflows with runs-on: arc-runner-set)
+  runnerScaleSetName: "arc-runner-set"
+  
+  # Runner group (optional - for enterprise/org level)
+  runnerGroup: "default"
+  
+  # Runner pod template
+  template:
+    spec:
+      # Use service account with appropriate permissions
+      serviceAccountName: arc-runner
+      
+      # Security context for rootless operation
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      containers:
+        - name: runner
+          image: ghcr.io/actions/actions-runner:latest
+          imagePullPolicy: IfNotPresent
+          
+          # Enable Docker builds
+          env:
+            - name: DOCKER_HOST
+              value: unix:///var/run/docker.sock
+            
+            # Runner configuration
+            - name: RUNNER_FEATURE_FLAG_EPHEMERAL
+              value: "true"
+          
+          # Volume mounts
+          volumeMounts:
+            - name: work
+              mountPath: /runner/_work
+            
+            # Mount Docker socket for builds
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+          
+          # Resource allocation
+          resources:
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+      
+      # Volumes
+      volumes:
+        - name: work
+          emptyDir:
+            sizeLimit: "20Gi"
+        
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+  
+  # Auto-scaling configuration
+  minRunners: 0           # Scale to zero when idle
+  maxRunners: 5           # Max concurrent runners
+  
+  # Scale down delay
+  scaleDownDelaySecondsAfterScaleUp: 300  # 5 minutes after scale up

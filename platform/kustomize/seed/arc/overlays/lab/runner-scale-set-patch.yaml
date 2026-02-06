@@ -1,0 +1,26 @@
+apiVersion: actions.github.com/v1alpha1
+kind: AutoscalingRunnerSet
+metadata:
+  name: arc-runner-set
+  namespace: arc-systems
+spec:
+  # Lab environment configuration - organization level
+  # This makes runners available to ALL repos in the craigedmunds org
+  # (argocd-eda, market-making, ai-dev, domain-apis, etc.)
+  githubConfigUrl: "https://github.com/craigedmunds"
+  
+  # Lab-specific scaling limits
+  maxRunners: 5  # Allow up to 5 concurrent builds across all repos
+  
+  # Lab-specific resource limits (smaller for lab)
+  template:
+    spec:
+      containers:
+        - name: runner
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"

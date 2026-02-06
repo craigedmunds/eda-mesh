@@ -1,6 +1,338 @@
 version: '3'
 
+vars:
+  REGISTRY: '{{.REGISTRY | default "ghcr.io"}}'
+  NAMESPACE: image-factory-kargo
+  BUILDER_IMAGE: '{{.REGISTRY}}/craigedmunds/image-factory:{{.BUILDER_VERSION | default "latest"}}'
+
 tasks:
+  # ============================================================================
+  # Primary Build Tasks (Convention: simple names for default actions)
+  # ============================================================================
+
+  build:
+    desc: Build and push multi-arch image for any enrolled image (reads from images.yaml)
+    summary: |
+      Usage: task build IMAGE=backstage [TAG=v1.0.0]
+      
+      Full pipeline: clone → build multi-arch → push → scan → update state
+    cmds:
+      - task: _ensure-enrolled
+        vars: {IMAGE: '{{.IMAGE}}'}
+      - task: _build-multiarch
+        vars: {IMAGE: '{{.IMAGE}}', TAG: '{{.TAG | default "latest"}}'}
+      - task: _scan
+        vars: {IMAGE: '{{.IMAGE}}', TAG: '{{.TAG | default "latest"}}'}
+      - task: _update-state
+        vars: {IMAGE: '{{.IMAGE}}', TAG: '{{.TAG | default "latest"}}'}
+      - echo "✅ Build complete - {{.REGISTRY}}/{{.IMAGE}}:{{.TAG | default "latest"}}"
+    vars:
+      IMAGE: '{{.IMAGE}}'
+      TAG: '{{.TAG}}'
+    requires:
+      vars: [IMAGE]
+
+  build:local:
+    desc: Build locally for testing (single platform, no push)
+    summary: |
+      Usage: task build:local IMAGE=backstage
+      
+      Quick local build - current platform only, tags as :local
+    cmds:
+      - task: _ensure-enrolled
+        vars: {IMAGE: '{{.IMAGE}}'}
+      - |
+        echo "🔧 Local build for {{.IMAGE}}..."
+        eval $(task _get-config -- {{.IMAGE}})
+        
+        docker build \
+          --tag "$IMAGE_NAME:local" \
+          --file "$DOCKERFILE" \
+          "$CONTEXT" || \
+        podman build \
+          --tag "$IMAGE_NAME:local" \
+          --file "$DOCKERFILE" \
+          "$CONTEXT"
+        
+        echo "✅ Local build complete: $IMAGE_NAME:local"
+    vars:
+      IMAGE: '{{.IMAGE}}'
+    requires:
+      vars: [IMAGE]
+
+  build:scan-only:
+    desc: Scan existing image without rebuilding
+    cmds:
+      - task: _scan
+        vars: {IMAGE: '{{.IMAGE}}', TAG: '{{.TAG | default "latest"}}'}
+    vars:
+      IMAGE: '{{.IMAGE}}'
+      TAG: '{{.TAG}}'
+    requires:
+      vars: [IMAGE]
+
+  # ============================================================================
+  # Builder Image Management
+  # ============================================================================
+
+  builder:
+    desc: Build and push the Image Factory builder image itself
+    cmds:
+      - task: builder:build
+      - task: builder:push
+
+  builder:build:
+    desc: Build the Image Factory builder image
+    dir: builder
+    cmds:
+      - |
+        echo "🏗️  Building Image Factory builder image..."
+        
+        # Use docker or podman depending on what's available
+        if command -v docker &> /dev/null; then
+          docker build \
+            --tag {{.BUILDER_IMAGE}} \
+            --file Dockerfile \
+            .
+        elif command -v podman &> /dev/null; then
+          podman build \
+            --tag {{.BUILDER_IMAGE}} \
+            --file Dockerfile \
+            .
+        else
+          echo "❌ Neither docker nor podman found"
+          exit 1
+        fi
+
+  builder:push:
+    desc: Push the Image Factory builder image
+    cmds:
+      - |
+        echo "📤 Pushing Image Factory builder image..."
+        
+        if command -v docker &> /dev/null; then
+          docker push {{.BUILDER_IMAGE}}
+        elif command -v podman &> /dev/null; then
+          podman push {{.BUILDER_IMAGE}}
+        else
+          echo "❌ Neither docker nor podman found"
+          exit 1
+        fi
+
+  builder:test:
+    desc: Test the builder image
+    cmds:
+      - |
+        echo "🧪 Testing builder image..."
+        
+        if command -v docker &> /dev/null; then
+          docker run --rm {{.BUILDER_IMAGE}} bash -c "
+            echo '✓ Task:' && task --version &&
+            echo '✓ Python:' && python3.11 --version &&
+            echo '✓ Podman:' && podman --version &&
+            echo '✓ Buildah:' && buildah --version &&
+            echo '✓ Trivy:' && trivy --version &&
+            echo '✓ kubectl:' && kubectl version --client
+          "
+        elif command -v podman &> /dev/null; then
+          podman run --rm {{.BUILDER_IMAGE}} bash -c "
+            echo '✓ Task:' && task --version &&
+            echo '✓ Python:' && python3.11 --version &&
+            echo '✓ Podman:' && podman --version &&
+            echo '✓ Buildah:' && buildah --version &&
+            echo '✓ Trivy:' && trivy --version &&
+            echo '✓ kubectl:' && kubectl version --client
+          "
+        fi
+
+  # ============================================================================
+  # Primary Deploy Tasks
+  # ============================================================================
+
+  deploy:
+    desc: Deploy Image Factory to K8s (primary deploy task)
+    cmds:
+      - task: cdk8s:synth
+      - kubectl apply -f cdk8s/dist/image-factory.k8s.yaml
+      - echo "✅ Image Factory deployed to {{.NAMESPACE}}"
+
+  # ============================================================================
+  # Internal Build Pipeline Tasks (prefixed with _)
+  # ============================================================================
+
+  _ensure-enrolled:
+    internal: true
+    desc: Verify image is enrolled in images.yaml
+    cmds:
+      - |
+        if ! grep -q "^- name: {{.IMAGE}}$" images.yaml; then
+          echo "❌ Image '{{.IMAGE}}' not found in images.yaml"
+          echo ""
+          echo "Available images:"
+          grep "^- name:" images.yaml | sed 's/- name: /  - /'
+          exit 1
+        fi
+    vars:
+      IMAGE: '{{.IMAGE}}'
+
+  _get-config:
+    internal: true
+    desc: Extract configuration for an enrolled image from images.yaml
+    cmds:
+      - |
+        python3 << 'EOF'
+        import yaml
+        import sys
+        
+        try:
+            with open('images.yaml') as f:
+                images = yaml.safe_load(f)
+        except Exception as e:
+            print(f"Error loading images.yaml: {e}", file=sys.stderr)
+            sys.exit(1)
+        
+        image_name = '{{.IMAGE}}'
+        img = next((i for i in images if i['name'] == image_name), None)
+        
+        if not img:
+            print(f"Image '{image_name}' not found", file=sys.stderr)
+            sys.exit(1)
+        
+        # Output as shell variables
+        print(f"IMAGE_NAME={img['repository']}")
+        print(f"DOCKERFILE={img['source']['dockerfile']}")
+        print(f"CONTEXT={img['source'].get('context', '.')}")
+        
+        if 'repo' in img.get('source', {}):
+            print(f"GIT_REPO=https://github.com/{img['source']['repo']}.git")
+            print(f"GIT_BRANCH={img['source'].get('branch', 'main')}")
+        EOF
+    vars:
+      IMAGE: '{{.IMAGE}}'
+
+  _build-multiarch:
+    internal: true
+    desc: Build multi-arch image (amd64, arm64)
+    cmds:
+      - |
+        echo "🏗️  Building {{.IMAGE}} (multi-arch: amd64, arm64)..."
+        
+        # Get configuration from images.yaml
+        eval $(task _get-config -- {{.IMAGE}})
+        
+        # Clone source if external repo
+        BUILD_DIR="."
+        if [ -n "$GIT_REPO" ]; then
+          echo "📥 Cloning $GIT_REPO..."
+          BUILD_DIR="/tmp/build-{{.IMAGE}}"
+          rm -rf "$BUILD_DIR"
+          git clone --depth 1 --branch "${GIT_BRANCH:-main}" "$GIT_REPO" "$BUILD_DIR"
+          cd "$BUILD_DIR"
+        fi
+        
+        # Ensure we have podman/buildah
+        if ! command -v podman &> /dev/null || ! command -v buildah &> /dev/null; then
+          echo "❌ Podman/Buildah not found. This task should run in the builder image."
+          exit 1
+        fi
+        
+        # Remove existing manifest if it exists
+        podman manifest rm {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}} 2>/dev/null || true
+        
+        # Create multi-arch manifest
+        podman manifest create {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}}
+        
+        # Build for each architecture
+        for ARCH in amd64 arm64; do
+          echo "  📦 Building for $ARCH..."
+          buildah bud \
+            --format docker \
+            --arch "$ARCH" \
+            --manifest {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}} \
+            --layers \
+            --file "$DOCKERFILE" \
+            "$CONTEXT"
+        done
+        
+        # Push manifest and all images
+        echo "📤 Pushing multi-arch manifest to {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}}..."
+        podman manifest push \
+          --all \
+          {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}} \
+          docker://{{.REGISTRY}}/$IMAGE_NAME:{{.TAG}}
+        
+        # Get digest for state tracking
+        DIGEST=$(podman manifest inspect {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}} | jq -r '.digest')
+        mkdir -p /tmp
+        echo "DIGEST=$DIGEST" > /tmp/build-digest-{{.IMAGE}}.env
+        echo "✅ Build complete: {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}} ($DIGEST)"
+    vars:
+      IMAGE: '{{.IMAGE}}'
+      TAG: '{{.TAG}}'
+
+  _scan:
+    internal: true
+    desc: Scan image with Trivy
+    cmds:
+      - |
+        echo "🔍 Scanning {{.IMAGE}}:{{.TAG}} for vulnerabilities..."
+        mkdir -p .output
+        
+        eval $(task _get-config -- {{.IMAGE}})
+        
+        # Run Trivy scan
+        trivy image \
+          --severity HIGH,CRITICAL \
+          --format sarif \
+          --output .output/trivy-{{.IMAGE}}-{{.TAG}}.sarif \
+          {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}} || true
+        
+        echo "📊 Vulnerability summary:"
+        trivy image \
+          --severity HIGH,CRITICAL \
+          --format table \
+          {{.REGISTRY}}/$IMAGE_NAME:{{.TAG}}
+    vars:
+      IMAGE: '{{.IMAGE}}'
+      TAG: '{{.TAG}}'
+
+  _update-state:
+    internal: true
+    desc: Update image factory state after build
+    dir: app
+    cmds:
+      - |
+        echo "💾 Updating state for {{.IMAGE}}..."
+        
+        # Load digest from build
+        if [ -f /tmp/build-digest-{{.IMAGE}}.env ]; then
+          source /tmp/build-digest-{{.IMAGE}}.env
+        else
+          echo "⚠️  No digest file found, skipping state update"
+          exit 0
+        fi
+        
+        # TODO: Implement state update in app.py
+        # For now, just log the update
+        echo "  Image: {{.IMAGE}}"
+        echo "  Tag: {{.TAG}}"
+        echo "  Digest: $DIGEST"
+        echo "  (State update not yet implemented)"
+    vars:
+      IMAGE: '{{.IMAGE}}'
+      TAG: '{{.TAG}}'
+
+  # ============================================================================
+  # Existing Tasks (Testing, Analysis, Status, etc.)
+  # ============================================================================
+
+  test:
+    desc: Run all Image Factory tests
+    cmds:
+      - task: test:unit
+      - task: test:integration
+      - task: test:acceptance
+
   test:unit:setup:
     desc: "Set up Image Factory development environment"
     cmds:

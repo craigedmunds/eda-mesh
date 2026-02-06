@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: arc-systems
+  labels:
+    # Enable ARC GitHub token (for runner registration)
+    secrets/arc-github-token: "true"
+    # Enable GitHub OAuth credentials (for API access)
+    secrets/gh-oauth-credentials: "true"
+    # Enable GitHub Docker registry access (for pulling images)
+    secrets/gh-docker-registry: "true"

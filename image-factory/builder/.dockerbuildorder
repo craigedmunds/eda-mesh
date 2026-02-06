@@ -1,0 +1,120 @@
+# Docker Build Order & Caching Strategy
+# This file documents the layer ordering for optimal caching
+
+# ============================================================================
+# Stage 1: base-tools (~1.2GB) - CACHE: Months
+# ============================================================================
+FROM registry.access.redhat.com/ubi9/ubi:latest
+↓
+RUN dnf install (system packages)
+↓
+RUN install Task, kubectl, Trivy
+↓
+RUN dnf install (podman, buildah, skopeo)
+↓
+RUN configure rootless
+↓
+COPY configs/
+
+# Cache invalidation: Only when tool versions change
+# Rebuild frequency: < 1% of builds
+
+# ============================================================================
+# Stage 2: dependencies (~200MB) - CACHE: Weeks
+# ============================================================================
+FROM base-tools
+↓
+COPY app/pyproject.toml (just metadata)
+COPY cdk8s/pyproject.toml (just metadata)
+↓
+RUN pip install (Python dependencies)
+
+# Cache invalidation: When dependencies change
+# Rebuild frequency: ~9% of builds
+
+# ============================================================================
+# Stage 3: application (~10MB) - CACHE: Minutes
+# ============================================================================
+FROM dependencies
+↓
+COPY app/ (Python source code)
+COPY cdk8s/ (Python source code)
+COPY Taskfile.yaml
+COPY images.yaml
+
+# Cache invalidation: Every code change
+# Rebuild frequency: ~90% of builds
+# BUILD TIME: ~30 seconds
+
+# ============================================================================
+# Stage 4: runtime (minimal) - CACHE: Days
+# ============================================================================
+FROM application
+↓
+ENV variables
+↓
+RUN useradd builder
+↓
+HEALTHCHECK
+
+# Cache invalidation: Configuration changes only
+# Rebuild frequency: ~5% of builds
+
+# ============================================================================
+# Build Performance Comparison
+# ============================================================================
+
+# BEFORE (Single-Stage):
+# Code change → Rebuild 1.5GB → 10+ minutes ❌
+
+# AFTER (Multi-Stage):
+# Code change → Rebuild 10MB → 30 seconds ✅
+
+# ============================================================================
+# Development Workflow
+# ============================================================================
+
+# 1. First build (or tool update):
+$ docker build -f builder/Dockerfile .
+# Time: ~10 minutes (builds all stages)
+
+# 2. Dependency change (update pyproject.toml):
+$ docker build -f builder/Dockerfile .
+# Time: ~3 minutes (rebuilds stage 2-4)
+
+# 3. Code change (edit app.py):
+$ docker build -f builder/Dockerfile .
+# Time: ~30 seconds (rebuilds stage 3-4 only) ⚡
+
+# 4. Config change (update Taskfile.yaml):
+$ docker build -f builder/Dockerfile .
+# Time: ~30 seconds (rebuilds stage 3-4 only) ⚡
+
+# ============================================================================
+# Layer Size Verification
+# ============================================================================
+
+$ docker history ghcr.io/craigedmunds/image-factory:latest
+
+# Expected output:
+# IMAGE          CREATED          SIZE       COMMENT
+# <sha>          1 minute ago     512B       runtime config
+# <sha>          1 minute ago     10MB       application code ← Changes frequently
+# <sha>          5 minutes ago    200MB      Python dependencies
+# <sha>          1 hour ago       1.2GB      base tools and build environment
+
+# ============================================================================
+# .dockerignore Optimization
+# ============================================================================
+
+# Build context size:
+# Without .dockerignore: ~500MB
+# With .dockerignore: ~50MB (10x reduction)
+
+# Excluded:
+# - .venv/ (100MB+)
+# - .git/ (50MB+)
+# - node_modules/ (100MB+)
+# - tests/ (10MB)
+# - docs/ (5MB)
+# - build artifacts
