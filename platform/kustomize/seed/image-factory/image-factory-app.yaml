@@ -23,3 +23,9 @@ spec:
       prune: true
       selfHeal: true
       enabled: true
+  ignoreDifferences:
+    # Kargo adds kargo.akuity.io/refresh annotation at runtime - ignore it
+    - group: kargo.akuity.io
+      kind: Warehouse
+      jsonPointers:
+        - /metadata/annotations/kargo.akuity.io~1refresh
