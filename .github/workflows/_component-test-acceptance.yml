@@ -21,24 +21,24 @@ jobs:
   acceptance-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
           token: ${{ secrets.SUBMODULE_PAT }}
-      - uses: arduino/setup-task@v1
+      - uses: arduino/setup-task@e26d8975574116b0097a1161e0fe16ba75d84c1c # v1
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup Node.js (for Playwright tests)
         if: hashFiles(format('{0}/tests/acceptance/package.json', inputs.component-path)) != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: ${{ inputs.component-path }}/tests/acceptance/package-lock.json
       - name: Setup Python (for pytest tests)
         if: hashFiles(format('{0}/**/pytest.ini', inputs.component-path)) != '' || hashFiles(format('{0}/**/pyproject.toml', inputs.component-path)) != ''
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.11'
       # - name: Install UV (for Python projects)
